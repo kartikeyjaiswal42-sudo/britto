@@ -2,6 +2,12 @@
 
 (Called Daam until 2026-10-27, when the owner renamed it. The folder is `britto/`.)
 
+> **The plan changed on 2026-10-27: `BLUEPRINT.md` is now the specification and its §24 is
+> the phase order.** S1–S3 below are its P0–P2. The next phase is **P3 (reader-config DSL +
+> config service)**. The S4–S12 list further down is superseded by BLUEPRINT §24 and kept
+> only as history. Start prompt for any session (local or cloud):
+> `Read PLAN.md "Start here", HISTORY.md and BLUEPRINT.md. Build only the next phase, keep every gate green.`
+
 Each piece below is sized for **one Claude session (one 5-hour usage window)**. Start every
 session by pasting its prompt. A session does only its own piece, then updates `HISTORY.md`,
 ticks this file, and says what is verified and what is not.
