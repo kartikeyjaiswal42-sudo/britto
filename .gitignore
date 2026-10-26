@@ -1,0 +1,9 @@
+node_modules/
+.wrangler/
+.dev.vars
+*.log
+.env
+.DS_Store
+test-results/
+*.apk
+*.keystore

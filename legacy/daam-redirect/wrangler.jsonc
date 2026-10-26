@@ -1,0 +1,9 @@
+{
+  // The OLD Worker name. Deployed over the original Daam Worker so its address redirects to
+  // Britto. No cron (frees an AMITY cron slot), no database.
+  "name": "daam",
+  "main": "worker.js",
+  "compatibility_date": "2026-10-01",
+  "account_id": "225f2c3132920804e70224f830c9aadc",
+  "triggers": { "crons": [] }
+}

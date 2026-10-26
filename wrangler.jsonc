@@ -1,0 +1,45 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "britto",
+  "main": "api/worker.ts",
+  // Must not be newer than the installed workerd (1.20261023 here) — workspace gotcha.
+  "compatibility_date": "2026-10-01",
+  // AMITY account (amitynoidalibrary@gmail.com) — owner's instruction 2026-10-26: "host on
+  // amitynoidalibrary account only". Its free Workers/D1/AI allowances are shared with the
+  // owner's other projects on this account (bookbot, truepen, palimpsest, meridingo, …).
+  "account_id": "225f2c3132920804e70224f830c9aadc",
+  "d1_databases": [
+    {
+      // api/env.ts reads env.DB.
+      "binding": "DB",
+      "database_name": "britto",
+      "database_id": "8fe7808f-37cf-4800-bee5-de9178423a29"
+    }
+  ],
+  // Free on every plan (5 cron triggers per account on Free). Each run re-checks at most
+  // PER_RUN products (api/app.ts) so it stays inside the 10 ms CPU limit.
+  "triggers": { "crons": ["*/5 * * * *"] },
+  "observability": { "enabled": true },
+  // Named in the bot's User-Agent. AMITY's workers.dev subdomain is account-wide and shared
+  // with a paying client's URL — never change the subdomain itself (workspace rule).
+  // VAPID_PUBLIC_KEY is public by design (browsers need it to subscribe to push). Its private
+  // half is the Worker secret VAPID_PRIVATE_JWK; TELEGRAM_BOT_TOKEN is a secret too. Without
+  // them those channels are off, not broken.
+  "vars": {
+    "SITE_URL": "https://britto.amitynoidalibrary.workers.dev",
+    "VAPID_PUBLIC_KEY": "BBAsF88eTCPtJXgVv2xFbz4a1o-F9UnX_gURASe2TERF-kBkMl5AbjtrDltKfrsN9U_Bg4CMIMQlvj3nICpFKYI"
+  },
+  // The Worker runs first for every path (API, /p/<key>, the "britto/<product link>" prefix)
+  // and hands static files to ASSETS itself.
+  //   not_found_handling "none": with "404-page" the asset server answers API paths with an
+  //   HTML 404 and the API becomes unreachable (workspace gotcha, flexfit + rokad).
+  "assets": {
+    "directory": "web",
+    "binding": "ASSETS",
+    "not_found_handling": "none",
+    //   html_handling "none": files by their exact names. The default redirects
+    //   /index.html -> / (307), which bounced /p/<key> to the home page (caught by prove.mjs).
+    "html_handling": "none",
+    "run_worker_first": true
+  }
+}

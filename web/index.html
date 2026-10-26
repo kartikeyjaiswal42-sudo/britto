@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Britto: price history and real discounts</title>
+  <meta name="description" content="Price history, honest discount checks and price-drop alerts for Amazon, Flipkart and Myntra.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#0f6b5c">
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header class="top">
+    <a class="logo" href="/" data-nav>Brit<span>to</span></a>
+    <form id="search-form" class="search" role="search">
+      <input name="q" type="search" placeholder="Search tracked products or paste a link" aria-label="Search or paste a link">
+    </form>
+    <nav><a href="/deals" data-nav>Deals</a><a href="/alerts" data-nav>Alerts</a><a href="/stores" data-nav>Stores</a></nav>
+  </header>
+  <main id="app"></main>
+  <footer class="foot">
+    <p>Prices are read from each store’s own product page; when a store refuses our server, from the shopper’s browser. We record a price only when it changes. <a href="/bot">About our bot</a>.</p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BrittoBot</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main>
+    <h1>BrittoBot</h1>
+    <p>BrittoBot reads the public product pages that shoppers ask Britto to track, so it can record their price history.</p>
+    <ul>
+      <li>It identifies itself as <code>BrittoBot</code> in every request and never pretends to be a browser.</li>
+      <li>It fetches only single product pages that the store's robots.txt allows.</li>
+      <li>It checks each product at most every few hours, one page at a time, and backs off when a store refuses it.</li>
+      <li>It never works around a store's bot defences. Stores that refuse it are not read by our server.</li>
+    </ul>
+    <p>Store operators: if you want BrittoBot to stop reading your site, block the <code>BrittoBot</code> user agent and it will back off automatically.</p>
+    <p><a href="/">Back to Britto</a></p>
+  </main>
+</body>
+</html>

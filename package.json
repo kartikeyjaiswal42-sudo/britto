@@ -1,0 +1,25 @@
+{
+  "name": "britto",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Britto: price history, real-vs-fake discount checks and price-drop alerts for Indian online stores.",
+  "scripts": {
+    "test": "node --test core/*.test.ts api/*.test.ts",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.ext.json",
+    "build:ext": "node scripts/build-ext.mjs",
+    "test:ext": "node scripts/extension.mjs",
+    "dev": "wrangler dev --local --persist-to .wrangler/dev-state",
+    "db:local": "wrangler d1 execute britto --local --persist-to .wrangler/dev-state --file=api/schema.sql",
+    "db:remote": "wrangler d1 execute britto --remote --file=api/schema.sql",
+    "prove": "node scripts/prove.mjs",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.1.43",
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.9.2",
+    "wrangler": "^4.131.2"
+  }
+}

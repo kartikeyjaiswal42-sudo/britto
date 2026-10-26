@@ -1,0 +1,71 @@
+# Test and deploy Britto
+#
+# Every push and pull request: typecheck (both configs) and the unit tests.
+# Every push to `main`: then the D1 schema, THEN the Worker (the order is load-bearing: new code
+# must never meet a database without its tables), then the live end-to-end check.
+#
+# One repository secret (Settings → Secrets and variables → Actions), added by the owner:
+#   CLOUDFLARE_API_TOKEN   "Edit Cloudflare Workers" template + D1 Edit, AMITY account only
+# Until it exists the deploy job says so and skips; tests still run.
+# The account id is not a secret: it is in wrangler.jsonc.
+
+name: Test and deploy
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # node --test strips types without checking them: tsc is the real gate.
+      - run: npm run typecheck
+      - run: npm test
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Never two deploys at once, and never cancel one halfway through a rollout.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Is the Cloudflare token set?
+        id: token
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::notice title=Deploy skipped::No CLOUDFLARE_API_TOKEN repository secret yet. Tests ran; nothing was deployed."
+            echo "ready=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=yes" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Database schema first (idempotent)
+        if: steps.token.outputs.ready == 'yes'
+        run: npx wrangler d1 execute britto --remote --file=api/schema.sql
+      - name: Then the Worker
+        if: steps.token.outputs.ready == 'yes'
+        run: npx wrangler deploy
+      # Read-mostly: re-opens two already-tracked products and checks refusals; adds no products
+      # (only short-lived rate-limit counters).
+      - name: Live check
+        if: steps.token.outputs.ready == 'yes'
+        run: node scripts/prove.mjs --live https://britto.amitynoidalibrary.workers.dev
