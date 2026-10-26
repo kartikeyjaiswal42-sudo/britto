@@ -15,7 +15,7 @@ test('Amazon in stock: the price box, not the first rupee on the page', () => {
   assert.equal(r.inStock, true);
   assert.match(r.title ?? '', /^Cello Butterflow Simply Ball Pen Set \| Pack of 25/);
   assert.equal(r.image, 'https://m.media-amazon.com/images/I/51xvbsAN5bL._SL1000_.jpg');
-  assert.equal(r.rule, 'amazon:core-price');
+  assert.equal(r.rule, 'amazon:priced');
 });
 
 test('Amazon price with paise: the decimal point sits inside the whole part', () => {
@@ -60,7 +60,7 @@ test('Amazon: price box present but no "price to pay" -> unrecognised, never ano
   const r = extract('amazon', html.replace(pay, ''));
   assert.equal(r.status, 'unrecognised');
   assert.equal(r.price, null);
-  assert.equal(r.rule, 'amazon:no-price-to-pay');
+  assert.equal(r.rule, 'amazon:no-price');
 });
 
 test('Amazon: a page with no product title is unrecognised, never priced', () => {

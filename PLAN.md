@@ -7,6 +7,26 @@
 > config service)**. The S4–S12 list further down is superseded by BLUEPRINT §24 and kept
 > only as history. Start prompt for any session (local or cloud):
 > `Read PLAN.md "Start here", HISTORY.md and BLUEPRINT.md. Build only the next phase, keep every gate green.`
+>
+> **P3 is IN PROGRESS on branch `p3-reader-configs`**: HISTORY.md "P3 … IN PROGRESS
+> (hand-over)" lists what is done and the 14 remaining steps in order. Continue that branch.
+
+## Unattended runs (the owner is away and cannot answer)
+
+The owner may start a cloud session and switch their laptop off. In that case:
+
+1. Finish P3 on `p3-reader-configs` (HISTORY.md hand-over, steps 1–14). Merge to `main`
+   only when every gate is green; GitHub Actions then deploys (schema, Worker, live check).
+2. Continue with BLUEPRINT §24 in order, **one phase per branch** (`p4-android`, …), each
+   merged only when every gate is green, with HISTORY.md + this file updated per phase.
+3. **Skip P5** until `design/` holds the owner's Claude Design export.
+4. Never stop to ask. Anything only the owner can do (a phone test, an account, a token, an
+   affiliate sign-up, a saved store page) goes into HISTORY.md under **"Waiting for the
+   owner"**, in plain English with the exact steps, and work moves to what is not blocked.
+5. All rules in CLAUDE.md stay binding: AMITY only, never disguise the bot or work around a
+   store's defences, never print secrets, no fake data in production, prove every new test
+   can fail, report verified and NOT verified separately.
+6. Commit and push after every meaningful step, so nothing is lost if the session stops.
 
 Each piece below is sized for **one Claude session (one 5-hour usage window)**. Start every
 session by pasting its prompt. A session does only its own piece, then updates `HISTORY.md`,

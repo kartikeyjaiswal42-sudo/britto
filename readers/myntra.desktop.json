@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "store": "myntra",
+  "device": "desktop",
+  "revision": 1,
+  "verified": "2026-10-26",
+  "reportsPid": true,
+  "domRecipe": {
+    "name": [{ "selector": [], "attribute": "innerHTML", "global": true, "sub_regex": "window\\.__myx = ([\\s\\S]*?)</script>", "json": "pdpData.name" }],
+    "pid": [{ "selector": [], "attribute": "innerHTML", "global": true, "sub_regex": "window\\.__myx = ([\\s\\S]*?)</script>", "json": "pdpData.id" }],
+    "itm": [],
+    "image": [
+      {
+        "selector": [], "attribute": "innerHTML", "global": true, "sub_regex": "window\\.__myx = ([\\s\\S]*?)</script>",
+        "json": "pdpData.media.albums[0].images[0].secureSrc",
+        "replace": [["($height)", "480"], ["($qualityPercentage)", "90"], ["($width)", "360"]]
+      }
+    ],
+    "availability": {
+      "selectors": [],
+      "outOfStockText": ["true"],
+      "fields": [{ "selector": [], "attribute": "innerHTML", "global": true, "sub_regex": "window\\.__myx = ([\\s\\S]*?)</script>", "json": "pdpData.flags.outOfStock" }]
+    },
+    "price": [{ "selector": [], "attribute": "innerHTML", "global": true, "sub_regex": "window\\.__myx = ([\\s\\S]*?)</script>", "json": "pdpData.price.discounted" }],
+    "mrp": [{ "selector": [], "attribute": "innerHTML", "global": true, "sub_regex": "window\\.__myx = ([\\s\\S]*?)</script>", "json": "pdpData.price.mrp" }]
+  }
+}

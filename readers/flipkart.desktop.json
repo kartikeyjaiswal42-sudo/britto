@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "store": "flipkart",
+  "device": "desktop",
+  "revision": 1,
+  "verified": null,
+  "reportsPid": false,
+  "domRecipe": {
+    "blocked": [["Something went wrong!", "\\bE00\\d\\b"]],
+    "name": [{ "selector": [], "attribute": "textContent", "jsonld": "name" }],
+    "pid": [],
+    "itm": [],
+    "image": [{ "selector": [], "attribute": "textContent", "jsonld": "image" }],
+    "availability": {
+      "selectors": [],
+      "outOfStockText": ["outofstock", "soldout", "discontinued"],
+      "fields": [{ "selector": [], "attribute": "textContent", "jsonld": "offers.availability" }]
+    },
+    "price": [
+      { "selector": [], "attribute": "textContent", "jsonld": "offers.price" },
+      { "selector": [], "attribute": "textContent", "jsonld": "offers.lowPrice" }
+    ],
+    "mrp": []
+  }
+}

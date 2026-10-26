@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "store": "amazon",
+  "device": "desktop",
+  "revision": 1,
+  "verified": "2026-10-26",
+  "reportsPid": true,
+  "domRecipe": {
+    "blocked": [
+      ["/errors/validateCaptcha"],
+      ["Enter the characters you see below"],
+      ["To discuss automated access to Amazon data"]
+    ],
+    "name": [{ "selector": ["#productTitle"], "attribute": "textContent" }],
+    "pid": [{ "selector": ["#title_feature_div"], "attribute": "attr:data-csa-c-asin" }],
+    "itm": [],
+    "image": [
+      { "selector": ["#landingImage"], "attribute": "attr:data-old-hires" },
+      { "selector": ["#landingImage"], "attribute": "attr:src" }
+    ],
+    "availability": {
+      "selectors": ["#availability"],
+      "outOfStockText": ["currently unavailable", "out of stock", "temporarily unavailable"]
+    },
+    "price": [
+      {
+        "selector": ["#corePriceDisplay_desktop_feature_div", ".a-price.priceToPay"],
+        "attribute": "textContent",
+        "squash": true,
+        "regex": ["([\\d,]+(?:\\.\\d{1,2})?)"]
+      }
+    ],
+    "mrp": [
+      {
+        "selector": ["#corePriceDisplay_desktop_feature_div", ".a-price.apex-basisprice-value", ".a-offscreen"],
+        "attribute": "textContent",
+        "squash": true,
+        "regex": ["([\\d,]+(?:\\.\\d{1,2})?)"]
+      }
+    ],
+    "earlyStop": { "complete": ["productTitle", "availability"], "thenUnavailableOr": ["corePriceDisplay_desktop_feature_div"] }
+  }
+}
