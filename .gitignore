@@ -7,3 +7,7 @@ node_modules/
 test-results/
 *.apk
 *.keystore
+android/.gradle/
+android/app/build/
+android/local.properties
+android/build/

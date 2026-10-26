@@ -3,5 +3,5 @@
   // import the site's own chart/format code (web/*.js) instead of copying it.
   "extends": "./tsconfig.json",
   "compilerOptions": { "allowJs": true, "checkJs": false, "types": ["chrome"] },
-  "include": ["extension/src/**/*.ts"]
+  "include": ["extension/src/**/*.ts", "android/js/**/*.ts"]
 }

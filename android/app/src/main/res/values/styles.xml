@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- DayNight so the WebView reports the phone's light/dark setting to the pages
+         (prefers-color-scheme follows the app theme). No action bar: the screens draw their own. -->
+    <style name="Britto" parent="@android:style/Theme.DeviceDefault.DayNight">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+</resources>

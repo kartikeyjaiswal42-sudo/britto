@@ -1,0 +1,118 @@
+import javax.inject.Inject
+
+plugins {
+    alias(libs.plugins.android.application)
+}
+
+/**
+ * The app's assets come from the repository's own sources, never a copy: britto-reader.js is
+ * the extension's page reader on the app's bridge, stores.json is core/stores.ts. Built by
+ * scripts/build-app-assets.mjs (Node.js + esbuild, from the repository's node_modules).
+ */
+abstract class BrittoAssets : DefaultTask() {
+    @get:OutputDirectory abstract val outputDir: DirectoryProperty
+    @get:Input abstract val site: Property<String>
+    @get:InputFiles @get:PathSensitive(PathSensitivity.RELATIVE) abstract val sources: ConfigurableFileCollection
+    @get:Internal abstract val repoRoot: DirectoryProperty
+    @get:Inject abstract val execOps: ExecOperations
+
+    @TaskAction
+    fun build() {
+        execOps.exec {
+            workingDir = repoRoot.get().asFile
+            commandLine("node", "scripts/build-app-assets.mjs", "--out", outputDir.get().asFile.absolutePath, "--site", site.get())
+        }
+    }
+}
+
+val repo = rootProject.layout.projectDirectory.dir("..")
+val brittoSite = providers.gradleProperty("britto.site")
+val brittoAssets = tasks.register<BrittoAssets>("brittoAssets") {
+    site.set(brittoSite)
+    repoRoot.set(repo)
+    sources.from(
+        repo.dir("core"), repo.dir("extension/src"), repo.dir("android/js"),
+        repo.file("web/api.js"), repo.file("web/chart.js"), repo.file("scripts/build-app-assets.mjs"),
+    )
+}
+
+android {
+    namespace = "app.britto"
+    compileSdk = 36
+    buildToolsVersion = "36.0.0"
+
+    defaultConfig {
+        applicationId = "app.britto"
+        minSdk = 29 // Android 10: saving to Downloads needs no storage permission
+        targetSdk = 36
+        versionCode = 1
+        versionName = "0.1.0"
+        buildConfigField("String", "SITE", "\"${brittoSite.get()}\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
+    }
+
+    // A release key from the environment when the owner has made one (HISTORY.md, "Waiting for
+    // the owner"); otherwise the machine's debug key. An APK signed with another key cannot
+    // update an installed one, so the same key must sign every version shared with friends.
+    val keystore = providers.environmentVariable("BRITTO_KEYSTORE").orNull
+    signingConfigs {
+        if (keystore != null) {
+            create("britto") {
+                storeFile = file(keystore)
+                storePassword = providers.environmentVariable("BRITTO_KEYSTORE_PASS").get()
+                keyAlias = providers.environmentVariable("BRITTO_KEY_ALIAS").orElse("britto").get()
+                keyPassword = providers.environmentVariable("BRITTO_KEY_PASS").orElse(providers.environmentVariable("BRITTO_KEYSTORE_PASS")).get()
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName(if (keystore != null) "britto" else "debug")
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(brittoAssets, BrittoAssets::outputDir)
+    }
+}
+
+// Robolectric's Android 16 runtime, fetched by Gradle (like every other dependency) and handed
+// to Robolectric offline: its own downloader does not get through every network (the cloud
+// session's proxy, measured 2026-10-26).
+val robolectricRuntime: Configuration by configurations.creating
+val robolectricJars = tasks.register<Sync>("robolectricJars") {
+    from(robolectricRuntime)
+    into(layout.buildDirectory.dir("robolectric-jars"))
+}
+tasks.withType<Test>().configureEach {
+    dependsOn(robolectricJars)
+    systemProperty("robolectric.offline", "true")
+    systemProperty("robolectric.dependency.dir", layout.buildDirectory.dir("robolectric-jars").get().asFile.absolutePath)
+    // Robolectric reaches into FileDescriptor internals, which Java 17+ closes by default
+    // (measured: "module java.base does not export jdk.internal.access").
+    jvmArgs("--add-opens=java.base/java.io=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
+}
+
+dependencies {
+    robolectricRuntime(libs.robolectric.android.all)
+    implementation(libs.androidx.webkit)
+    implementation(libs.androidx.activity)
+    testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+}
