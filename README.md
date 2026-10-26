@@ -43,6 +43,25 @@ affiliate data feeds, which need an affiliate account (not checked yet, see PLAN
 | Flipkart | No: answers "Something went wrong! E002" | **Not yet.** The reader is off until it is checked against a real Flipkart page |
 | Croma | No: HTTP 403 (not in the app yet) | (S5) |
 
+## Readers are data (since P3)
+
+Everything Britto knows about a store's page lives in a JSON **reader config**
+(`readers/amazon.desktop.json`, …), not in code. One interpreter (`core/interpret.ts`) runs
+it everywhere: the Worker, the extension, and later the Android app, so they cannot
+disagree. The server serves the configs (`GET /api/config/reader`, cached 10 minutes by
+clients, revalidated by version), so **when a store changes its page, the fix is a config
+change, never a new extension release**.
+
+- **Check a config before it ships:** `npm run check:readers` reads every saved page in
+  `test/fixtures/` and compares it with `test/fixtures/expected.json`; it also deletes what
+  each recipe read and requires the reading to change. CI runs it on every push.
+- **Hot-fix production without a deploy:** `node scripts/publish-reader.mjs new.json --remote`
+  dry-runs the candidate against every saved page and only then writes it to D1; the Worker
+  serves it within a minute. `--clear amazon.desktop --remote` goes back to the bundled one.
+- **Watch for breakage:** `GET /api/health/readers` counts every reading per store, source and
+  config version for 24 hours, and warns when a store stops being read or half its readings
+  fail. The cron logs the same warnings once an hour.
+
 ## Rules
 
 1. **The server never disguises itself.** It sends `BrittoBot/0.1 (+<site>/bot)`, fetches only
@@ -87,12 +106,17 @@ npm run db:local          # create the local database
 npm run dev               # http://127.0.0.1:8787
 npm test                  # unit tests (no network), incl. RFC 8291's own push example
 npm run typecheck         # the real gate: node --test strips types without checking them
+npm run check:readers     # every reader config against every saved store page
+npm run mutate            # break the code on purpose; the right checks must turn red
 npm run prove             # real Worker + real local D1 + one real Amazon request
 node scripts/alerts.mjs   # alerts end to end: fake Telegram + a push service that decrypts
 PW_DIR=<playwright-core dir> node scripts/alerts.mjs --browser   # + real Chrome, real FCM push
 PW_DIR=<playwright-core dir> node scripts/browser.mjs http://127.0.0.1:8787   # site, real Chrome
 PW_DIR=<playwright-core dir> node scripts/extension.mjs                        # extension, real Brave
 ```
+
+In a cloud session Playwright and Chrome for Testing are preinstalled; `extension.mjs` uses
+them when Brave is absent (Chrome for Testing still allows `--load-extension`).
 
 ## Deploy (Cloudflare, free plan, AMITY account)
 

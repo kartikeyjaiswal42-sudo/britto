@@ -7,7 +7,7 @@ import { createRequire } from 'node:module';
 const base = (process.argv[2] ?? '').replace(/\/$/, '');
 if (!base) throw new Error('usage: browser.mjs <url>');
 const require = createRequire(import.meta.url);
-const { chromium } = require(process.env.PW_DIR ?? 'playwright-core');
+const { chromium } = (() => { try { return require(process.env.PW_DIR ?? 'playwright-core'); } catch { return require('playwright'); } })();
 
 let pass = 0;
 let fail = 0;
@@ -16,7 +16,10 @@ const check = (name, ok, detail = '') => {
   console.log(`${ok ? '  ok ' : 'FAIL '} ${name}${!ok && detail ? `  — ${detail}` : ''}`);
 };
 
-const browser = await chromium.launch({ channel: 'chrome', headless: true });
+// Google Chrome on the Mac; where it is not installed (cloud sessions), Playwright's own
+// Chromium (Chrome for Testing).
+const browser = await chromium.launch({ channel: 'chrome', headless: true }).catch(() => chromium.launch({ headless: true }));
+console.log(`browser: ${browser.version()}`);
 try {
   for (const [label, viewport, scheme] of [['desktop light', { width: 1280, height: 900 }, 'light'], ['phone dark', { width: 390, height: 844 }, 'dark']]) {
     console.log(`— ${label}`);

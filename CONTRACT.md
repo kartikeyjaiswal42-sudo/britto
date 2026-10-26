@@ -99,6 +99,27 @@ message → price, verdict, sale check, history link and alert buttons (`d|key` 
 linked: disconnects, alerts stay). Private chats only; 60 messages and 30 new products per
 chat per hour.
 
+## Reader configs and reader health (P3)
+
+| Method & path | Body / query | 2xx response | Error codes |
+|---|---|---|---|
+| `GET /api/config/reader` | `store=<id or number>` (amazon 1, flipkart 2, myntra 3), `device=desktop\|mobile` (default desktop), `v=<client version>` (ignored) | the `ReaderConfig` (`core/recipe.ts`) plus `version`, `storeNumber`, `features: { deviceFallback }`. `ETag: "<version>"`, `Cache-Control: public, max-age=600`; `If-None-Match` with the current version → `304` without a body. No mobile recipe → the desktop one with `deviceFallback: true` | `404 no_reader` `400 bad_device` |
+| `POST /api/telemetry` | `{ feature: "read", store, outcome: "blocked"\|"unrecognised", configVersion?, readerVersion?, client?: "extension"\|"app" }` | `202 { ok: true }` | `400 bad_json` `422 bad_telemetry` `429` (600 per network per hour) |
+| `GET /api/health/readers` | | `HealthReport` (`api/readers.ts`): per store, last 24 h: reads, by outcome / source / config version, `failRate`, last 6 h; `warnings` (`no_reads`: read in the last 7 days, not in 6 h; `failing`: ≥ 50% unrecognised or blocked with ≥ 5 reads in 6 h); the config log | |
+
+`POST /api/observations` also takes optional `configVersion`, `readerVersion` (1–80 of
+`[A-Za-z0-9_.-]`, else `422 bad_observation` naming the field) and `client`. Every reading,
+the server's own included, is counted in `reader_health` (hour, store, source, config
+version, reader version, outcome): counts only, no page content, no client id.
+
+A config's `version` is `<store>.<device>.r<revision>.<12 hex of a hash of its content>`:
+any change to the content changes it. Clients refuse a served config that does not
+validate or does not hash to its version (`configFromServed`). The Worker uses the newest
+D1 row in `reader_configs` for a store and device that validates, else the bundled file;
+`scripts/publish-reader.mjs` writes those rows only after a dry run on every saved page.
+
+`Store` gained `num` (the stable number above).
+
 ## Planned (later sessions, not live)
 
 - Compare across stores (S5), deals filters and coupons from the page (S6), Spend Lens (S7).

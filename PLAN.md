@@ -8,15 +8,17 @@
 > only as history. Start prompt for any session (local or cloud):
 > `Read PLAN.md "Start here", HISTORY.md and BLUEPRINT.md. Build only the next phase, keep every gate green.`
 >
-> **P3 is IN PROGRESS on branch `p3-reader-configs`**: HISTORY.md "P3 … IN PROGRESS
-> (hand-over)" lists what is done and the 14 remaining steps in order. Continue that branch.
+> **P3 is DONE** (2026-10-27, HISTORY.md "P3"): readers are JSON configs served by the
+> Worker, one interpreter in every client, config CI, reader health, D1 hot-fixes. **Next:
+> P4 (Android app)**, then P6 (P5 waits for the owner's Claude Design export). Owner-only
+> steps are listed at the top of HISTORY.md under "Waiting for the owner".
 
 ## Unattended runs (the owner is away and cannot answer)
 
 The owner may start a cloud session and switch their laptop off. In that case:
 
-1. Finish P3 on `p3-reader-configs` (HISTORY.md hand-over, steps 1–14). Merge to `main`
-   only when every gate is green; GitHub Actions then deploys (schema, Worker, live check).
+1. ~~Finish P3 on `p3-reader-configs`~~ (done 2026-10-27). Merge to `main` only when every
+   gate is green; GitHub Actions then deploys (schema, Worker, live check).
 2. Continue with BLUEPRINT §24 in order, **one phase per branch** (`p4-android`, …), each
    merged only when every gate is green, with HISTORY.md + this file updated per phase.
 3. **Skip P5** until `design/` holds the owner's Claude Design export.
@@ -54,7 +56,11 @@ iPhone friends use the website and Telegram.
 - Code: `core/` pure logic (no I/O), `api/` Cloudflare Worker + D1, `web/` the site,
   `scripts/` proofs, `test/fixtures/` real store pages (fetched 2026-10-26, unmodified).
 - Run locally: `npm run db:local && npm run dev` → http://127.0.0.1:8787
-- Gates: `npm test` (unit) · `npm run typecheck` (core+api AND extension) · `npm run prove`
+- Readers: `readers/<store>.<device>.json` (data, BLUEPRINT §6), run by `core/interpret.ts`
+  everywhere; served at `GET /api/config/reader`; hot-fix with `scripts/publish-reader.mjs`.
+- Gates: `npm test` (unit) · `npm run typecheck` (core+api AND extension) ·
+  `npm run check:readers` (every config vs every saved page) · `npm run mutate [name]`
+  (deliberate breakages, each must redden exactly its checks) · `npm run prove`
   (real Worker, real D1, one real Amazon request; `--live <url>` for production) ·
   `node scripts/alerts.mjs [--browser]` (alerts end to end, fake Telegram, decrypting push
   service; `--browser` adds real Chrome and a real FCM push) · `scripts/push-live.mjs <url>` ·

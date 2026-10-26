@@ -15,6 +15,9 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const UNIT = ['node', ['--test', 'core/recipe.test.ts', 'core/extract.test.ts', 'core/select.test.ts']];
 const CHECK = ['node', ['scripts/check-readers.mjs']];
+// The slow ones (a real Worker; prove also makes its real amazon.in requests): run them by name.
+const PROVE = ['node', ['scripts/prove.mjs']];
+const EXTENSION = ['node', ['scripts/extension.mjs']];
 
 export const MUTANTS = [
   {
@@ -91,6 +94,26 @@ export const MUTANTS = [
     find: "  const price = parseRupees(firstOf(d.price, ctx));\n",
     replace: "  const price = parseRupees(firstOf(d.price, ctx)) ?? parseRupees(/\"priceAmount\":([\\d.]+)/.exec(html)?.[1]);\n",
     run: CHECK, expect: [/^amazon-cello-(25pens|10pens)-instock\.html deleting the price/, /^amazon-cello-technotip-paise\.html deleting the price/],
+  },
+  // ---- the config service end to end (scripts/prove.mjs) and the extension (scripts/extension.mjs)
+  {
+    name: 'prove: config endpoint ignores If-None-Match',
+    file: 'api/app.ts', find: "  if (asked.includes(etag) || asked.includes('*')) return new Response(null, { status: 304, headers });\n", replace: '',
+    run: PROVE, expect: [/asking again with If-None-Match gets 304/],
+  },
+  {
+    name: 'prove: a D1 override is used without validation',
+    file: 'api/readers.ts',
+    find: "    if (!v.ok) { console.error('reader override refused', store, device, row.created_at, v.errors.join('; ')); continue; }\n",
+    replace: "    if (!v.ok) return { config: parsed as ReaderConfig, version: 'unvalidated', origin: 'd1' };\n",
+    run: PROVE, expect: [/an invalid newer row in D1 is skipped/, /that server read used the hot-fix/],
+  },
+  {
+    name: 'extension: the browser drops the image it read (parity)',
+    file: 'extension/src/content.ts',
+    find: '    last = confirmIdentity(config.store, pid, readPage(config, document.documentElement.outerHTML, location.href), config.reportsPid);\n',
+    replace: '    last = { ...confirmIdentity(config.store, pid, readPage(config, document.documentElement.outerHTML, location.href), config.reportsPid), image: null };\n',
+    run: EXTENSION, expect: [/^parity: the browser reads (amazon\.in\/Cello|amazon\.in\/dp\/B09N3ZNHTY|myntra)/],
   },
 ];
 

@@ -3,6 +3,25 @@
 Renamed from Daam to Britto on 2026-10-27 at the owner's request (S3). Entries below S3 keep
 the old name and addresses as they were at the time.
 
+## Waiting for the owner
+
+Things only the owner can do, in plain English with the exact steps. Each later session adds
+to this list and removes what is done.
+
+1. **Reload the Britto extension** (once P3 is on `main`): open `chrome://extensions` (or
+   `brave://extensions`), find Britto, press the round reload arrow. Then open any Amazon.in
+   product: the panel should appear as before. The version under the popup's "Open Britto"
+   link should say v0.3.0. (Your old copy keeps working until you do this.)
+2. **Switch on the Telegram bot** (from S3, about 3 minutes): README "Switch on the Telegram
+   bot". Then tell the next session "bot token is set" so it runs one live Telegram check.
+3. **Save one real Flipkart product page** (from S2): open any Flipkart product in Chrome with
+   the extension, press "Save this page for Britto" in the panel, and put the downloaded
+   `britto-page-flipkart-….html` file into the `britto/test/fixtures/` folder (or attach it
+   to the next session). That lets a session check and switch on the Flipkart reader.
+4. **CPU check on production** (optional, 2 minutes): in the `britto` folder run
+   `npx wrangler tail britto --format json | grep cpuTime` for 10 minutes and paste the
+   numbers into the next session. (Measures what the new reader costs on Cloudflare.)
+
 ## S1, 2026-10-26: foundations
 
 **Asked:** a BuyHatke-class site with every feature working, the UI to come from a Claude
@@ -338,113 +357,101 @@ page the shopper opened, like the extension. New order: S4 Android app, S5 desig
 Product Lens, S11 Spend Lens, S12 job-ready. Not planned: gift cards, cashback, Refer & Win
 (real money), food compare (after grocery), iPhone app.
 
-## P3, 2026-10-27: reader-config DSL + config service — IN PROGRESS (hand-over)
+## P3, 2026-10-27: readers are data (reader-config DSL + config service)
 
-Work lives on branch **`p3-reader-configs`** (not merged; the live site is unchanged).
-BLUEPRINT.md is the spec (§6, §7.5, §20, §22, §24 P3).
+**Asked:** BLUEPRINT §24 P3 — §6 in full: one config interpreter for every client, ETag
+caching, config CI with fixture dry-runs, reader-health telemetry, the P1 readers migrated
+onto configs. Part 1 (selector engine, recipe schema, interpreter, the three recipes, 386
+readings identical to the old readers) was done on the owner's Mac; part 2 ran unattended in
+a cloud session (claude.ai/code) on branch `p3-reader-configs`.
 
-### Done on the branch (all gates below green)
+### Built
 
-- `core/select.ts`: CSS selectors over raw HTML (no DOM), the ONE engine every client uses,
-  so server/extension/app cannot disagree (parity by construction; the extension already reads
-  `document.documentElement.outerHTML` as text). Supported: tag, `#id`, `.class`,
-  `[attr op value]` (= ~= ^= $= *= |=), descendant and `>`; anything else is REFUSED by
-  `parseSelector`. Fast path: a selector starting with `#id` scans only inside that element.
-  Ids inside scripts/styles/comments/noscript are not elements (browsers agree).
-- `core/recipe.ts`: §6.1/§6.2 types, `validateReader` (unknown keys, bad regexes, unsupported
-  selectors, identity headers in API recipes are refused), `configVersion` =
-  `<store>.<device>.r<revision>.<content hash>` (no manual bump needed to change it),
-  `jsonPath`, `fillTemplate`, `readApiRows` (§6.2 parse; rupees -> paise).
-  **Britto extensions to §6.1** (each needed by an existing reader; listed in the file header):
-  `attr:<name>`, `squash`, `json`, `jsonld`, `replace`, `AvailRule.fields`, `blocked`,
-  `earlyStop`, regex list = alternatives.
-- `core/interpret.ts`: `readPage(config, html, url)` and `readerEnough(config, html)`.
-  Decision order: blocked -> classSelector -> name -> verified? -> unavailable -> price ->
-  priced. Never a price from outside the recipe's price fields.
-- `core/jsonld.ts`: the schema.org reader, moved; `jsonLdValue` for `Field.jsonld`.
-- `readers/amazon.desktop.json`, `myntra.desktop.json`, `flipkart.desktop.json` (verified:
-  null = Flipkart stays unrecognised; this replaces the old `FLIPKART_READER_VERIFIED`),
-  `readers/index.ts` (validates at load; `bundledReader`).
-- `core/extract.ts` is now a thin wrapper (bundled configs); `confirmIdentity` takes
-  `reportsPid` from the config. Rule strings changed (`amazon:priced`, `amazon:no-price`, …).
-- **Migration proof:** the old hand-written readers (commit 2dfce45) and the recipes compared
-  on every fixture, full page AND every 16 KB prefix: **386 readings, 0 differences**
-  (one-off script, not kept: the old code no longer exists in the tree).
-- **CPU (M2, Node, warm):** full Amazon page old 0.78–0.90 ms -> new 1.17–1.25 ms; server
-  path (early stop + read) old 1.06–1.28 -> new 1.56–1.88 ms. Found on the way: an unbounded
-  backward search for the page's 2 `<noscript>` tags cost ~0.12 ms per id lookup (measured)
-  -> noscript is searched only 20 KB back.
-- Bugs the new selector tests found in my first version: bare `id=x` not found; an id inside
-  a script's string taken as an element (the old `elementById` has the same weakness).
-- Known limits (documented in code): an element without a closing tag (`<li>a<li>b`) has no
-  readable text (browsers always serialise closing tags); innerText = textContent
-  (layout-free, same everywhere); only lower-case raw tags are recognised.
-- Gates on the branch: `npm test` 66/66 · both typechecks clean · `npm run prove` local
-  51/51 (real amazon.in read through the recipe: ₹265 / M.R.P. ₹299) · extension builds.
+- `core/select.ts` (CSS selectors over raw HTML, no DOM; anything unsupported is refused),
+  `core/recipe.ts` (schema, `validateReader`, content-hashed `configVersion`, `jsonPath`,
+  `fillTemplate`, `readApiRows`, `configFromServed`), `core/interpret.ts` (`readPage`,
+  `readerEnough`, `confirmIdentity`), `core/jsonld.ts`, `readers/*.json` (Amazon, Myntra
+  verified; Flipkart `verified: null`, so it stays unrecognised).
+- `validateReader` now refuses unknown keys at EVERY level (its header promised that; only
+  field keys were checked) and identity headers in API recipes (User-Agent, Origin, Referer,
+  Cookie, Authorization, Host, Forwarded, X-Forwarded-*, X-Real-IP, True-Client-IP, Proxy-*,
+  Sec-*). `variants` and `sellerPageFallback` are refused until built.
+- **Config CI** `scripts/check-readers.mjs` + `test/fixtures/expected.json` (every fixture
+  must have an entry): validates every `readers/*.json`, reads every saved page and diffs
+  status/price/M.R.P./stock/pid/title, **deletes what the recipe read until the reading
+  changes** (a reading that survives every target came from somewhere the recipe does not
+  name), checks the early-stop contract on every 16 KB prefix; `--candidate <file>`. In CI.
+- Schema: `reader_configs` (D1 hot-fix), `config_log`, `reader_health` (hourly counts,
+  swept after 30 days).
+- `api/readers.ts`: `getReader` (newest VALID D1 override, else bundled, 60 s per isolate,
+  first-seen versions logged), `countReading`, `healthReport` (§20 warnings `no_reads`,
+  `failing`; the cron logs them once an hour).
+- Endpoints: `GET /api/config/reader` (id or number; desktop/mobile with `deviceFallback`;
+  `ETag` = version; `304`; `max-age=600`), `POST /api/telemetry`, `GET /api/health/readers`;
+  `POST /api/observations` takes `configVersion`/`readerVersion`/`client`. Server reads go
+  through `getReader` and count every outcome. `Store.num`: amazon 1, flipkart 2, myntra 3.
+- `scripts/publish-reader.mjs`: dry run against every saved page, then insert; `--clear`,
+  `--list`; `--local <dir>` or `--remote`.
+- Extension 0.3.0: the §7.5 messages (`getReaderConfig`, `postObservation`,
+  `getProductAnswer`, `reportTelemetry`), shape-checked, unknown/foreign ones dropped; the
+  service worker caches configs 10 min in `chrome.storage.session`, revalidates with
+  `If-None-Match`, refuses a body that does not hash to its version, dedupes in-flight asks.
+  **The content script ships the interpreter only: `content.js` contains no recipe string.**
+- `scripts/mutate.mjs` (`npm run mutate [name]`): kept mutation runner. Each mutant is one
+  exact replacement, a command, and the names of the checks that must fail; it fails if any
+  other check fails or an expected one stays green. Restores files on exit/Ctrl-C.
 
-### Remaining for P3 (do in this order; each line ends with what proves it)
+### Measured / found
 
-1. `core/recipe.test.ts`: validator good/bad (unsupported selector, identity header,
-   unknown key), version stable for same content / changes on any change, `jsonPath`,
-   `fillTemplate`, `readApiRows` on synthetic JSON (eq/ne with `{{pid}}`, oos, oosDefault,
-   image replacements, rupees->paise), every `fieldValue` feature (regex alternatives, match
-   index, sub_regex, json, jsonld, replace, squash, URL). Prove able to fail.
-2. `scripts/check-readers.mjs` (config CI, §22) + `test/fixtures/expected.json` (fixture ->
-   store, url, expected status/price/mrp/pid/inStock/title prefix): validates every
-   `readers/*.json`, dry-runs all fixtures, prints field diffs, exits 1 on any. AND for every
-   required field (name, price) on every priced fixture: delete the element the recipe
-   matched and assert the reading changes (the §22 "deleting the target reddens" rule,
-   automated). `--candidate <file>` dry-runs a new config instead of the bundled one.
-   Add `npm run check:readers`; run it in the CI workflow's test job.
-3. Schema (additive, idempotent): `reader_configs(store, device, created_at, json, PK all
-   three)` = D1 hot-fix override; `config_log(version PK, store, device, origin,
-   first_seen_at)`; `reader_health(hour, store, source, config_version, reader_version,
-   outcome, n, PK all but n) WITHOUT ROWID`; sweep health rows > 30 days in `sweepRate`.
-4. `api/readers.ts` `getReader(env, store, device)`: newest D1 override that passes
-   `validateReader`, else bundled; 60 s per-isolate memo; first-seen version -> `config_log`
-   (insert-or-ignore, once per isolate per version).
-5. `GET /api/config/reader?store=<id|number>&device=desktop|mobile&v=` ->
-   `{version, store, device, verified, reportsPid, toCacheLong, domRecipe, apiRecipes,
-   features:{deviceFallback}}`, `ETag: "<version>"`, `If-None-Match` -> 304,
-   `Cache-Control: public, max-age=600`; unknown store 404 `no_reader`; `mobile` with no
-   mobile recipe serves desktop with `deviceFallback: true`. Numeric ids in `core/stores.ts`:
-   amazon 1, flipkart 2, myntra 3 (BLUEPRINT §4.1, additive).
-6. Server reads use `getReader` (`fetchProduct` takes the config; `readPage`/`readerEnough`)
-   and add one `reader_health` count (source `server`, reader_version `worker`, outcome =
-   status or fetch error code).
-7. `POST /api/observations` accepts optional `configVersion`/`readerVersion`
-   (≤ 80 chars, `[\w.-]`) -> `reader_health` (source `extension`). New `POST /api/telemetry`
-   `{feature:'read', store, outcome:'blocked'|'unrecognised', configVersion, readerVersion}`,
-   600/h per network -> `reader_health`. No page content, no PII.
-8. `GET /api/health/readers` (§20): last 24 h per store, counts by outcome/source/version,
-   unrecognised+blocked rate, `warnings` (store read in the last 7 days but 0 reads in 6 h;
-   unrecognised+blocked >= 50% with >= 5 reads in 6 h). Cron logs warnings.
-9. `scripts/publish-reader.mjs <candidate.json> --local <persist dir> | --remote`: runs the
-   check-readers dry-run first; inserts into `reader_configs` only if every fixture passes.
-10. Extension (§7.5): messages `getReaderConfig`, `postObservation`, `getProductAnswer`,
-    `reportTelemetry`, each validated, unknown dropped. Background caches configs 10 min in
-    `chrome.storage.session` with ETag revalidation (test build TTL 0 via a define). Content
-    script imports `core/interpret.ts` only (NO bundled readers: clients ship the
-    interpreter), sends `configVersion` + `readerVersion` (manifest version, bump to 0.3.0),
-    reports blocked/unrecognised via telemetry.
-11. Tests: `prove.mjs` — config endpoint (200, ETag, 304, Cache-Control, numeric id, 404,
-    mobile fallback), health counts after a server read, an observation's configVersion
-    recorded, telemetry, and the D1 override end to end locally (publish revision 99 ->
-    endpoint serves it -> cron read records it -> delete -> bundled again).
-    `extension.mjs` — the extension used the served config (health shows source extension
-    with the current version); **publishing a broken override to the local D1 makes the
-    extension say it cannot read, with no rebuild** (rule 3 proved); extension readings equal
-    Node `readPage` on the same fixtures (parity, §22).
-12. Mutation proofs: interpreter falls back to "any price on the page" -> fixture checks
-    red; ETag ignored -> prove red; override skips validation -> prove red; each restored.
-13. Docs: BLUEPRINT §6.1 gets a "Britto extensions and known limits" note; CONTRACT.md the
-    new endpoints; README a "Readers are data" section; this entry becomes the P3 record;
-    PLAN.md ticks P3; CLAUDE.md gates add `check:readers`.
-14. Merge to `main` when every gate is green (the workflow deploys: schema, then Worker,
-    then `prove --live`). Then live checks: `prove --live`, the config endpoint on
-    production, `browser.mjs` live.
+1. **Amazon refused this cloud container.** Shortly before 21:10 UTC (2026-10-26) two local
+   `prove` runs read the real page through the Worker's honest BrittoBot headers (₹265 /
+   M.R.P. ₹299). At 21:10:50 UTC (Amazon's own Date header) a plain `curl` with the BrittoBot
+   User-Agent got **HTTP 503** from CloudFront ORD58 (USA), the "To discuss automated access
+   to Amazon data" page; by 21:25 the Worker's own reads got 503 too. Not worked around. Saved as fixture
+   `amazon-refused-503-automated-access.html`: it confirms two of the reader's three blocked
+   markers on a real page (`/errors/validateCaptcha` and the "automated access" comment);
+   "Enter the characters you see below" is NOT on it (still from memory). `prove` and
+   `alerts.mjs` now print the checks that need a real Amazon price as **SKIP … NOT verified**
+   instead of crashing (prove did `last.source` on an empty result) or passing silently.
+2. **Parity, browser vs Node** (§22): the extension's readings in Chrome for Testing 153
+   equal `readPage` in Node on the same saved pages, all fields (status, price, M.R.P.,
+   stock, pid, title, image, rule), on 4 pages (Amazon in stock, Amazon unavailable, Myntra,
+   Flipkart error page). The browser re-serialises the page and runs its inline scripts;
+   none of that changed a reading here.
+3. Cloud tooling: Playwright + Chrome for Testing 153 are preinstalled (`require('playwright')`,
+   nothing downloaded); Chrome for Testing accepts `--load-extension` (the extension suite ran
+   30/30 in it). Android SDK pieces for P4 came from `dl.google.com` (reachable).
+4. The config CI runs in 0.7 s for 8 fixtures, every 16 KB prefix included.
 
-Cloud notes: `playwright-core` is not a devDependency here (the Mac borrows it from
-`../quire`); install it and a Chromium in the cloud and record which download hosts were
-needed. `extension.mjs` uses Brave on the Mac (Google Chrome 137+ refuses
-`--load-extension`); in the cloud try Playwright's Chromium and say what happened.
+### Gates (final code on the branch, this cloud session)
+
+`npm test` **77/77** · both typechecks clean · `check:readers` **8/8 fixtures** ·
+`mutate` **17/17 caught exactly** · `prove` local **71 passed, 0 failed, 6 SKIP (Amazon
+refused this network)** · `extension.mjs` **30/30** (Chrome for Testing 153) ·
+`alerts.mjs` **61 passed, 0 failed, Amazon section SKIPPED** (same reason). GitHub Actions
+(Node 24): typecheck + unit + check:readers green on every push of the branch.
+
+### Proved able to fail (`npm run mutate`, each restored)
+
+validator ignores unknown keys → 1 red · validator allows identity headers → 1 · version
+ignores content → 1 · only the first regex alternative tried → 1 · regex match index
+ignored → 1 · API rows keep rupees → 2 · API row filter ignores `ne` → 1 · `jsonPath` does
+not step into arrays → 2 · **interpreter falls back to any price on the page → 2** (the
+synthetic decision test and the real "price box without price-to-pay" page) · Amazon recipe
+forgets "currently unavailable" → both unavailable fixtures · Myntra recipe reads M.R.P. as
+price → 1 · Flipkart loses its error-page markers → 1 · early stop before the price box → 3
+fixtures · **interpreter falls back to the page's own `priceAmount` JSON → the deletion rule
+reddens 3 fixtures** (the reading survived deleting every target) · config endpoint ignores
+If-None-Match → prove 1 · D1 override used without validation → prove 2 · extension drops
+the image → the 3 parity checks with an image.
+
+### NOT verified / not done
+
+- **Anything that needs Amazon to answer this network**: the 6 prove SKIPs and the alerts
+  Amazon section. They run green where Amazon answers (S3 on the Mac; the live check after a
+  deploy reads through the production Worker).
+- CPU of the new interpreter on Cloudflare (Mac: full Amazon page 1.17–1.25 ms vs 0.78–0.90
+  before). Needs `wrangler tail` on production (owner's login).
+- The extension 0.3.0 has not been loaded into the owner's own browser.
+- No real-store page has been read by the extension since S2 (tests serve saved pages).
+

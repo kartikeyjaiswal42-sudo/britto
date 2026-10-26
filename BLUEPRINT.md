@@ -231,6 +231,20 @@ Rules for writing recipes:
   own price block is empty still shows carousel prices elsewhere; a "price from anywhere"
   reader reports the carousel's price as the product's. That is a lie with a number on it.)
 
+**Britto extensions and known limits (as built in P3, `core/recipe.ts`, `core/select.ts`):**
+`Field.attribute` also takes `attr:<name>` (any attribute); `Field.squash` (drop whitespace
+before the regexes), `Field.json` (a path into JSON text), `Field.jsonld` (a path into the
+page's schema.org Product), `Field.replace` (literal replacements); `regex` is a list of
+alternatives (first that matches wins); `AvailRule.fields` (stock from a value);
+`DomRecipe.blocked` (bot-wall markers → `blocked`) and `DomRecipe.earlyStop` (when the server
+may stop downloading). Config-level: `schema`, `store`, `device`, `revision`, `verified`
+(null = never trust its prices), `reportsPid`. Selectors: tag, `#id`, `.class`, attribute
+tests and the descendant/child combinators only; anything else is refused. Not implemented,
+so refused by the validator: `variants`, `sellerPageFallback`. `rating`, `brand` and the other
+optional fields are accepted and not yet read. `innerText` is computed like `textContent`
+(layout-free, identical on every client); an element written without its closing tag has no
+readable text (browsers always serialise closing tags).
+
 ### 6.2 API recipe (stores whose pages render from JSON APIs)
 
 Many stores render product pages from an internal JSON API. For those, the recipe declares

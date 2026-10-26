@@ -44,6 +44,8 @@ and end with the prompt to paste next. Use they/them for the owner.
 ## Gates
 
 `npm test` · `npm run typecheck` (both configs; `node --test` strips types without checking) ·
+`npm run check:readers` (every reader config against every saved page) · `npm run mutate
+[name]` (deliberate breakages must redden exactly their checks) ·
 `npm run prove` (real Worker + throwaway D1 + one real amazon.in request) ·
 `node scripts/alerts.mjs [--browser]` · `scripts/browser.mjs <url>` · `scripts/extension.mjs` ·
 `scripts/push-live.mjs <url>`.
@@ -51,11 +53,14 @@ and end with the prompt to paste next. Use they/them for the owner.
 ## Cloud sessions (claude.ai/code)
 
 - The browser scripts take Playwright from `PW_DIR` (on the owner's Mac:
-  `../quire/web/test/node_modules/playwright-core`). In the cloud there is no browser
-  pre-installed: install `playwright-core` + a Chromium build, and record which download hosts
-  the environment's network allowlist needed. `scripts/extension.mjs` uses Brave on the Mac
-  (Google Chrome 137+ refuses `--load-extension`); in the cloud use a Chromium build and say
-  which one.
+  `../quire/web/test/node_modules/playwright-core`). The cloud container (checked 2026-10-26)
+  has Playwright preinstalled with Chrome for Testing 153 (`require('playwright')` works,
+  nothing to download); `scripts/extension.mjs` falls back to it when Brave is absent, and
+  Chrome for Testing accepts `--load-extension`.
+- **Amazon refuses the cloud container's network** (measured 2026-10-26: HTTP 503 "automated
+  access" page, after two successful reads earlier the same hour). `prove` then marks the
+  checks that need a real Amazon price as `SKIP … NOT verified` instead of passing them.
+  Never work around it; the real-price checks are verified by the live check after deploy.
 - The environment's network allowlist must include `www.amazon.in`, `m.media-amazon.com`,
   `api.telegram.org`, `*.workers.dev`, and `dl.google.com` (Android SDK) on top of the defaults.
   If a request is refused by the sandbox, say which host, don't work around it.
