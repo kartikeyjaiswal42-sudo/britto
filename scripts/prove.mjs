@@ -217,6 +217,7 @@ try {
   check('search with only punctuation returns nothing, not an error', (await j('/api/search?q=%22%2A%29')).body?.results?.length === 0);
   const stores = await j('/api/stores');
   check('stores list carries the measured lines', stores.body?.stores?.length === 3 && stores.body.stores.every((s) => s.measured.length > 20));
+  check('…and each store\'s number and https front page (Super Browse opens it)', stores.body?.stores?.every((s) => Number.isInteger(s.num) && /^https:\/\/[^/]+\/$/.test(s.home) && s.hosts.includes(new URL(s.home).hostname)), JSON.stringify(stores.body?.stores?.map((s) => [s.num, s.home])));
   check('recent and deals answer', (await j('/api/recent')).status === 200 && (await j('/api/deals')).status === 200);
   const rh = await j('/api/health/readers');
   check('reader health answers for every store', rh.status === 200 && rh.body?.stores?.length === 3 && Array.isArray(rh.body?.warnings), rh.text.slice(0, 200));
@@ -228,7 +229,7 @@ try {
   check('prefix form without https:// works too', pre2.status === 302 && pre2.headers.get('location')?.includes('/p/myntra%3A1700944'));
   const pg = await j(`/p/${encodeURIComponent(KEY)}`);
   check('/p/<key> serves the app', pg.status === 200 && pg.text.includes('id="app"'), `${pg.status} ${pg.headers.get('location') ?? ''}`);
-  for (const path of ['/deals', '/stores', '/search?q=pen']) {
+  for (const path of ['/deals', '/stores', '/search?q=pen', '/browse']) {
     const r = await j(path);
     check(`${path} serves the app`, r.status === 200 && r.text.includes('id="app"'), `${r.status} ${r.headers.get('location') ?? ''}`);
   }

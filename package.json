@@ -11,6 +11,8 @@
     "mutate": "node scripts/mutate.mjs",
     "build:ext": "node scripts/build-ext.mjs",
     "test:ext": "node scripts/extension.mjs",
+    "build:apk": "cd android && ./gradlew assembleRelease",
+    "test:app": "cd android && ./gradlew testDebugUnitTest bridgeHarnessLibs && cd .. && node scripts/app.mjs",
     "dev": "wrangler dev --local --persist-to .wrangler/dev-state",
     "db:local": "wrangler d1 execute britto --local --persist-to .wrangler/dev-state --file=api/schema.sql",
     "db:remote": "wrangler d1 execute britto --remote --file=api/schema.sql",

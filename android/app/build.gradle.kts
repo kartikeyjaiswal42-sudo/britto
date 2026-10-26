@@ -71,7 +71,12 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // R8 drops the unused parts of the libraries (measured: 5.8 MB unshrunk). Nothing
+            // here is reached by reflection: activities are kept through the manifest, and the
+            // bridge is a WebMessageListener object, not an @JavascriptInterface.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
             signingConfig = signingConfigs.getByName(if (keystore != null) "britto" else "debug")
         }
     }
@@ -109,7 +114,24 @@ tasks.withType<Test>().configureEach {
     jvmArgs("--add-opens=java.base/java.io=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
 }
 
+// The bridge harness: the app's REAL BridgeCore + Api, compiled for a computer against org.json
+// (Android's own JSON API), so scripts/app.mjs can drive the page reader in Chromium through the
+// exact Java code the app runs. Only the WebView/Activity glue is left for a phone.
+val harnessDeps: Configuration by configurations.creating
+val bridgeHarness = tasks.register<JavaCompile>("bridgeHarness") {
+    source(file("src/main/java/app/britto/BridgeCore.java"), file("src/main/java/app/britto/Api.java"), fileTree("src/harness/java"))
+    classpath = harnessDeps
+    destinationDirectory.set(layout.buildDirectory.dir("bridge-harness/classes"))
+    options.release.set(17)
+}
+tasks.register<Sync>("bridgeHarnessLibs") {
+    dependsOn(bridgeHarness)
+    from(harnessDeps)
+    into(layout.buildDirectory.dir("bridge-harness/libs"))
+}
+
 dependencies {
+    harnessDeps(libs.orgjson)
     robolectricRuntime(libs.robolectric.android.all)
     implementation(libs.androidx.webkit)
     implementation(libs.androidx.activity)

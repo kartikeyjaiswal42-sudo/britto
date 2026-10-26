@@ -5,6 +5,8 @@ agp = "9.4.1"
 webkit = "1.17.1"
 activity = "1.13.0"
 junit = "4.13.2"
+# Same API as Android's built-in org.json: lets the bridge harness run BridgeCore on a computer.
+orgjson = "20260719"
 robolectric = "4.17"
 # The Android 16 (API 36) runtime that Robolectric 4.17 asks for.
 robolectricAndroidAll = "16-robolectric-13921718-i7"
@@ -13,6 +15,7 @@ robolectricAndroidAll = "16-robolectric-13921718-i7"
 androidx-webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+orgjson = { group = "org.json", name = "json", version.ref = "orgjson" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 robolectric-android-all = { group = "org.robolectric", name = "android-all-instrumented", version.ref = "robolectricAndroidAll" }
 

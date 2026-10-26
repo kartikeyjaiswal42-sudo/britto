@@ -18,6 +18,8 @@ const CHECK = ['node', ['scripts/check-readers.mjs']];
 // The slow ones (a real Worker; prove also makes its real amazon.in requests): run them by name.
 const PROVE = ['node', ['scripts/prove.mjs']];
 const EXTENSION = ['node', ['scripts/extension.mjs']];
+const APP = ['node', ['scripts/app.mjs']];
+const GRADLE_TEST = ['sh', ['-c', 'cd android && ./gradlew --no-daemon testDebugUnitTest 2>&1']];
 
 export const MUTANTS = [
   {
@@ -115,6 +117,28 @@ export const MUTANTS = [
     replace: '    last = { ...confirmIdentity(config.store, pid, readPage(config, document.documentElement.outerHTML, location.href), config.reportsPid), image: null };\n',
     run: EXTENSION, expect: [/^parity: the browser reads (amazon\.in\/Cello|amazon\.in\/dp\/B09N3ZNHTY|myntra)/],
   },
+  // ---- the Android app: its Java bridge (Robolectric, ./gradlew testDebugUnitTest) and the
+  // injected reader through the real bridge code (scripts/app.mjs)
+  {
+    name: 'app: bridge forgets to say the reading came from the app',
+    file: 'android/app/src/main/java/app/britto/BridgeCore.java', find: '                    .put("client", "app");\n                return reply(', replace: '                    ;\n                return reply(',
+    run: GRADLE_TEST, expect: [/BridgeCoreTest > observationCarriesTheConfigAndAppVersionsAndNothingElse/],
+  },
+  {
+    name: 'app: bridge never caches reader configs',
+    file: 'android/app/src/main/java/app/britto/BridgeCore.java', find: 'if (cached != null && now - cached.at < CONFIG_TTL_MS) return withBody(cached.body);', replace: '',
+    run: GRADLE_TEST, expect: [/BridgeCoreTest > readerConfigIsCachedTenMinutesThenRevalidatedWithItsEtag/],
+  },
+  {
+    name: 'app: bridge accepts any config version text',
+    file: 'android/app/src/main/java/app/britto/BridgeCore.java', find: 'if (url.isEmpty() || url.length() > 2000 || observed == null || !VERSION.matcher(configVersion).matches()) return null;', replace: 'if (url.isEmpty() || observed == null) return null;',
+    run: GRADLE_TEST, expect: [/BridgeCoreTest > anythingElseIsDroppedWithoutARequest/],
+  },
+  {
+    name: 'app: the injected reader starts again on every injection',
+    file: 'android/js/inject.ts', find: "if (bridge && window.top === window && !w.__brittoStarted) {", replace: "if (bridge && window.top === window) {",
+    run: APP, expect: [/a second injection on the same page adds no panel and no report/],
+  },
 ];
 
 const only = process.argv[2];
@@ -126,7 +150,8 @@ for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { restore(); proc
 function failingNames(output) {
   const names = [];
   for (const line of output.split('\n')) {
-    const m = /^not ok \d+ - (.*)$/.exec(line.trim()) ?? /^FAIL\s+(.*?)(?:\s+—.*)?$/.exec(line) ?? /^DIFF\s+(.*)$/.exec(line);
+    const m = /^not ok \d+ - (.*)$/.exec(line.trim()) ?? /^FAIL\s+(.*?)(?:\s+—.*)?$/.exec(line) ?? /^DIFF\s+(.*)$/.exec(line)
+      ?? /^(\w+Test > \w+) FAILED$/.exec(line.trim());
     if (m) names.push(m[1]);
   }
   return names;
