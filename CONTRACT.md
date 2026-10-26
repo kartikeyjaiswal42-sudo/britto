@@ -135,6 +135,18 @@ null = end date not published). From `readers/sales.json`, validated by `core/sa
 Every reader: a price under ₹1 makes the reading `unrecognised` (rule `<store>:implausible-price`);
 an M.R.P. under ₹1 is dropped.
 
+## Grocery compare (P7)
+
+| Method & path | Body | 2xx response | Error codes |
+|---|---|---|---|
+| `GET /api/grocery/platforms` | | `{ platforms: GroceryPlatform[] }` (id, name, home, measured) | |
+| `POST /api/grocery/compare` | `{ address, ref: {item, brand?, pack?}, quotes: GroceryQuote[] }` (1–40) | `{ comparison: ItemComparison, computedAt }` | `400 bad_json` `422 bad_address` `422 bad_ref` `422 bad_quotes` `429` (300/h per network) |
+| `POST /api/grocery/basket` | `{ address, items: [{ref, quotes}] (1–30), delivery?: {platform: paise} }` | `{ items: ItemComparison[], totals: BasketTotal[], computedAt }` | as above, `422 bad_items` `422 bad_delivery` |
+
+Types in `core/grocery.ts`. A quote is `{platform, address, title, brand, pack, price, mrp,
+inStock, at}` in paise; quotes for another address are left out (`leftOut`), never compared.
+Nothing is stored.
+
 ## The Android app (P4)
 
 Same API, same trust rules. Its readings and telemetry carry `client: "app"` and

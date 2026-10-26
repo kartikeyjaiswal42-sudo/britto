@@ -134,3 +134,5 @@ export function ago(ms) {
   if (s < 129600) return `${Math.round(s / 3600)} h ago`;
   return `${Math.round(s / 86400)} days ago`;
 }
+
+export const getGroceryPlatforms = () => call('/api/grocery/platforms');

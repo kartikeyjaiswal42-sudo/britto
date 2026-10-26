@@ -243,6 +243,24 @@ try {
   const rh = await j('/api/health/readers');
   check('reader health answers for every store', rh.status === 200 && rh.body?.stores?.length === STORE_IDS.length && Array.isArray(rh.body?.warnings), rh.text.slice(0, 200));
 
+  // ---- grocery compare (BLUEPRINT §12): computed from the shopper's own quotes, one address.
+  // The quotes here are MADE UP (no grocery reader is verified yet); nothing is stored.
+  const gp = await j('/api/grocery/platforms');
+  check('grocery platforms are listed with what was measured', gp.status === 200 && gp.body?.platforms?.length === 8 && gp.body.platforms.every((p) => p.measured.length > 5));
+  const quote = (platform, title, price, extra = {}) => ({ platform, address: '110001', title, brand: 'Amul', pack: null, price, mrp: null, inStock: true, at: Date.now(), ...extra });
+  const gc = await j('/api/grocery/compare', { method: 'POST', body: JSON.stringify({ address: '110001', ref: { item: 'Amul Butter 500 g', brand: 'Amul', pack: '500 g' },
+    quotes: [quote('blinkit', 'Amul Butter 500 g', 28500), quote('zepto', 'Amul Butter 500 g', 27900), quote('jiomart', 'Amul Butter 500 g', 25000, { address: '400001' })] }) });
+  check('grocery compare: cheapest same item for THIS address; another address left out, said why', gc.status === 200 && gc.body?.comparison?.best === 'zepto'
+    && gc.body.comparison.leftOut.some((l) => l.platform === 'jiomart' && /another delivery address/.test(l.reason)) && gc.body.comparison.rows[0].unitPrice.per === '100 g', gc.text.slice(0, 200));
+  const gb = await j('/api/grocery/basket', { method: 'POST', body: JSON.stringify({ address: '110001', delivery: { blinkit: 2500 }, items: [
+    { ref: { item: 'Amul Butter 500 g', brand: 'Amul', pack: '500 g' }, quotes: [quote('blinkit', 'Amul Butter 500 g', 28500), quote('zepto', 'Amul Butter 500 g', 27900)] },
+    { ref: { item: 'Amul Taaza Milk 1 L', brand: 'Amul', pack: '1 L' }, quotes: [quote('blinkit', 'Amul Taaza Milk 1 L', 7400), quote('zepto', 'Amul Taaza Milk 500 ml', 3800)] },
+  ] }) });
+  check('grocery basket: complete basket first, delivery added only where read, nothing swapped', gb.status === 200 && gb.body?.totals?.[0]?.platform === 'blinkit' && gb.body.totals[0].total === 38400
+    && gb.body.totals[1].missing.length === 1, gb.text.slice(0, 200));
+  check('grocery compare refuses a missing address and bad quotes', (await j('/api/grocery/compare', { method: 'POST', body: JSON.stringify({ ref: { item: 'x' }, quotes: [] }) })).body?.error?.code === 'bad_address'
+    && (await j('/api/grocery/compare', { method: 'POST', body: JSON.stringify({ address: '1', ref: { item: 'x' }, quotes: [quote('amazon', 'x', 100)] }) })).body?.error?.code === 'bad_quotes');
+
   // ---- "britto/<link>" prefix
   const pre = await j('/https://www.amazon.in/dp/B09X5DK382?tag=x');
   check('prefix form redirects to the product page', pre.status === 302 && pre.headers.get('location')?.endsWith('/p/amazon%3AB09X5DK382?add=1'), `${pre.status} ${pre.headers.get('location')}`);
@@ -250,7 +268,7 @@ try {
   check('prefix form without https:// works too', pre2.status === 302 && pre2.headers.get('location')?.includes('/p/myntra%3A1700944'));
   const pg = await j(`/p/${encodeURIComponent(KEY)}`);
   check('/p/<key> serves the app', pg.status === 200 && pg.text.includes('id="app"'), `${pg.status} ${pg.headers.get('location') ?? ''}`);
-  for (const path of ['/deals', '/stores', '/search?q=pen', '/browse']) {
+  for (const path of ['/deals', '/stores', '/search?q=pen', '/browse', '/grocery']) {
     const r = await j(path);
     check(`${path} serves the app`, r.status === 200 && r.text.includes('id="app"'), `${r.status} ${r.headers.get('location') ?? ''}`);
   }

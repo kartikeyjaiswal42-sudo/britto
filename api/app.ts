@@ -2,6 +2,7 @@ import { ALERTS, parseRule, readingMovesAlerts } from '../core/alerts.ts';
 import { pickDue } from '../core/schedule.ts';
 import { STORES, STORE_IDS, parseKey, parseProductLink, storeFromParam } from '../core/stores.ts';
 import { cleanObserved, judgeObservation } from '../core/trust.ts';
+import { GROCERY_PLATFORMS, cleanQuotes, compareBasket, compareItem, type GroceryPlatformId } from '../core/grocery.ts';
 import type { ServedConfig } from '../core/recipe.ts';
 import type { ApiError, AppConfig, Extracted, ProductKey } from '../core/types.ts';
 import {
@@ -29,6 +30,8 @@ export const DEVICES_PER_HOUR = 60;
 /** Alerts one owner may create per hour, and test messages one owner may ask for. */
 export const ALERT_WRITES_PER_HOUR = 120;
 export const TESTS_PER_HOUR = 5;
+/** Grocery comparisons one network may ask for per hour (each is computed, nothing stored). */
+export const GROCERY_PER_HOUR = 300;
 /** Reader telemetry one network may send per hour ("could not read this page" reports). */
 export const TELEMETRY_PER_HOUR = 600;
 /** Clients may keep a served reader config this long before asking again (BLUEPRINT §6.3). */
@@ -195,6 +198,56 @@ async function telemetry(request: Request, env: Env): Promise<Response> {
   return json({ ok: true }, 202);
 }
 
+type Ref = { item: string; brand: string | null; pack: string | null };
+function cleanRef(v: unknown): Ref | null {
+  const o = v as Record<string, unknown> | null;
+  const text = (x: unknown, max: number) => typeof x === 'string' && x.trim().length > 0 && x.length <= max;
+  if (!o || !text(o['item'], 300)) return null;
+  return { item: (o['item'] as string).trim(), brand: text(o['brand'], 80) ? (o['brand'] as string).trim() : null, pack: text(o['pack'], 80) ? (o['pack'] as string).trim() : null };
+}
+
+/**
+ * Grocery compare (BLUEPRINT §12), computed from quotes the shopper's own app read: one item
+ * (POST /api/grocery/compare) or a basket (POST /api/grocery/basket), for ONE address.
+ * Nothing is stored. Quotes are claims about the shopper's own screen; they move nothing else.
+ */
+async function grocery(request: Request, env: Env, path: string): Promise<Response> {
+  const body = await readJson<Record<string, unknown>>(request);
+  if (!body) return fail(400, 'bad_json', 'Send JSON.');
+  if (typeof body['address'] !== 'string' || !body['address'].trim() || body['address'].length > 80) return fail(422, 'bad_address', 'Say which delivery address the prices are for ("address").');
+  if (!(await rateLimit(env.DB, `grocery:${await clientId(request)}`, GROCERY_PER_HOUR, 3_600_000, Date.now()))) {
+    return fail(429, 'rate_limited', `At most ${GROCERY_PER_HOUR} comparisons an hour from one network.`);
+  }
+  const address = body['address'].trim();
+  if (path === '/api/grocery/compare') {
+    const ref = cleanRef(body['ref']);
+    if (!ref) return fail(422, 'bad_ref', 'Say which item to compare: ref {item, brand?, pack?}.');
+    const quotes = cleanQuotes(body['quotes']);
+    if (!quotes.ok) return fail(422, 'bad_quotes', quotes.reason);
+    return json({ comparison: compareItem(ref, address, quotes.quotes), computedAt: Date.now() });
+  }
+  const items = body['items'];
+  if (!Array.isArray(items) || !items.length || items.length > 30) return fail(422, 'bad_items', 'Send 1 to 30 items, each {ref, quotes}.');
+  const compared = [];
+  for (const [i, it] of items.entries()) {
+    const ref = cleanRef((it as Record<string, unknown>)?.['ref']);
+    const quotes = cleanQuotes((it as Record<string, unknown>)?.['quotes']);
+    if (!ref) return fail(422, 'bad_ref', `items[${i}].ref is missing its item`);
+    if (!quotes.ok) return fail(422, 'bad_quotes', `items[${i}]: ${quotes.reason}`);
+    compared.push(compareItem(ref, address, quotes.quotes));
+  }
+  const delivery: Partial<Record<GroceryPlatformId, number>> = {};
+  const fees = body['delivery'];
+  if (fees && typeof fees === 'object') {
+    for (const p of GROCERY_PLATFORMS) {
+      const fee = (fees as Record<string, unknown>)[p.id];
+      if (fee !== undefined && !(Number.isSafeInteger(fee) && (fee as number) >= 0 && (fee as number) <= 1_000_000)) return fail(422, 'bad_delivery', `delivery.${p.id} must be whole paise`);
+      if (fee !== undefined) delivery[p.id] = fee as number;
+    }
+  }
+  return json({ items: compared, totals: compareBasket(compared, delivery), computedAt: Date.now() });
+}
+
 /** The browser's owner, from `Authorization: Bearer <device token>`. */
 async function authed(request: Request, env: Env): Promise<OwnerRow | Response> {
   const m = /^Bearer ([A-Za-z0-9_-]+)$/.exec(request.headers.get('authorization') ?? '');
@@ -303,6 +356,8 @@ async function api(request: Request, env: Env, ctx: Ctx, url: URL): Promise<Resp
   if (path === '/api/config' && method === 'GET') return config(env);
   if (path === '/api/config/reader' && method === 'GET') return readerConfig(request, env, url);
   if (path === '/api/telemetry' && method === 'POST') return telemetry(request, env);
+  if (path === '/api/grocery/platforms' && method === 'GET') return json({ platforms: GROCERY_PLATFORMS });
+  if ((path === '/api/grocery/compare' || path === '/api/grocery/basket') && method === 'POST') return grocery(request, env, path);
   if (path === '/api/health/readers' && method === 'GET') return json(await healthReport(env.DB, STORE_IDS, Date.now()));
   if (path === '/api/me' || path.startsWith('/api/me/')) return me(request, env, path, method);
   if (path === '/api/alerts' || path.startsWith('/api/alerts/')) return alerts(request, env, path, method);
@@ -344,7 +399,7 @@ async function page(request: Request, env: Env, url: URL): Promise<Response> {
   // The app is one page; /p/<key>, /search, /deals, /stores, /alerts and /browse are its client routes.
   // html_handling is "none" (wrangler.jsonc): with the default, a request for /index.html
   // is answered 307 -> "/", which sent every /p/<key> link to the home page.
-  if (/^\/(|p\/[^/]+|search|deals|stores|alerts|browse)\/?$/.test(url.pathname)) {
+  if (/^\/(|p\/[^/]+|search|deals|stores|alerts|browse|grocery)\/?$/.test(url.pathname)) {
     return env.ASSETS.fetch(new Request(new URL('/index.html', url), request));
   }
   if (url.pathname === '/bot') return env.ASSETS.fetch(new Request(new URL('/bot.html', url), request));

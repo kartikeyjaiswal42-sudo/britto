@@ -19,8 +19,11 @@
 >
 > **P6 is DONE on branch `p6-stores` (built on P4), NOT merged** (HISTORY.md "P6"): Vijay
 > Sales, Reliance Digital, Nykaa and ShopClues read by the server, fixture-verified; sale
-> calendar on charts; affiliate feeds checked. Generic Shopify recipes not built. **Next: P7**
-> (grocery, app-first), branched from `p6-stores`. P5 waits for the owner's Claude Design
+> calendar on charts; affiliate feeds checked. Generic Shopify recipes not built.
+>
+> **P7 is PARTLY DONE on branch `p7-grocery` (built on P6)**: grocery compare logic + API +
+> `/grocery` page; no platform can be read until the owner saves phone pages (HISTORY "P7").
+> **Next: P8** (deals, look-alikes, Lens, coupons), branched from `p7-grocery`. P5 waits for the owner's Claude Design
 > export. Owner-only steps: top of HISTORY.md, "Waiting for the owner".
 
 ## Unattended runs (the owner is away and cannot answer)

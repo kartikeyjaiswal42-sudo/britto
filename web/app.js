@@ -2,7 +2,7 @@
 // store (titles, image URLs) goes in via textContent / setAttribute — never innerHTML.
 import {
   ago, connectTelegram, date, deletePush, disconnectTelegram, getConfig, getDeals, getMe, getPopular, getProduct, getRecent, getStores,
-  pct, removeAlert, rupees, savePush, searchProducts, sendTest, setAlert, toPaise, trackProduct,
+  pct, removeAlert, rupees, savePush, searchProducts, sendTest, setAlert, toPaise, trackProduct, getGroceryPlatforms,
 } from './api.js';
 import { drawChart } from './chart.js';
 
@@ -226,6 +226,21 @@ async function browsePage() {
       h('span', { class: 'small muted' }, s.serverFetch === 'yes' ? 'Prices also checked by our server' : 'Prices from shoppers\u2019 own pages')))));
 }
 
+/**
+ * Grocery compare (BLUEPRINT §12): what works today, said plainly. Every grocery platform refuses
+ * our server, so prices come from the shopper's own phone (the Britto app), and a comparison is
+ * valid for one delivery address only.
+ */
+async function groceryPage() {
+  const { platforms } = await getGroceryPlatforms();
+  app.replaceChildren(h('h1', {}, 'Grocery compare'),
+    h('p', { class: 'muted' }, 'Grocery prices and stock depend on your delivery address and change by the hour, so Britto compares them only for one address at a time, says which, and puts the price per 100 g, 100 ml or piece beside each pack.'),
+    h('p', { class: 'notice' }, 'Not working yet. Every grocery app below refuses our server, so prices will come from the Britto app on your phone, from the pages you open. Britto does not read any of them yet: each one needs a page saved from a phone first, so Britto can learn to read it.'),
+    h('table', { class: 'stores' },
+      h('thead', {}, h('tr', {}, h('th', {}, 'Platform'), h('th', {}, 'What we measured'))),
+      h('tbody', {}, platforms.map((p) => h('tr', {}, h('td', {}, p.name), h('td', { class: 'small' }, p.measured))))));
+}
+
 // ------------------------------------------------------------------ alerts
 
 let configPromise = null;
@@ -441,6 +456,7 @@ function route() {
   if (pathname === '/deals') return done(dealsPage());
   if (pathname === '/stores') return done(storesPage());
   if (pathname === '/browse') return done(browsePage());
+  if (pathname === '/grocery') return done(groceryPage());
   if (pathname === '/alerts') return done(alertsPage());
   return done(home());
 }

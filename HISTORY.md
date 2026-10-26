@@ -51,11 +51,17 @@ to this list and removes what is done.
    console.firebase.google.com, add an Android app with package name `app.britto`, download
    `google-services.json` and give it to a session (it is not secret, but it is yours). Until
    then the app's alerts come by Telegram.
-8. **Flipkart Affiliate account** (optional, 15 minutes; makes Flipkart prices work without the
+8. **Grocery pages from your phone** (P7, 10 minutes, after item 4): in the Britto app, set a
+   delivery address in Blinkit, Zepto, Swiggy Instamart and BigBasket inside Super Browse (they
+   are not in the Shop grid yet: open them from a Telegram/WhatsApp link to their site), open
+   one product (e.g. Amul Butter 500 g) and one search for it on each, and press "Save page"
+   each time. Send the files to the next session with the pincode you used. Without these,
+   grocery compare cannot read any prices.
+9. **Flipkart Affiliate account** (optional, 15 minutes; makes Flipkart prices work without the
    extension): sign up at affiliate.flipkart.com, then in the dashboard go to API → API Token →
    Generate. Do not paste the token anywhere; tell the next session "Flipkart affiliate token
    is ready" and it will explain how to store it as a Worker secret yourself.
-9. **CPU check on production** (optional, 2 minutes): in the `britto` folder run
+10. **CPU check on production** (optional, 2 minutes): in the `britto` folder run
    `npx wrangler tail britto --format json | grep cpuTime` for 10 minutes and paste the
    numbers into the next session. (Measures what the new reader costs on Cloudflare.)
 
@@ -674,3 +680,43 @@ real Chrome) · `extension.mjs` 30/30 · `test:app` 28/28 · Gradle unit tests 8
   and abuse limits designed first. Left for its own step.
 - Sale end dates not published in the sources read; earlier sales not entered.
 - The Android APK must be rebuilt after store changes (app.mjs checks it; it caught a stale one).
+
+## P7, 2026-10-27: grocery compare (the part not waiting for phone captures) — branch `p7-grocery`
+
+**Asked:** BLUEPRINT §12 / §24 P7: platform registry, search/price/address/cart recipes, basket
+compare, category map, per-100 g normalisation, location-bound labelling. App-first.
+
+**The blocker, measured in S3:** Blinkit (403 + captcha), Zepto and Instamart (202 + JavaScript
+wall), BigBasket and JioMart (403) all refuse an honest server. Their prices can only come
+from the shopper's phone, and a recipe for each needs real pages/JSON saved there first. So no
+platform recipe, address recipe or cart recipe was written: there is nothing real to verify
+them against.
+
+### Built (logic and service; tested with made-up quotes, labelled as such in the tests)
+
+- `core/grocery.ts`: the platform registry (8, with what was measured), pack sizes as platforms
+  print them ("500 g", "1.5 L", "6 x 300 ml", "300 ml x 6", "Pack of 30", "12 pcs"), price per
+  100 g / 100 ml / piece, name matching with the brand left out (my first version scored
+  "Amul Butter" and "Amul Cheese Slices" 50% alike on the brand alone: the test caught it),
+  `compareItem` (one address only: quotes for another address are left out and said so; in
+  stock first; unit prices compared only within one unit; only a certain "same" match can be
+  "best", anything else is "check this one"), `compareBasket` (complete baskets first,
+  delivery fee only when read, nothing silently swapped), `cleanQuotes`.
+- `GET /api/grocery/platforms`, `POST /api/grocery/compare`, `POST /api/grocery/basket`
+  (computed per request, nothing stored, 300 per network per hour). `/grocery` page saying
+  plainly that it does not work yet and why.
+
+### Gates
+
+`npm test` 93/93 (7 grocery) · typechecks clean · `prove` 82 passed, 0 failed, 6 SKIP (Amazon)
+incl. 5 grocery checks · 4 grocery mutants caught exactly (address mixing, brand-only match,
+basket swap, "best" without a certain match).
+
+### NOT done / not verified
+
+- **No grocery platform is read.** Needs, per platform, one product page and one search page
+  saved from the Britto app on a phone with a delivery address set (Waiting for the owner).
+- The page-world API listener (§7.1), search/price/address/cart recipes, category map: not
+  built. Without a real platform's JSON there is no pattern to arm the listener with, and
+  untested code that wraps a store's own network calls is risk without benefit.
+- Nothing about pack sizes has been checked against real platform listings.

@@ -16,6 +16,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const UNIT = ['node', ['--test', 'core/recipe.test.ts', 'core/extract.test.ts', 'core/select.test.ts']];
 const CHECK = ['node', ['scripts/check-readers.mjs']];
 const UNIT2 = ['node', ['--test', 'core/sales.test.ts']];
+const GROCERY = ['node', ['--test', 'core/grocery.test.ts']];
 // The slow ones (a real Worker; prove also makes its real amazon.in requests): run them by name.
 const PROVE = ['node', ['scripts/prove.mjs']];
 const EXTENSION = ['node', ['scripts/extension.mjs']];
@@ -122,6 +123,26 @@ export const MUTANTS = [
     name: 'chart guesses an end date for an open-ended sale',
     file: 'web/chart.js', find: "to: e.to == null ? null : Math.min(e.to, t1), ongoing: e.to == null }));", replace: "to: Math.min(e.to ?? t1, t1), ongoing: false }));",
     run: UNIT2, expect: [/an open-ended event is a start marker/],
+  },
+  {
+    name: 'grocery compares prices from different delivery addresses',
+    file: 'core/grocery.ts', find: "    if (q.address !== address) { leftOut.push({ platform: q.platform, reason: 'priced for another delivery address' }); continue; }\n", replace: '',
+    run: GROCERY, expect: [/one item: same address only/],
+  },
+  {
+    name: 'grocery counts a shared brand as half a name match',
+    file: 'core/grocery.ts', find: "  const skip = new Set(brand ? nameWords(brand) : []);", replace: "  const skip = new Set<string>();",
+    run: GROCERY, expect: [/names: pack sizes and filler words/, /one item: same address only/],
+  },
+  {
+    name: 'grocery basket swaps in a "check this one" item',
+    file: 'core/grocery.ts', find: "      const row = it.rows.find((r) => r.platform === p && r.inStock && r.match === 'same');", replace: "      const row = it.rows.find((r) => r.platform === p && r.inStock);",
+    run: GROCERY, expect: [/basket: complete baskets first/],
+  },
+  {
+    name: 'grocery best is the cheapest per 100 g even when not the same item',
+    file: 'core/grocery.ts', find: "  const best = rows.find((r) => r.inStock && r.match === 'same')?.platform ?? null;", replace: "  const best = rows.find((r) => r.inStock)?.platform ?? null;",
+    run: GROCERY, expect: [/one item: same address only/, /no winner when nothing is certainly/],
   },
   {
     name: 'early stop before the price box has arrived',
