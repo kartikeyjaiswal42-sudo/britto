@@ -13,7 +13,7 @@ Types: `core/types.ts` (the source of truth; this file explains it). Money is in
 | `POST /api/products` | `{ "url": "<product link>" }` | `201 { created: true, product: ProductView }` or `200 { created: false, … }` when already tracked | `400 bad_json` `400 bad_url` `422 not_a_url` `422 unsupported_store` `422 not_a_product` `422 short_link_unresolved` `429 rate_limited` |
 | `GET /api/products/<key>` | key URL-encoded, e.g. `amazon%3AB09X5DK382` | `{ product: ProductView }` | `400 bad_key` `404 not_tracked` |
 | `GET /api/search?q=` | words; punctuation ignored | `{ q, results: ProductCard[] }` (≤ 30) | |
-| `GET /api/deals` | | `{ results: ProductCard[] }`: `sale_status = real_drop`, in stock, biggest real drop first | |
+| `GET /api/deals` | `?store=<id>&min=<5–90>` (P8) | `{ results: ProductCard[], computedAt }`: `sale_status = real_drop`, in stock, biggest real drop first; each card has `spark` (P8) | `400 bad_store` `400 bad_min` |
 | `GET /api/recent` | | `{ results: ProductCard[] }` newest first | |
 | `GET /api/popular` | | `{ results: ProductCard[] }` most viewed | |
 | `POST /api/observations` | `{ "url": "<product page>", "observed": { status: "priced"\|"unavailable", title, image, price, mrp } }` (paise) | `{ recorded: "accept"\|"hold"\|"skip", reason, product: ProductView }` | `400 bad_json` `400 bad_url` `422 bad_observation` `422 unsupported_store` `422 not_a_product` `429 rate_limited` |
@@ -147,6 +147,27 @@ Types in `core/grocery.ts`. A quote is `{platform, address, title, brand, pack, 
 inStock, at}` in paise; quotes for another address are left out (`leftOut`), never compared.
 Nothing is stored.
 
+## Deals, look-alikes, offers and coupons (P8)
+
+| Method & path | Body / query | 2xx response | Error codes |
+|---|---|---|---|
+| `GET /api/deals?store=&min=` | store id; smallest real drop in % (5–90) | `{ results: ProductCard[], computedAt }`, each with `spark: {at, price}[]` (its last 90 days) | `400 bad_store` `400 bad_min` |
+| `GET /api/products/<key>/similar` | | `{ results: ProductCard[], basis }`: cheaper, in stock, sharing 2+ distinctive title words; "similar, not the same product" | `400 bad_key` `404 not_tracked` |
+| `POST /api/coupons/vote` | `{ store, code, worked: true\|false }` | `{ votes: { worked, total } }` (last 30 days) | `400 bad_json` `422 bad_vote` `404 unknown_code` `429 rate_limited` (30/h per network) |
+
+- **The usual price is the 90-day time-weighted median** (`SALE.window`, was 30 days). A real
+  drop is the trusted price at least `SALE.realDrop` below it; M.R.P. plays no part.
+- **Offers** (`ProductView.offers`: `{ at, items: OfferView[] } | null`): what the store's own
+  page showed when **our server** last read it (`DomRecipe.offers` in the reader config), shown
+  for 3 days after that read. An `OfferView` is `{ title, text, count, code, votes }`; `code`
+  is a coupon code the page advertised (`[A-Za-z0-9_-]{3,30}`), `votes` is `{worked, total}`
+  for a coded offer. Offer text sent by a client is **never stored or shown** (it is ignored
+  in `observed`); the extension and the app show the offers of the page on the shopper's own
+  screen only.
+- **Votes:** only a code our server read on that store's product page can be voted on (a vote
+  never brings a code in); one vote per network per code (a second replaces the first);
+  older than 30 days are deleted.
+
 ## The Android app (P4)
 
 Same API, same trust rules. Its readings and telemetry carry `client: "app"` and
@@ -157,4 +178,5 @@ unchanged).
 
 ## Planned (later sessions, not live)
 
-- Compare across stores (S5), deals filters and coupons from the page (S6), Spend Lens (S7).
+- Compare across stores (P9 deep links), Product Lens and AI look-alikes (need Workers AI on
+  the account), trying the page's codes in a cart (needs real carts), Spend Lens (P10).

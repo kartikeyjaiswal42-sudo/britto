@@ -23,8 +23,13 @@
 >
 > **P7 is PARTLY DONE on branch `p7-grocery` (built on P6)**: grocery compare logic + API +
 > `/grocery` page; no platform can be read until the owner saves phone pages (HISTORY "P7").
-> **Next: P8** (deals, look-alikes, Lens, coupons), branched from `p7-grocery`. P5 waits for the owner's Claude Design
-> export. Owner-only steps: top of HISTORY.md, "Waiting for the owner".
+>
+> **P8 is DONE except Lens on branch `p8-deals` (built on P7), NOT merged** (HISTORY "P8"):
+> deals vs the 90-day usual price with filters and sparklines, look-alikes, offers read from
+> the store page (Amazon, ShopClues codes) stored only from our own reads, coupon votes.
+> Product Lens and AI look-alikes wait for Workers AI (owner item 11).
+> **Next: P9** (travel + rides deep links), branched from `p8-deals`. P5 waits for the owner's
+> Claude Design export. Owner-only steps: top of HISTORY.md, "Waiting for the owner".
 
 ## Unattended runs (the owner is away and cannot answer)
 

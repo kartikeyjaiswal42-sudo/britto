@@ -72,6 +72,19 @@ change, never a new extension release**.
   config version for 24 hours, and warns when a store stops being read or half its readings
   fail. The cron logs the same warnings once an hour.
 
+## Deals, look-alikes and offers (P8)
+
+- **Deals** (`/deals`) are products whose trusted price is at least 5% below their usual
+  price (the 90-day median of prices Britto saw). M.R.P. is never used. Filter by store and by
+  the smallest drop; each deal shows a small graph of its last 90 days so you can check it.
+- **Similar, and cheaper** on a product page: tracked products sharing distinctive title
+  words, cheaper and in stock. Labelled "similar, not the same product".
+- **Offers on the store's page:** bank offers and cashback (Amazon.in) and coupon codes
+  (ShopClues) exactly as the page shows them when Britto's own server reads it, for 3 days.
+  A code has a Copy button and "It worked / It did not"; the page shows "Worked for N of M
+  shoppers in the last 30 days". Britto never invents codes and never stores offer text sent
+  by a browser.
+
 ## Rules
 
 1. **The server never disguises itself.** It sends `BrittoBot/0.1 (+<site>/bot)`, fetches only

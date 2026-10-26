@@ -15,8 +15,8 @@ to this list and removes what is done.
    → **New pull request** → base `main`, compare `p3-reader-configs` → **Create pull request**
    → **Merge**. GitHub Actions then updates the database, deploys the Worker and runs the live
    check by itself (about 1 minute; the Actions tab shows a green tick). Later phases are on
-   their own branches, each built on the one before (`p4-android` on P3, `p6-stores` on P4);
-   merging the newest one brings all of them. Merge in order if you want to try each.
+   their own branches, each built on the one before (`p4-android` on P3, `p6-stores` on P4,
+   `p7-grocery` on P6, `p8-deals` on P7, …); merging the newest one brings all of them. Merge in order if you want to try each.
    Or tell the next session "you may merge to main".
 1. **Reload the Britto extension** (once P3 is on `main`): open `chrome://extensions` (or
    `brave://extensions`), find Britto, press the round reload arrow. Then open any Amazon.in
@@ -64,6 +64,13 @@ to this list and removes what is done.
 10. **CPU check on production** (optional, 2 minutes): in the `britto` folder run
    `npx wrangler tail britto --format json | grep cpuTime` for 10 minutes and paste the
    numbers into the next session. (Measures what the new reader costs on Cloudflare.)
+11. **Decide on Workers AI** (P8, a decision, 1 minute): picture search ("Lens": photo of a
+   product → matches) and smarter "similar products" need Cloudflare Workers AI. Cloudflare's
+   pricing page (read 2026-10-27) says every account gets 10,000 "neurons" a day free, and on
+   the free plan going over makes requests fail rather than cost money. The allowance is per
+   ACCOUNT, so on AMITY it is shared with the paying client's projects, if they use Workers AI.
+   If that is fine, tell the next session "Workers AI is allowed on AMITY"; it will add it and
+   measure the cost per search before switching anything on. If not, nothing changes.
 
 ## S1, 2026-10-26: foundations
 
@@ -680,6 +687,74 @@ real Chrome) · `extension.mjs` 30/30 · `test:app` 28/28 · Gradle unit tests 8
   and abuse limits designed first. Left for its own step.
 - Sale end dates not published in the sources read; earlier sales not entered.
 - The Android APK must be rebuilt after store changes (app.mjs checks it; it caught a stale one).
+
+## P8, 2026-10-27: deals, look-alikes, offers and coupon codes — branch `p8-deals` (built on P7)
+
+**Asked:** BLUEPRINT §24 P8: deals feed (§11), look-alikes (§10.3), Product Lens (§19),
+coupons and bank offers (§15).
+
+### Built
+
+- **Deals against the 90-day usual price** (§11): `SALE.window` 30 → 90 days (a new test pins
+  it: 60 days at ₹1,000 then ₹800 is a 20% drop against 90 days and none against 30).
+  `GET /api/deals?store=&min=` (5–90%), each card with its last 90 days of prices; the deals
+  page has the filters and a sparkline per deal. M.R.P. plays no part.
+- **Look-alikes** (§10.3): `GET /api/products/<key>/similar`, cheaper in-stock tracked products
+  sharing 2+ distinctive title words (FTS5), labelled "similar, not the same product". The
+  Workers AI version waits (owner item 11).
+- **Offers read from the store page** (§15): a new `offers` part of the reader language
+  (every matching card, read inside each card; at most 1–20; text capped at 200 characters; an
+  offer the page repeats listed once; a coupon code only if it looks like one). Amazon reader
+  r2 reads Cashback / Bank Offer / No Cost EMI / Partner Offers (3, 3 and 4 cards on the three
+  saved priced pages, word for word against the raw HTML); ShopClues reader r2 reads its coupon
+  list (code MYSHOPCLUES, "Get flat 10 Percent off on all Prepaid Orders").
+- **Stored only from our own server's reads:** `product_offers` (one row per product, replaced
+  on each server read, shown for 3 days). Offer text sent by a browser is ignored, never stored
+  or shown to anyone else. The extension and the app show the page's offers on the shopper's
+  own screen only. An identity mismatch drops the other item's offers with its price.
+- **Coupon votes:** `POST /api/coupons/vote`: only a code our server read on that store's page
+  can be voted on (a vote never brings a code in), one vote per network per code, 30 votes a
+  network per hour, counted over 30 days. Product page: code + Copy + "It worked / It did not"
+  + "Worked for N of M shoppers in the last 30 days".
+
+### Measured / found
+
+- The config CI's early-stop rule caught a real bug: the server stopped downloading Amazon
+  pages before the offers box closed (it reads to 360 KB; the offers end later). The Amazon
+  reader now also waits for `vsxoffers_feature_div`: early stop moves from 33–45% to 36–51% of
+  the saved pages.
+- Vijay Sales' "Extra Deals" load by JavaScript (not in the server's HTML); Nykaa's `offers`
+  list was empty on both saved pages; Reliance Digital's offers are a separate JS section;
+  Myntra's codes (MYNTRA300) are site-wide new-user banners, not product offers: none read.
+- A real ShopClues read through the local Worker stored its offer (MYSHOPCLUES), from this
+  cloud container.
+
+### Gates (final code on the branch, this cloud session)
+
+`npm test` 96/96 · typechecks clean · `check:readers` 21/21 (offers compared exactly; a priced
+page whose recipe reads offers must list them) · `prove` **97 passed, 0 failed, 7 SKIP** (all 7
+need Amazon, which refuses this network: 503) · `browser.mjs` local **50/50** (offers as plain
+text, an injected `<img onerror>` shown as text and never run; coupon Copy/vote; 1280 light and
+390 dark; votes stubbed in the browser only) · `extension.mjs` **32/32** (panel shows the 3
+offers; parity with Node now includes offers; nothing stored) · `test:app` **28/28** (parity
+includes offers) · `npm run mutate` **48/48 caught exactly** (14 new in P8: usual price from 30
+days, look-alikes on one shared word, deals ignoring the store filter, offers read outside the
+card, text uncapped, another item's offers kept, validator skipping offers, Amazon early stop
+before the offers box, offer titles from the wrong element, offers shown after 3 days, a vote
+bringing in an unknown code, repeated votes, repeated offers, any text taken as a code; the
+ShopClues sold-out mutant now also trips the offers rule, correctly).
+
+### NOT verified / not done
+
+- **Amazon offers from a real server read:** Amazon refuses this network, so the server path
+  was proven on ShopClues and on saved Amazon pages only (SKIP in `prove`).
+- **Product Lens** (§19) and **AI look-alikes** (§10.3): need Workers AI on the account (owner
+  item 11). Not built: nothing here can run Workers AI (`wrangler dev --local` cannot), and
+  untestable code is not shipped.
+- **"Try codes" at checkout** (§15 auto-apply): needs real cart pages; none saved. Not built.
+- **Deals by category** (§11): products have no category yet (the readers do not read
+  breadcrumbs); store and minimum drop only.
+- Nothing deployed: waits for item 0 (merge).
 
 ## P7, 2026-10-27: grocery compare (the part not waiting for phone captures) — branch `p7-grocery`
 

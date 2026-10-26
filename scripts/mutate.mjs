@@ -117,7 +117,7 @@ export const MUTANTS = [
   {
     name: 'ShopClues recipe ignores the sold-out markers',
     file: 'readers/shopclues.desktop.json', find: '"outOfStockText": ["outofstock", "sold out", "soldout"]', replace: '"outOfStockText": ["discontinued-forever"]',
-    run: CHECK, expect: [/^shopclues-babyoil-soldout\.html (status|price|mrp|inStock|deleting)/],
+    run: CHECK, expect: [/^shopclues-babyoil-soldout\.html (status|price|mrp|inStock|deleting|the recipe reads offers)/],
   },
   {
     name: 'chart guesses an end date for an open-ended sale',
