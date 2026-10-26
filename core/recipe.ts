@@ -109,10 +109,28 @@ type Check = { ok: true; config: ReaderConfig } | { ok: false; errors: string[] 
 
 const ATTRS = new Set(['innerText', 'innerHTML', 'textContent', 'content', 'href', 'alt', 'URL']);
 const FIELD_KEYS = new Set(['selector', 'attribute', 'regex', 'match', 'global', 'sub_regex', 'squash', 'json', 'jsonld', 'replace']);
+const TOP_KEYS = new Set(['schema', 'store', 'device', 'revision', 'verified', 'reportsPid', 'toCacheLong', 'domRecipe', 'apiRecipes']);
+const DOM_KEYS = new Set([
+  'classSelector', 'name', 'price', 'mrp', 'image', 'pid', 'itm', 'availability', 'discontinuedText', 'blocked', 'earlyStop',
+  'rating', 'ratingsCount', 'reviewsCount', 'brand', 'categoryPath', 'seller', 'pincodeFromStorageKeys',
+]);
+// sellerPageFallback (§6.1) is not implemented: refused, so no recipe can rely on it silently.
+const AVAIL_KEYS = new Set(['selectors', 'outOfStockText', 'fields']);
+const API_KEYS = new Set(['url', 'method', 'headers', 'bodyTemplate', 'parse', 'imageTemplateReplacements']);
+const PARSE_KEYS = new Set(['root', 'match', 'fields', 'oos', 'oosDefault']);
+const API_FIELD_KEYS = new Set(['product_id', 'price', 'mrp', 'productName', 'image', 'groupId']);
+/** Identity headers are the store's (or the browser's) to set, never a recipe's (rule 1). */
+const IDENTITY_HEADER = /^(user-agent|origin|referer|cookie|authorization|host|forwarded|x-forwarded-|x-real-ip|true-client-ip|proxy-|sec-)/i;
 
 function isObj(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
+
+function unknownKeys(o: Record<string, unknown>, known: Set<string>, where: string, errors: string[]): void {
+  for (const k of Object.keys(o)) if (!known.has(k)) errors.push(`${where}: unknown key "${k}"`);
+}
+
+const isPath = (x: unknown) => typeof x === 'string' && x.length > 0;
 
 function checkRegex(src: unknown, where: string, errors: string[]): void {
   if (typeof src !== 'string' || !src) { errors.push(`${where}: regex must be a non-empty string`); return; }
@@ -126,7 +144,7 @@ function checkSelector(src: unknown, where: string, errors: string[]): void {
 
 function checkField(f: unknown, where: string, errors: string[]): void {
   if (!isObj(f)) { errors.push(`${where}: must be an object`); return; }
-  for (const k of Object.keys(f)) if (!FIELD_KEYS.has(k)) errors.push(`${where}: unknown key "${k}"`);
+  unknownKeys(f, FIELD_KEYS, where, errors);
   if (!Array.isArray(f['selector'])) errors.push(`${where}.selector: must be an array`);
   else f['selector'].forEach((s, i) => checkSelector(s, `${where}.selector[${i}]`, errors));
   const a = f['attribute'];
@@ -152,10 +170,49 @@ function checkFields(v: unknown, where: string, errors: string[], required: bool
   v.forEach((f, i) => checkField(f, `${where}[${i}]`, errors));
 }
 
+function checkApiRecipe(r: unknown, where: string, errors: string[]): void {
+  if (!isObj(r) || typeof r['url'] !== 'string' || !r['url'] || (r['method'] !== 'GET' && r['method'] !== 'POST') || !isObj(r['parse'])) {
+    errors.push(`${where}: needs url, method GET|POST and parse`);
+    return;
+  }
+  unknownKeys(r, API_KEYS, where, errors);
+  const p = r['parse'];
+  unknownKeys(p, PARSE_KEYS, `${where}.parse`, errors);
+  if (!Array.isArray(p['root']) || !p['root'].length || !p['root'].every(isPath)) errors.push(`${where}.parse.root: must be a non-empty list of paths`);
+  const f = p['fields'];
+  if (!isObj(f)) errors.push(`${where}.parse.fields: must be an object`);
+  else {
+    unknownKeys(f, API_FIELD_KEYS, `${where}.parse.fields`, errors);
+    for (const [k, v] of Object.entries(f)) {
+      const ok = k === 'productName' ? Array.isArray(v) && v.length > 0 && v.every(isPath) : isPath(v);
+      if (!ok) errors.push(`${where}.parse.fields.${k}: must be ${k === 'productName' ? 'a non-empty list of paths' : 'a path'}`);
+    }
+  }
+  if (p['match'] !== undefined && !(Array.isArray(p['match']) && p['match'].every((m) => isObj(m) && isPath(m['path'])
+    && Object.keys(m).every((k) => ['path', 'eq', 'ne'].includes(k)) && (m['eq'] === undefined || Array.isArray(m['eq'])) && (m['ne'] === undefined || Array.isArray(m['ne']))))) {
+    errors.push(`${where}.parse.match: must be [{path, eq?: [], ne?: []}]`);
+  }
+  if (p['oos'] !== undefined && !(Array.isArray(p['oos']) && p['oos'].every((o) => isObj(o) && isPath(o['path']) && Array.isArray(o['oos']) && Object.keys(o).length === 2))) {
+    errors.push(`${where}.parse.oos: must be [{path, oos: []}]`);
+  }
+  if (p['oosDefault'] !== undefined && p['oosDefault'] !== 0 && p['oosDefault'] !== 1) errors.push(`${where}.parse.oosDefault: must be 0 or 1`);
+  // Rule 1: constant headers only. Identity headers are the store's to set, never ours.
+  if (r['headers'] !== undefined) {
+    if (!isObj(r['headers'])) errors.push(`${where}.headers: must be an object`);
+    else for (const [h, v] of Object.entries(r['headers'])) {
+      if (IDENTITY_HEADER.test(h)) errors.push(`${where}.headers: "${h}" is not ours to set (rule 1)`);
+      if (typeof v !== 'string' && typeof v !== 'number') errors.push(`${where}.headers.${h}: must be text or a number`);
+    }
+  }
+  const itr = r['imageTemplateReplacements'];
+  if (itr !== undefined && !(isObj(itr) && Object.values(itr).every((v) => typeof v === 'string'))) errors.push(`${where}.imageTemplateReplacements: must map text to text`);
+}
+
 /** Accept a config only when every part of it is understood. Unknown = refused, never guessed. */
 export function validateReader(input: unknown): Check {
   const errors: string[] = [];
   if (!isObj(input)) return { ok: false, errors: ['config must be an object'] };
+  unknownKeys(input, TOP_KEYS, 'config', errors);
   if (input['schema'] !== 1) errors.push('schema: must be 1');
   if (!(STORE_IDS as readonly string[]).includes(String(input['store']))) errors.push(`store: unknown "${String(input['store'])}"`);
   if (input['device'] !== 'desktop' && input['device'] !== 'mobile') errors.push('device: must be desktop or mobile');
@@ -167,12 +224,17 @@ export function validateReader(input: unknown): Check {
   const d = input['domRecipe'];
   if (!isObj(d)) errors.push('domRecipe: must be an object');
   else {
+    unknownKeys(d, DOM_KEYS, 'domRecipe', errors);
     for (const k of ['name', 'price', 'mrp', 'image', 'pid', 'itm'] as const) checkFields(d[k], `domRecipe.${k}`, errors, true);
+    if (d['pincodeFromStorageKeys'] !== undefined && !(Array.isArray(d['pincodeFromStorageKeys']) && d['pincodeFromStorageKeys'].every(isPath))) {
+      errors.push('domRecipe.pincodeFromStorageKeys: must be a list of names');
+    }
     for (const k of ['rating', 'ratingsCount', 'reviewsCount', 'brand', 'categoryPath', 'seller'] as const) checkFields(d[k], `domRecipe.${k}`, errors, false);
     if (d['classSelector'] !== undefined) checkSelector(d['classSelector'], 'domRecipe.classSelector', errors);
     const av = d['availability'];
     if (!isObj(av)) errors.push('domRecipe.availability: must be an object');
     else {
+      unknownKeys(av, AVAIL_KEYS, 'domRecipe.availability', errors);
       if (!Array.isArray(av['selectors'])) errors.push('domRecipe.availability.selectors: must be an array');
       else av['selectors'].forEach((s, i) => checkSelector(s, `domRecipe.availability.selectors[${i}]`, errors));
       if (!Array.isArray(av['outOfStockText']) || !av['outOfStockText'].every((t) => typeof t === 'string' && t === t.toLowerCase() && t.length > 0)) {
@@ -201,19 +263,7 @@ export function validateReader(input: unknown): Check {
   }
   if (input['apiRecipes'] !== undefined) {
     if (!Array.isArray(input['apiRecipes'])) errors.push('apiRecipes: must be an array');
-    else input['apiRecipes'].forEach((r, i) => {
-      if (!isObj(r) || typeof r['url'] !== 'string' || (r['method'] !== 'GET' && r['method'] !== 'POST') || !isObj(r['parse'])) {
-        errors.push(`apiRecipes[${i}]: needs url, method GET|POST and parse`);
-        return;
-      }
-      const p = r['parse'];
-      if (!Array.isArray(p['root']) || !p['root'].every((x) => typeof x === 'string')) errors.push(`apiRecipes[${i}].parse.root: must be path strings`);
-      if (!isObj(p['fields'])) errors.push(`apiRecipes[${i}].parse.fields: must be an object`);
-      // Rule 1: constant headers only. Identity headers are the store's to set, never ours.
-      if (isObj(r['headers'])) for (const h of Object.keys(r['headers'])) {
-        if (/^(user-agent|origin|referer|cookie|authorization|x-forwarded-for|sec-)/i.test(h)) errors.push(`apiRecipes[${i}].headers: "${h}" is not ours to set (rule 1)`);
-      }
-    });
+    else input['apiRecipes'].forEach((r, i) => checkApiRecipe(r, `apiRecipes[${i}]`, errors));
   }
   return errors.length ? { ok: false, errors } : { ok: true, config: input as unknown as ReaderConfig };
 }
