@@ -70,6 +70,14 @@ export interface Offer {
   text: string;
   /** The page's own count, e.g. "27 offers". */
   count: string | null;
+  /** A coupon code the page itself advertises (letters, digits, - and _), else null. */
+  code: string | null;
+}
+
+/** An offer as the site shows it: coded offers carry what shoppers said about the code. */
+export interface OfferView extends Offer {
+  /** Votes in the last 30 days (POST /api/coupons/vote); null for an offer without a code. */
+  votes: { worked: number; total: number } | null;
 }
 
 /**
@@ -176,7 +184,7 @@ export interface ProductView {
   /** The store's sale events (core/sales.ts), for the chart. */
   saleEvents: import('./sales.ts').SaleEvent[];
   /** Offers our server last read on the store's page, and when; null when none were read. */
-  offers: { at: Millis; items: Offer[] } | null;
+  offers: { at: Millis; items: OfferView[] } | null;
 }
 
 /** A row in search results, deal lists and "recently tracked". */

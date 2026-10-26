@@ -122,21 +122,33 @@ function isUnavailable(cfg: ReaderConfig, ctx: Ctx): boolean {
   return false;
 }
 
+/** What a coupon code looks like; anything else on the page is not taken as a code. */
+export const COUPON_CODE = /^[A-Za-z0-9_-]{3,30}$/;
+
 /**
  * The offers the page shows (BLUEPRINT §15), read inside each offer element: at most `max`
- * (default 8), each text capped at 200 characters. Empty when the recipe reads none.
+ * (default 8), each text capped at 200 characters, an offer the page repeats listed once.
+ * Empty when the recipe reads none.
  */
 export function readOffers(cfg: ReaderConfig, html: string): Offer[] {
   const rule = cfg.domRecipe.offers;
   if (!rule) return [];
   const out: Offer[] = [];
+  const seen = new Set<string>();
   for (const el of selectAll(html, rule.items, rule.max ?? 8)) {
     const part = outerOf(html, el);
     if (part == null) continue;
     const title = fieldValue(rule.title, part);
     const text = fieldValue(rule.text, part);
     if (!title || !text) continue;
-    out.push({ title: title.slice(0, 80), text: text.slice(0, 200), count: rule.count ? fieldValue(rule.count, part)?.slice(0, 40) ?? null : null });
+    const code = rule.code ? fieldValue(rule.code, part) : null;
+    const offer: Offer = {
+      title: title.slice(0, 80), text: text.slice(0, 200),
+      count: rule.count ? fieldValue(rule.count, part)?.slice(0, 40) ?? null : null,
+      code: code != null && COUPON_CODE.test(code) ? code : null,
+    };
+    const id = JSON.stringify(offer);
+    if (!seen.has(id)) { seen.add(id); out.push(offer); }
   }
   return out;
 }

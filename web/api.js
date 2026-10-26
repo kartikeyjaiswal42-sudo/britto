@@ -142,3 +142,6 @@ export function ago(ms) {
 }
 
 export const getGroceryPlatforms = () => call('/api/grocery/platforms');
+
+/** "Did this code work?" -> { votes: { worked, total } } (last 30 days). */
+export const voteCoupon = (store, code, worked) => call('/api/coupons/vote', { method: 'POST', body: JSON.stringify({ store, code, worked }) });

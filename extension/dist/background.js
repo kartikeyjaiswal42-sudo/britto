@@ -374,11 +374,12 @@
       if (of !== void 0) {
         if (!isObj(of)) errors.push("domRecipe.offers: must be an object");
         else {
-          unknownKeys(of, /* @__PURE__ */ new Set(["items", "title", "text", "count", "max"]), "domRecipe.offers", errors);
+          unknownKeys(of, /* @__PURE__ */ new Set(["items", "title", "text", "count", "code", "max"]), "domRecipe.offers", errors);
           checkSelector(of["items"], "domRecipe.offers.items", errors);
           checkField(of["title"], "domRecipe.offers.title", errors);
           checkField(of["text"], "domRecipe.offers.text", errors);
           if (of["count"] !== void 0) checkField(of["count"], "domRecipe.offers.count", errors);
+          if (of["code"] !== void 0) checkField(of["code"], "domRecipe.offers.code", errors);
           if (of["max"] !== void 0 && !(Number.isInteger(of["max"]) && of["max"] >= 1 && of["max"] <= 20)) errors.push("domRecipe.offers.max: 1 to 20");
         }
       }

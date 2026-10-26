@@ -167,3 +167,14 @@ CREATE TABLE IF NOT EXISTS product_offers (
   at   INTEGER NOT NULL,
   json TEXT NOT NULL                         -- [{title, text, count}] from core/interpret.ts readOffers
 );
+
+-- Shoppers' word on a coupon code our server read on a store page (BLUEPRINT §15): one vote
+-- per network per code (it may change its mind), shown as "worked for N of M" over 30 days.
+CREATE TABLE IF NOT EXISTS coupon_votes (
+  store  TEXT NOT NULL,
+  code   TEXT NOT NULL,
+  voter  TEXT NOT NULL,                      -- hashed network, as for reports
+  at     INTEGER NOT NULL,
+  worked INTEGER NOT NULL,                   -- 1 it worked, 0 it did not
+  PRIMARY KEY (store, code, voter)
+) WITHOUT ROWID;

@@ -60,18 +60,31 @@ try {
       const res = await route.fetch();
       const body = await res.json();
       body.product.offers = { at: Date.now() - 2 * 3_600_000, items: [
-        { title: 'Bank Offer', text: 'Upto ₹1,000.00 discount <img src=x onerror="document.title=1"> on select Credit Cards', count: '27 offers' },
-        { title: 'Cashback', text: 'Upto ₹7.00 cashback as Amazon Pay Balance', count: null },
+        { title: 'Bank Offer', text: 'Upto ₹1,000.00 discount <img src=x onerror="document.title=1"> on select Credit Cards', count: '27 offers', code: null, votes: null },
+        { title: 'Cashback', text: 'Upto ₹7.00 cashback as Amazon Pay Balance', count: null, code: null, votes: null },
+        { title: 'Get flat 10 Percent off', text: 'Use Code "SAVE10" Min. Cart Value ₹199', count: null, code: 'SAVE10', votes: { worked: 3, total: 4 } },
       ] };
       await route.fulfill({ response: res, json: body });
     });
     await page.reload({ waitUntil: 'networkidle' });
     await page.waitForSelector('#offers li');
     const offerItems = await page.locator('#offers li').allInnerTexts();
-    check('offers: each listed as the store page put it, markup shown as text, never run', offerItems.length === 2 && offerItems[0].startsWith('Bank Offer Upto ₹1,000.00 discount <img')
+    check('offers: each listed as the store page put it, markup shown as text, never run', offerItems.length === 3 && offerItems[0].startsWith('Bank Offer Upto ₹1,000.00 discount <img')
       && offerItems[0].endsWith('· 27 offers') && (await page.locator('#offers img').count()) === 0, JSON.stringify(offerItems));
     const offerNote = await page.locator('#offers p').innerText();
     check('…with when they were read, and that Britto does not check them', /showed them 2 h ago/.test(offerNote) && /does not check offers/.test(offerNote), offerNote);
+    const coupon = page.locator('#offers .coupon');
+    check('a coupon code: shown with Copy, and what shoppers said', (await coupon.count()) === 1 && (await coupon.locator('code').innerText()) === 'SAVE10'
+      && /Worked for 3 of 4 shoppers/.test(await coupon.innerText()), await coupon.innerText().catch(() => 'none'));
+    let voteSent = null;
+    await page.route('**/api/coupons/vote', async (route) => { voteSent = route.request().postDataJSON(); await route.fulfill({ json: { votes: { worked: 4, total: 5 } } }); });
+    await coupon.getByRole('button', { name: 'It worked' }).click();
+    await page.waitForFunction(() => /Thanks/.test(document.querySelector('#offers .coupon .votes')?.textContent ?? ''));
+    check('…"It worked" sends store, code and the answer, then shows the new count', JSON.stringify(voteSent) === '{"store":"amazon","code":"SAVE10","worked":true}'
+      && /Worked for 4 of 5 shoppers/.test(await coupon.locator('.votes').innerText()) && await coupon.getByRole('button', { name: 'It did not' }).isDisabled(), JSON.stringify(voteSent));
+    const couponBox = await coupon.boundingBox();
+    check('…and the coupon row fits the screen', couponBox != null && couponBox.x >= 0 && couponBox.x + couponBox.width <= viewport.width, JSON.stringify(couponBox));
+    await page.unroute('**/api/coupons/vote');
     await page.unroute(productApi);
     await page.reload({ waitUntil: 'networkidle' });
     await page.waitForSelector('.big-price');

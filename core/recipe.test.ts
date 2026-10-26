@@ -222,13 +222,20 @@ test('readOffers: every offer card in page order, each read inside its own card,
     title: { selector: ['h6'], attribute: 'textContent' },
     text: { selector: ['.full'], attribute: 'textContent' },
     count: { selector: ['.n'], attribute: 'textContent' },
+    code: { selector: ['.c'], attribute: 'attr:data-code' },
   };
-  const card = (t: string, x: string, n = '') => `<div class="card"><h6>${t}</h6><span class="full">${x}</span>${n ? `<a class="n">${n}</a>` : ''}</div>`;
+  const card = (t: string, x: string, n = '', c = '') => `<div class="card"><h6>${t}</h6><span class="full">${x}</span>${n ? `<a class="n">${n}</a>` : ''}${c ? `<b class="c" data-code="${c}">${c}</b>` : ''}</div>`;
   const page = `<div class="card"><h6>Outside</h6><span class="full">not an offer box</span></div>
     <div id="offers">${card('Bank Offer', 'Upto &#8377;1,000 off', '27 offers')}<div class="card"><h6>No text</h6></div>${card('Cashback', 'x'.repeat(300))}${card('EMI', 'No cost')}${card('Fourth', 'over the cap')}</div>`;
   assert.deepEqual(readOffers(cfg, page), [
-    { title: 'Bank Offer', text: 'Upto ₹1,000 off', count: '27 offers' },
-    { title: 'Cashback', text: 'x'.repeat(200), count: null },
+    { title: 'Bank Offer', text: 'Upto ₹1,000 off', count: '27 offers', code: null },
+    { title: 'Cashback', text: 'x'.repeat(200), count: null, code: null },
   ], 'outside the box: no; a card without text: skipped; text capped at 200; max counts cards looked at');
   assert.equal(readOffers(good(), page).length, 0, 'a recipe without offers reads none');
+
+  const coded = `<div id="offers">${card('10% off', 'Use code SAVE10', '', 'SAVE10')}${card('10% off', 'Use code SAVE10', '', 'SAVE10')}${card('Free gift', 'see page', '', 'not a code!')}</div>`;
+  assert.deepEqual(readOffers(cfg, coded), [
+    { title: '10% off', text: 'Use code SAVE10', count: null, code: 'SAVE10' },
+    { title: 'Free gift', text: 'see page', count: null, code: null },
+  ], 'an offer the page repeats is listed once; text that is not a code is no code');
 });

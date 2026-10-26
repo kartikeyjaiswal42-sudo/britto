@@ -147,7 +147,7 @@ export function renderPanel(store: StoreId, savePage: ((store: StoreId) => void)
       if (ex.offers?.length) {
         const offers = el('div', 'card offers');
         offers.append(el('b', '', 'Offers on this page'));
-        for (const o of ex.offers.slice(0, 4)) offers.append(el('span', 'small', `${o.title}: ${o.text}`));
+        for (const o of ex.offers.slice(0, 4)) offers.append(el('span', 'small', `${o.title}: ${o.text}${o.code && !o.text.includes(o.code) ? ` (code ${o.code})` : ''}`));
         body.append(offers);
       }
 

@@ -2,7 +2,7 @@
 // store (titles, image URLs) goes in via textContent / setAttribute — never innerHTML.
 import {
   ago, connectTelegram, date, deletePush, disconnectTelegram, getConfig, getDeals, getMe, getPopular, getProduct, getRecent, getStores,
-  pct, removeAlert, rupees, savePush, searchProducts, sendTest, setAlert, toPaise, trackProduct, getGroceryPlatforms, getSimilar,
+  pct, removeAlert, rupees, savePush, searchProducts, sendTest, setAlert, toPaise, trackProduct, getGroceryPlatforms, getSimilar, voteCoupon,
 } from './api.js';
 import { drawChart } from './chart.js';
 
@@ -173,8 +173,32 @@ function offersSection(view) {
   if (!view.offers?.items.length) return null;
   return h('section', { class: 'offers', id: 'offers' },
     h('h2', {}, `Offers on ${view.store.name}'s page`),
-    h('ul', {}, view.offers.items.map((o) => h('li', {}, h('b', {}, o.title), ' ', o.text, o.count ? h('span', { class: 'muted small' }, ` · ${o.count}`) : null))),
+    h('ul', {}, view.offers.items.map((o) => h('li', {}, h('b', {}, o.title), ' ', o.text, o.count ? h('span', { class: 'muted small' }, ` · ${o.count}`) : null,
+      o.code ? couponBox(view.store.id, o) : null))),
     h('p', { class: 'muted small' }, `As the page showed them ${ago(view.offers.at)}. Britto does not check offers or their terms: read them on ${view.store.name} before you pay.`));
+}
+
+// A code the page advertised: copy it, and say whether it worked (one vote per network).
+function couponBox(store, offer) {
+  const said = h('span', { class: 'muted small votes' }, votesText(offer.votes));
+  const vote = (worked) => async () => {
+    buttons.forEach((b) => { b.disabled = true; });
+    try {
+      said.textContent = `${votesText((await voteCoupon(store, offer.code, worked)).votes)} Thanks for saying.`;
+    } catch (e) {
+      said.textContent = e.message;
+      buttons.forEach((b) => { b.disabled = false; });
+    }
+  };
+  const copy = h('button', { type: 'button', class: 'secondary', onclick: async () => {
+    try { await navigator.clipboard.writeText(offer.code); copy.textContent = 'Copied'; } catch { copy.textContent = 'Select the code to copy it'; }
+  } }, 'Copy');
+  const buttons = [h('button', { type: 'button', class: 'secondary', onclick: vote(true) }, 'It worked'), h('button', { type: 'button', class: 'secondary', onclick: vote(false) }, 'It did not')];
+  return h('div', { class: 'coupon' }, h('code', {}, offer.code), copy, ...buttons, said);
+}
+
+function votesText(v) {
+  return v?.total ? `Worked for ${v.worked} of ${v.total} shoppers in the last 30 days.` : 'No shopper has said yet whether it works.';
 }
 
 function stat(label, value, note) {

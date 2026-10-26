@@ -3,6 +3,7 @@ import { pickDue } from '../core/schedule.ts';
 import { STORES, STORE_IDS, parseKey, parseProductLink, storeFromParam } from '../core/stores.ts';
 import { cleanObserved, judgeObservation } from '../core/trust.ts';
 import { GROCERY_PLATFORMS, cleanQuotes, compareBasket, compareItem, type GroceryPlatformId } from '../core/grocery.ts';
+import { COUPON_CODE } from '../core/interpret.ts';
 import type { ServedConfig } from '../core/recipe.ts';
 import type { ApiError, AppConfig, Extracted, ProductKey, StoreId } from '../core/types.ts';
 import {
@@ -11,8 +12,8 @@ import {
 } from './alerts.ts';
 import { deliver, siteUrl, telegramBot, vapid } from './channels.ts';
 import {
-  clearHeld, deals, getProduct, holdReport, insertProduct, loadHeld, loadPoints, markRecheck, popular, productView,
-  rateLimit, recent, recordObservation, refreshCandidates, search, similarCheaper, sweepRate,
+  clearHeld, couponKnown, couponVotes, deals, getProduct, holdReport, insertProduct, loadHeld, loadPoints, markRecheck, popular,
+  productView, rateLimit, recent, recordObservation, refreshCandidates, search, similarCheaper, sweepRate, voteCoupon,
 } from './db.ts';
 import type { Ctx, D1Database, Env } from './env.ts';
 import { countReading, getReader, healthReport, type HealthSource } from './readers.ts';
@@ -34,6 +35,8 @@ export const TESTS_PER_HOUR = 5;
 export const GROCERY_PER_HOUR = 300;
 /** Reader telemetry one network may send per hour ("could not read this page" reports). */
 export const TELEMETRY_PER_HOUR = 600;
+/** Coupon votes one network may cast per hour. */
+export const VOTES_PER_HOUR = 30;
 /** Clients may keep a served reader config this long before asking again (BLUEPRINT §6.3). */
 export const READER_CACHE_SECONDS = 600;
 
@@ -198,6 +201,27 @@ async function telemetry(request: Request, env: Env): Promise<Response> {
   return json({ ok: true }, 202);
 }
 
+/**
+ * "Did this code work?" (BLUEPRINT §15). Only a code our server read on that store's product
+ * page can be voted on: a vote never brings a code into Britto. One vote per network per code.
+ */
+async function couponVote(request: Request, env: Env): Promise<Response> {
+  const body = await readJson<{ store?: unknown; code?: unknown; worked?: unknown }>(request);
+  if (!body) return fail(400, 'bad_json', 'Send JSON: {"store": …, "code": …, "worked": true|false}.');
+  const store = typeof body.store === 'string' ? storeFromParam(body.store) : null;
+  if (!store) return fail(422, 'bad_vote', 'Unknown store.');
+  if (typeof body.code !== 'string' || !COUPON_CODE.test(body.code)) return fail(422, 'bad_vote', 'Not a coupon code.');
+  if (typeof body.worked !== 'boolean') return fail(422, 'bad_vote', 'worked must be true or false.');
+  if (!(await couponKnown(env.DB, store, body.code))) return fail(404, 'unknown_code', `Britto has not seen this code on a ${STORES[store].name} page.`);
+  const now = Date.now();
+  const voter = await clientId(request);
+  if (!(await rateLimit(env.DB, `vote:${voter}`, VOTES_PER_HOUR, 3_600_000, now))) {
+    return fail(429, 'rate_limited', `At most ${VOTES_PER_HOUR} votes an hour from one network.`);
+  }
+  await voteCoupon(env.DB, store, body.code, voter, body.worked, now);
+  return json({ votes: await couponVotes(env.DB, store, body.code, now) });
+}
+
 type Ref = { item: string; brand: string | null; pack: string | null };
 function cleanRef(v: unknown): Ref | null {
   const o = v as Record<string, unknown> | null;
@@ -356,6 +380,7 @@ async function api(request: Request, env: Env, ctx: Ctx, url: URL): Promise<Resp
   if (path === '/api/config' && method === 'GET') return config(env);
   if (path === '/api/config/reader' && method === 'GET') return readerConfig(request, env, url);
   if (path === '/api/telemetry' && method === 'POST') return telemetry(request, env);
+  if (path === '/api/coupons/vote' && method === 'POST') return couponVote(request, env);
   if (path === '/api/grocery/platforms' && method === 'GET') return json({ platforms: GROCERY_PLATFORMS });
   if ((path === '/api/grocery/compare' || path === '/api/grocery/basket') && method === 'POST') return grocery(request, env, path);
   if (path === '/api/health/readers' && method === 'GET') return json(await healthReport(env.DB, STORE_IDS, Date.now()));

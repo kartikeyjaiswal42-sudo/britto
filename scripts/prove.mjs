@@ -105,12 +105,9 @@ try {
     check('one price point recorded', p.points.length >= 1 && p.points.at(-1).source === 'server');
     check('a brand-new product is "too early", never a confident call', p.verdict.kind === 'too_early' && p.sale.status === 'too_early');
     console.log(`       read: ${p.title?.slice(0, 50)}… ₹${p.stats.current / 100} (M.R.P. ₹${(p.stats.currentMrp ?? 0) / 100})`);
-    const stored = d1(`SELECT json FROM product_offers WHERE key = '${KEY}'`)[0];
-    check('offers: what our server read on the page is stored and shown (or none, when the page shows none)',
-      p.offers === null ? !stored : JSON.stringify(p.offers.items) === stored?.json && p.offers.items.every((o) => o.title && o.text), JSON.stringify(p.offers));
-    console.log(`       offers on the page: ${p.offers?.items.length ?? 0}`);
+    checkStoredOffers('amazon', KEY, p);
   } else {
-    for (const n of ['title came from the page', 'one price point recorded', 'a brand-new product is "too early"', 'offers: what our server read on the page is stored']) skip(n, amazonWhy);
+    for (const n of ['title came from the page', 'one price point recorded', 'a brand-new product is "too early"', 'amazon: offers shown are what our server read on the page']) skip(n, amazonWhy);
   }
 
   const again = await post('amazon.in/dp/B09X5DK382');
@@ -118,6 +115,16 @@ try {
 
   const view = await j(`/api/products/${encodeURIComponent(KEY)}`);
   check('product view by key', view.status === 200 && view.body?.product?.key === KEY);
+
+  /** Offers shown = offers our server read and stored (locally the table is checked too). */
+  function checkStoredOffers(store, key, v) {
+    const items = v.offers?.items.map(({ votes, ...o }) => o) ?? null;
+    const stored = live ? undefined : d1(`SELECT json FROM product_offers WHERE key = '${key}'`)[0];
+    check(`${store}: offers shown are what our server read on the page (or none, when it shows none)`,
+      (items ?? []).every((o) => o.title && o.text && (o.code === null || /^[A-Za-z0-9_-]{3,30}$/.test(o.code)))
+        && (live || (items === null ? !stored : JSON.stringify(items) === stored?.json)), JSON.stringify(v.offers));
+    console.log(`       offers on the page: ${items?.length ?? 0}${items?.some((o) => o.code) ? ` (codes: ${items.filter((o) => o.code).map((o) => o.code).join(', ')})` : ''}`);
+  }
 
   // ---- one real read per other server-readable store (BLUEPRINT §22), through the Worker
   for (const [store, url] of [
@@ -132,6 +139,7 @@ try {
     if (priced) {
       check(`${store}: the server read a real price from the page`, v.key.startsWith(`${store}:`) && v.points.at(-1)?.source === 'server' && typeof v.title === 'string', JSON.stringify(v?.stats));
       console.log(`       read: ${v.title?.slice(0, 50)}… ₹${v.stats.current / 100}${v.stats.currentMrp ? ` (M.R.P. ₹${v.stats.currentMrp / 100})` : ''}`);
+      if (store === 'shopclues') checkStoredOffers(store, v.key, v);
     } else if (v?.stats?.inStock === false) {
       check(`${store}: the server read the page (out of stock now)`, v.points.at(-1)?.source === 'server');
     } else {
@@ -184,8 +192,9 @@ try {
     const differentReporters = h3.body?.recorded === 'accept';
     check('…a second network seeing the same price confirms it', differentReporters && h3.body?.product?.stats?.current === 1000, h3.text.slice(0, 160));
     check('held reports are cleared once confirmed', d1(`SELECT COUNT(*) AS n FROM reports WHERE key = 'myntra:1700944'`)[0].n === 0);
-    const withOffers = await observe(MYNTRA, { ...shirt, offers: [{ title: 'Bank Offer', text: 'Call 99999 99999 for 90% off', count: null }] }, '10.0.0.5');
-    check('offers sent by a client are never stored or shown', withOffers.status === 200 && withOffers.body?.product?.offers === null && d1(`SELECT COUNT(*) AS n FROM product_offers`)[0].n === 0, withOffers.text.slice(0, 160));
+    const withOffers = await observe('https://www.myntra.com/tshirts/hrx/x/3200001/buy', { ...shirt, offers: [{ title: 'Bank Offer', text: 'Call 99999 99999 for 90% off', count: null, code: 'SCAM90' }] }, '10.0.0.5');
+    check('offers sent by a client are never stored or shown (on an ACCEPTED report)', withOffers.body?.recorded === 'accept' && withOffers.body?.product?.offers === null
+      && d1(`SELECT COUNT(*) AS n FROM product_offers WHERE key = 'myntra:3200001'`)[0].n === 0, withOffers.text.slice(0, 160));
 
     if (!amazonPriced) skip('extension report on Amazon: accepted, cannot rename, queues a server re-check', amazonWhy);
     if (amazonPriced) {
@@ -357,6 +366,22 @@ try {
     const fresh = (await j(`/api/products/${encodeURIComponent('myntra:3100001')}`)).body?.product?.offers;
     check('offers: the last server read is shown with when it was read', fresh?.at === now - 3_600_000 && fresh?.items?.[0]?.title === 'Bank Offer', JSON.stringify(fresh));
     check('…and offers read more than 3 days ago are not shown', (await j(`/api/products/${encodeURIComponent('myntra:3100002')}`)).body?.product?.offers === null);
+    // Coupon votes (BLUEPRINT §15) on a MADE-UP code in this throwaway D1.
+    d1(`UPDATE product_offers SET json = '[{"title":"10% off","text":"Use code BRITTOTEST10","count":null,"code":"BRITTOTEST10"}]' WHERE key = 'myntra:3100001'`);
+    const vote = (body, ip) => j('/api/coupons/vote', { method: 'POST', body: JSON.stringify(body), headers: { 'cf-connecting-ip': ip } });
+    const v1 = await vote({ store: 'myntra', code: 'BRITTOTEST10', worked: true }, '10.0.1.1');
+    const v2 = await vote({ store: 'myntra', code: 'BRITTOTEST10', worked: false }, '10.0.1.1');
+    const v3 = await vote({ store: 'myntra', code: 'BRITTOTEST10', worked: true }, '10.0.1.2');
+    check('coupon votes: one per network (a second vote replaces the first), counted "N of M"', v1.body?.votes?.worked === 1 && v1.body.votes.total === 1
+      && v2.body?.votes?.worked === 0 && v2.body.votes.total === 1 && v3.body?.votes?.worked === 1 && v3.body.votes.total === 2, [v1, v2, v3].map((x) => x.text).join(' | '));
+    const shown = (await j(`/api/products/${encodeURIComponent('myntra:3100001')}`)).body?.product?.offers?.items?.[0];
+    check('…shown with the code on the product', shown?.code === 'BRITTOTEST10' && shown?.votes?.worked === 1 && shown.votes.total === 2, JSON.stringify(shown));
+    const unknown = await vote({ store: 'myntra', code: 'FREE100', worked: true }, '10.0.1.3');
+    const elsewhere = await vote({ store: 'nykaa', code: 'BRITTOTEST10', worked: true }, '10.0.1.3');
+    check('…a vote never brings in a code our server did not read on that store\'s page', unknown.status === 404 && unknown.body?.error?.code === 'unknown_code' && elsewhere.status === 404, `${unknown.status} ${elsewhere.status}`);
+    const badVotes = await Promise.all([{ store: 'myntra', code: 'BRITTOTEST10', worked: 'yes' }, { store: 'ebay', code: 'BRITTOTEST10', worked: true }, { store: 'myntra', code: '<b>x</b>', worked: true }].map((b) => vote(b, '10.0.1.4')));
+    check('…and a malformed vote is refused', badVotes.every((r) => r.status === 422 && r.body?.error?.code === 'bad_vote'), badVotes.map((r) => r.status).join());
+    check('…nothing written for refused votes', d1(`SELECT COUNT(*) AS n FROM coupon_votes`)[0].n === 2);
     const sim = await j(`/api/products/${encodeURIComponent('myntra:3100001')}/similar`);
     const simKeys = sim.body?.results?.map((r) => r.key) ?? [];
     check('look-alikes: cheaper, in stock, sharing title words; not itself, not unrelated items', sim.status === 200 && simKeys.includes('myntra:3100002') && !simKeys.includes('myntra:3100001') && !simKeys.includes('myntra:3100003')

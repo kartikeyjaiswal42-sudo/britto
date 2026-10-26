@@ -14,17 +14,20 @@
       {
         "title": "Cashback",
         "text": "Upto ₹7.00 cashback as Amazon Pay Balance when you pay with Amazon Pay ICICI Bank Credit Cards",
-        "count": "1 offer"
+        "count": "1 offer",
+        "code": null
       },
       {
         "title": "Bank Offer",
         "text": "Upto ₹1,000.00 discount on select Credit Cards",
-        "count": "27 offers"
+        "count": "27 offers",
+        "code": null
       },
       {
         "title": "Partner Offers",
         "text": "Get GST invoice and save up to 18% on business purchases. Sign up for free",
-        "count": "1 offer"
+        "count": "1 offer",
+        "code": null
       }
     ]
   },
@@ -42,17 +45,20 @@
       {
         "title": "Cashback",
         "text": "Upto ₹4.00 cashback as Amazon Pay Balance when you pay with Amazon Pay ICICI Bank Credit Cards",
-        "count": "1 offer"
+        "count": "1 offer",
+        "code": null
       },
       {
         "title": "Bank Offer",
         "text": "Upto ₹1,000.00 discount on select Credit Cards",
-        "count": "27 offers"
+        "count": "27 offers",
+        "code": null
       },
       {
         "title": "Partner Offers",
         "text": "Spend INR 100.00 or more and get 3% off on Qualifying Items offered by Smart Seller India. Shop items View products",
-        "count": "2 offers"
+        "count": "2 offers",
+        "code": null
       }
     ]
   },
@@ -70,22 +76,26 @@
       {
         "title": "Cashback",
         "text": "Upto ₹52.00 cashback as Amazon Pay Balance when you pay with Amazon Pay ICICI Bank Credit Cards",
-        "count": "1 offer"
+        "count": "1 offer",
+        "code": null
       },
       {
         "title": "No Cost EMI",
         "text": "Upto ₹45.97 EMI interest savings on Amazon Pay ICICI Bank Credit Cards",
-        "count": "1 offer"
+        "count": "1 offer",
+        "code": null
       },
       {
         "title": "Bank Offer",
         "text": "Upto ₹1,000.00 discount on select Credit Cards",
-        "count": "27 offers"
+        "count": "27 offers",
+        "code": null
       },
       {
         "title": "Partner Offers",
         "text": "Get GST invoice and save up to 18% on business purchases. Sign up for free",
-        "count": "1 offer"
+        "count": "1 offer",
+        "code": null
       }
     ]
   },
@@ -238,7 +248,15 @@
     "mrp": 149900,
     "inStock": true,
     "pid": "153656207",
-    "title": "ANK Hub Portable Foldable Electric Mini Iron"
+    "title": "ANK Hub Portable Foldable Electric Mini Iron",
+    "offers": [
+      {
+        "title": "Get flat 10 Percent off on all Prepaid Orders",
+        "text": "Use Code \"MYSHOPCLUES\" Min. Cart Value ₹199 | Max. Discount ₹1000",
+        "count": null,
+        "code": "MYSHOPCLUES"
+      }
+    ]
   },
   "shopclues-steam-iron-instock.html": {
     "fetched": "2026-10-26 22:45-22:50 UTC, Claude cloud container (USA), honest BrittoBot User-Agent and the Worker's headers: HTTP 200, 212 KB.",
@@ -247,7 +265,15 @@
     "status": "priced",
     "price": 47900,
     "inStock": true,
-    "pid": "153725631"
+    "pid": "153725631",
+    "offers": [
+      {
+        "title": "Get flat 10 Percent off on all Prepaid Orders",
+        "text": "Use Code \"MYSHOPCLUES\" Min. Cart Value ₹199 | Max. Discount ₹1000",
+        "count": null,
+        "code": "MYSHOPCLUES"
+      }
+    ]
   },
   "shopclues-babyoil-soldout.html": {
     "fetched": "2026-10-26 22:45-22:50 UTC, Claude cloud container (USA), honest BrittoBot User-Agent and the Worker's headers: HTTP 200, 201 KB. Sold out: 'This product is currently out of stock' and microdata OutOfStock, while the price box still shows ₹220 (M.R.P. ₹229).",

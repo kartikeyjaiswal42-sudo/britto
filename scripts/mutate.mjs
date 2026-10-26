@@ -140,6 +140,16 @@ export const MUTANTS = [
     run: PROVE, expect: [/offers read more than 3 days ago are not shown/],
   },
   {
+    name: 'prove: a vote can bring in a code our server never read',
+    file: 'api/app.ts', find: "  if (!(await couponKnown(env.DB, store, body.code))) return fail(", replace: "  if (false && !(await couponKnown(env.DB, store, body.code))) return fail(",
+    run: PROVE, expect: [/a vote never brings in a code/, /nothing written for refused votes/],
+  },
+  {
+    name: 'prove: one network can vote on a code again and again',
+    file: 'api/app.ts', find: '  await voteCoupon(env.DB, store, body.code, voter, body.worked, now);', replace: '  await voteCoupon(env.DB, store, body.code, voter + now, body.worked, now);',
+    run: PROVE, expect: [/coupon votes: one per network/, /shown with the code on the product/, /nothing written for refused votes/],
+  },
+  {
     name: 'prove: deals ignore the store filter',
     file: 'api/db.ts', find: "  if (f.store) { where.push('store = ?'); args.push(f.store); }\n", replace: '',
     run: PROVE, expect: [/deals: filtered by store/, /each deal carries its last 90 days/],
@@ -172,6 +182,16 @@ export const MUTANTS = [
   {
     name: 'offers read from anywhere on the page, not inside each offer card',
     file: 'core/interpret.ts', find: '    const title = fieldValue(rule.title, part);', replace: '    const title = fieldValue(rule.title, html);',
+    run: UNIT, expect: [/readOffers: every offer card in page order/],
+  },
+  {
+    name: 'an offer the page repeats is listed twice',
+    file: 'core/interpret.ts', find: '    if (!seen.has(id)) { seen.add(id); out.push(offer); }', replace: '    out.push(offer);',
+    run: UNIT, expect: [/readOffers: every offer card in page order/],
+  },
+  {
+    name: 'any text is taken as a coupon code',
+    file: 'core/interpret.ts', find: '      code: code != null && COUPON_CODE.test(code) ? code : null,', replace: '      code,',
     run: UNIT, expect: [/readOffers: every offer card in page order/],
   },
   {

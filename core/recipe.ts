@@ -13,6 +13,7 @@
 //   AvailRule.fields               availability from a value, not a selector's text
 //   DomRecipe.blocked              bot-wall / error-page markers -> status 'blocked'
 //   DomRecipe.earlyStop            when a server download may stop (CPU budget)
+//   DomRecipe.offers               the offers / coupon codes the page shows (BLUEPRINT §15)
 //   Field.regex                    alternatives, tried in order (first that matches wins)
 import { compile, SelectorError } from './select.ts';
 import { rupeesToPaise } from './money.ts';
@@ -60,7 +61,7 @@ export interface DomRecipe {
   /** Alternatives; each is a list of regexes that must ALL match the page source. */
   blocked?: string[][];
   /** Offers the page shows: every element matching `items` is one offer (BLUEPRINT §15). */
-  offers?: { items: string; title: Field; text: Field; count?: Field; max?: number };
+  offers?: { items: string; title: Field; text: Field; count?: Field; code?: Field; max?: number };
   /** Server early stop: every id in `complete` is a closed element, and then either the page
    * reads as unavailable or every id in `thenUnavailableOr` is closed too. */
   earlyStop?: { complete: string[]; thenUnavailableOr?: string[] };
@@ -237,11 +238,12 @@ export function validateReader(input: unknown): Check {
     if (of !== undefined) {
       if (!isObj(of)) errors.push('domRecipe.offers: must be an object');
       else {
-        unknownKeys(of, new Set(['items', 'title', 'text', 'count', 'max']), 'domRecipe.offers', errors);
+        unknownKeys(of, new Set(['items', 'title', 'text', 'count', 'code', 'max']), 'domRecipe.offers', errors);
         checkSelector(of['items'], 'domRecipe.offers.items', errors);
         checkField(of['title'], 'domRecipe.offers.title', errors);
         checkField(of['text'], 'domRecipe.offers.text', errors);
         if (of['count'] !== undefined) checkField(of['count'], 'domRecipe.offers.count', errors);
+        if (of['code'] !== undefined) checkField(of['code'], 'domRecipe.offers.code', errors);
         if (of['max'] !== undefined && !(Number.isInteger(of['max']) && (of['max'] as number) >= 1 && (of['max'] as number) <= 20)) errors.push('domRecipe.offers.max: 1 to 20');
       }
     }

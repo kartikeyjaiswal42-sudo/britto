@@ -2,7 +2,7 @@
   "schema": 1,
   "store": "shopclues",
   "device": "desktop",
-  "revision": 1,
+  "revision": 2,
   "verified": "2026-10-26",
   "reportsPid": true,
   "domRecipe": {
@@ -16,6 +16,13 @@
       "fields": [{ "selector": [".price", "link[itemprop=availability]"], "attribute": "href" }]
     },
     "price": [{ "selector": [".price", ".f_price"], "attribute": "textContent" }],
-    "mrp": [{ "selector": ["#sec_list_price_"], "attribute": "attr:content" }]
+    "mrp": [{ "selector": ["#sec_list_price_"], "attribute": "attr:content" }],
+    "offers": {
+      "items": ".offers_pdp .pdp_offrs",
+      "title": { "selector": ["p"], "attribute": "textContent" },
+      "text": { "selector": [], "attribute": "textContent", "global": true, "regex": ["</p>\\s*<span>([^<]+)"] },
+      "code": { "selector": [".coupons_code span"], "attribute": "attr:data-attr" },
+      "max": 8
+    }
   }
 }

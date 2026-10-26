@@ -411,7 +411,7 @@ a.go { display: inline-block; background: var(--accent); color: var(--on-accent)
         if (ex.offers?.length) {
           const offers = el2("div", "card offers");
           offers.append(el2("b", "", "Offers on this page"));
-          for (const o of ex.offers.slice(0, 4)) offers.append(el2("span", "small", `${o.title}: ${o.text}`));
+          for (const o of ex.offers.slice(0, 4)) offers.append(el2("span", "small", `${o.title}: ${o.text}${o.code && !o.text.includes(o.code) ? ` (code ${o.code})` : ""}`));
           body.append(offers);
         }
         if (v.points.length) {
@@ -924,17 +924,30 @@ a.go { display: inline-block; background: var(--accent); color: var(--on-accent)
     }
     return false;
   }
+  var COUPON_CODE = /^[A-Za-z0-9_-]{3,30}$/;
   function readOffers(cfg, html) {
     const rule = cfg.domRecipe.offers;
     if (!rule) return [];
     const out = [];
+    const seen = /* @__PURE__ */ new Set();
     for (const el3 of selectAll(html, rule.items, rule.max ?? 8)) {
       const part = outerOf(html, el3);
       if (part == null) continue;
       const title = fieldValue(rule.title, part);
       const text = fieldValue(rule.text, part);
       if (!title || !text) continue;
-      out.push({ title: title.slice(0, 80), text: text.slice(0, 200), count: rule.count ? fieldValue(rule.count, part)?.slice(0, 40) ?? null : null });
+      const code = rule.code ? fieldValue(rule.code, part) : null;
+      const offer = {
+        title: title.slice(0, 80),
+        text: text.slice(0, 200),
+        count: rule.count ? fieldValue(rule.count, part)?.slice(0, 40) ?? null : null,
+        code: code != null && COUPON_CODE.test(code) ? code : null
+      };
+      const id = JSON.stringify(offer);
+      if (!seen.has(id)) {
+        seen.add(id);
+        out.push(offer);
+      }
     }
     return out;
   }

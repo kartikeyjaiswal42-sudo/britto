@@ -3,7 +3,7 @@ import { saleCheck, verdict } from '../core/judge.ts';
 import { saleEventsFor } from '../core/sales.ts';
 import { STORES, type ParsedLink } from '../core/stores.ts';
 import { TRUST, type HeldReport, type Observed } from '../core/trust.ts';
-import type { Extracted, Millis, Offer, PricePoint, ProductCard, ProductKey, ProductView, SaleStatus, StoreId } from '../core/types.ts';
+import type { Extracted, Millis, Offer, OfferView, PricePoint, ProductCard, ProductKey, ProductView, SaleStatus, StoreId } from '../core/types.ts';
 import type { D1Database } from './env.ts';
 import { HEALTH } from './readers.ts';
 
@@ -139,8 +139,11 @@ function pendingReason(row: ProductRow, hasPoints: boolean): string | null {
   return `We could not read the price yet (${row.last_status ?? 'unknown'}). We will try again automatically.`;
 }
 
-/** Offers our server read on a store's page (BLUEPRINT §15) are shown for this long after the read. */
-export const OFFERS = { showFor: 3 * 86_400_000 };
+/**
+ * Offers our server read on a store's page (BLUEPRINT §15) are shown for `showFor` after the
+ * read; votes on a coupon code count for `votesFor`.
+ */
+export const OFFERS = { showFor: 3 * 86_400_000, votesFor: 30 * 86_400_000 };
 
 /** Replace a product's offers with what our server just read; none read removes them. */
 export async function recordOffers(db: D1Database, key: ProductKey, offers: Offer[], now: Millis): Promise<void> {
@@ -154,10 +157,41 @@ export async function recordOffers(db: D1Database, key: ProductKey, offers: Offe
     .run();
 }
 
-async function loadOffers(db: D1Database, key: ProductKey, now: Millis): Promise<ProductView['offers']> {
+async function loadOffers(db: D1Database, key: ProductKey, store: StoreId, now: Millis): Promise<ProductView['offers']> {
   const row = await db.prepare('SELECT at, json FROM product_offers WHERE key = ?').bind(key).first<{ at: number; json: string }>();
   if (!row || now - row.at > OFFERS.showFor) return null;
-  return { at: row.at, items: JSON.parse(row.json) as Offer[] };
+  const items = JSON.parse(row.json) as Offer[];
+  const votes = new Map<string, OfferView['votes']>();
+  for (const code of new Set(items.flatMap((o) => (o.code ? [o.code] : [])))) votes.set(code, await couponVotes(db, store, code, now));
+  return { at: row.at, items: items.map((o) => ({ ...o, code: o.code ?? null, votes: o.code ? votes.get(o.code) ?? null : null })) };
+}
+
+/** "Worked for N of M": votes on a store's code in the last OFFERS.votesFor. */
+export async function couponVotes(db: D1Database, store: StoreId, code: string, now: Millis): Promise<{ worked: number; total: number }> {
+  const r = await db
+    .prepare('SELECT COALESCE(SUM(worked), 0) AS worked, COUNT(*) AS total FROM coupon_votes WHERE store = ? AND code = ? AND at > ?')
+    .bind(store, code, now - OFFERS.votesFor)
+    .first<{ worked: number; total: number }>();
+  return { worked: r?.worked ?? 0, total: r?.total ?? 0 };
+}
+
+/** True when our server read this code on one of the store's product pages (still stored). */
+export async function couponKnown(db: D1Database, store: StoreId, code: string): Promise<boolean> {
+  const r = await db
+    .prepare(`SELECT 1 AS ok FROM product_offers p, json_each(p.json) j
+              WHERE p.key >= ? AND p.key < ? AND json_extract(j.value, '$.code') = ? LIMIT 1`)
+    .bind(`${store}:`, `${store};`, code)
+    .first<{ ok: number }>();
+  return r != null;
+}
+
+/** One vote per network per code; a second vote replaces the first. */
+export async function voteCoupon(db: D1Database, store: StoreId, code: string, voter: string, worked: boolean, now: Millis): Promise<void> {
+  await db
+    .prepare(`INSERT INTO coupon_votes (store, code, voter, at, worked) VALUES (?, ?, ?, ?, ?)
+              ON CONFLICT (store, code, voter) DO UPDATE SET at = excluded.at, worked = excluded.worked`)
+    .bind(store, code, voter, now, worked ? 1 : 0)
+    .run();
 }
 
 export async function productView(db: D1Database, row: ProductRow, now: Millis = Date.now()): Promise<ProductView> {
@@ -176,7 +210,7 @@ export async function productView(db: D1Database, row: ProductRow, now: Millis =
     sale: saleCheck(points, row.last_checked_at),
     pending: pendingReason(row, points.length > 0),
     saleEvents: saleEventsFor(row.store),
-    offers: await loadOffers(db, row.key, now),
+    offers: await loadOffers(db, row.key, row.store, now),
   };
 }
 
@@ -320,5 +354,6 @@ export async function sweepRate(db: D1Database, now: Millis): Promise<void> {
     db.prepare('DELETE FROM rate WHERE expires < ?').bind(now),
     db.prepare('DELETE FROM reports WHERE at < ?').bind(now - TRUST.confirmWindow),
     db.prepare('DELETE FROM reader_health WHERE hour < ?').bind(now - HEALTH.keep),
+    db.prepare('DELETE FROM coupon_votes WHERE at < ?').bind(now - OFFERS.votesFor),
   ]);
 }
