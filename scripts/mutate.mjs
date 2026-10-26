@@ -135,6 +135,16 @@ export const MUTANTS = [
     run: GRADLE_TEST, expect: [/BridgeCoreTest > anythingElseIsDroppedWithoutARequest/],
   },
   {
+    name: 'app: a store host matches anywhere in the address',
+    file: 'android/app/src/main/java/app/britto/Stores.java', find: 'for (Store s : all(context)) if (s.hosts.contains(host)) return s;', replace: 'for (Store s : all(context)) if (s.hosts.stream().anyMatch(host::contains)) return s;',
+    run: GRADLE_TEST, expect: [/ScreensTest > storesAreMatchedByExactHost/],
+  },
+  {
+    name: 'app: share reads only a link at the very start of the text',
+    file: 'android/app/src/main/java/app/britto/MainActivity.java', find: '            while (m.find()) {', replace: '            if (m.find() && m.start() == 0) {',
+    run: GRADLE_TEST, expect: [/ScreensTest > aSharedProductOpensInSuperBrowse/],
+  },
+  {
     name: 'app: the injected reader starts again on every injection',
     file: 'android/js/inject.ts', find: "if (bridge && window.top === window && !w.__brittoStarted) {", replace: "if (bridge && window.top === window) {",
     run: APP, expect: [/a second injection on the same page adds no panel and no report/],
