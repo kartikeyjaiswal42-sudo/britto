@@ -66,6 +66,13 @@ try {
     await page.goto(base + '/stores', { waitUntil: 'networkidle' });
     check('stores page lists the measured status', (await page.locator('table.stores tbody tr').count()) === 3);
 
+    await page.goto(base + '/browse', { waitUntil: 'networkidle' });
+    const tiles = await page.locator('a.store-tile').evaluateAll((as) => as.map((a) => [a.dataset.store, a.getAttribute('href')]));
+    check('Super Browse lists every store with its front page', JSON.stringify(tiles) === JSON.stringify([['amazon', 'https://www.amazon.in/'], ['flipkart', 'https://www.flipkart.com/'], ['myntra', 'https://www.myntra.com/']]), JSON.stringify(tiles));
+    const tileBox = await page.locator('a.store-tile').first().boundingBox();
+    check('…tiles are large enough to tap (≥ 44 px tall)', (tileBox?.height ?? 0) >= 44, JSON.stringify(tileBox));
+    check('…the header links to it ("Shop")', (await page.locator('.top nav a', { hasText: 'Shop' }).getAttribute('href')) === '/browse');
+
     await page.goto(base + '/search?q=cello', { waitUntil: 'networkidle' });
     check('search page finds it', await page.locator('.card .title', { hasText: 'Cello' }).count() > 0);
 

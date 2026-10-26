@@ -51,6 +51,20 @@ jobs:
           distribution: temurin
           java-version: 21
       - run: npm ci
+      # With the owner's release key (two repository secrets, see HISTORY.md "Waiting for the
+      # owner"), every APK can update the one installed before it. Without, a debug key.
+      - name: Release key, if the owner has added one
+        env:
+          KEY_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KEY_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+        run: |
+          if [ -n "$KEY_B64" ] && [ -n "$KEY_PASS" ]; then
+            echo "$KEY_B64" | base64 -d > "$RUNNER_TEMP/britto.keystore"
+            echo "BRITTO_KEYSTORE=$RUNNER_TEMP/britto.keystore" >> "$GITHUB_ENV"
+            echo "BRITTO_KEYSTORE_PASS=$KEY_PASS" >> "$GITHUB_ENV"
+          else
+            echo "::notice title=APK signed with a debug key::No ANDROID_KEYSTORE_B64 / ANDROID_KEYSTORE_PASS secrets yet."
+          fi
       - name: Unit tests and the release APK
         working-directory: android
         run: ./gradlew --no-daemon testDebugUnitTest assembleRelease
