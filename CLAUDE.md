@@ -48,6 +48,7 @@ and end with the prompt to paste next. Use they/them for the owner.
 [name]` (deliberate breakages must redden exactly their checks) ·
 `npm run prove` (real Worker + throwaway D1 + one real amazon.in request) ·
 `node scripts/alerts.mjs [--browser]` · `scripts/browser.mjs <url>` · `scripts/extension.mjs` ·
+`npm run test:app` (Android: Robolectric, APK checks, reader through the real Java bridge) ·
 `scripts/push-live.mjs <url>`.
 
 ## Cloud sessions (claude.ai/code)
@@ -64,4 +65,9 @@ and end with the prompt to paste next. Use they/them for the owner.
 - The environment's network allowlist must include `www.amazon.in`, `m.media-amazon.com`,
   `api.telegram.org`, `*.workers.dev`, and `dl.google.com` (Android SDK) on top of the defaults.
   If a request is refused by the sandbox, say which host, don't work around it.
-- Cloud sessions push branches; merging to `main` deploys.
+- Android in the cloud (2026-10-27): no emulator (no `/dev/kvm`). SDK: `dl.google.com`
+  platform 36 + build-tools 36.0.0 unpacked into `~/android-sdk` (SHA-1s from Google's
+  repository index), `android/local.properties` → `sdk.dir`. Gradle, AGP and AndroidX come
+  from `services.gradle.org`, `dl.google.com` and Maven Central (all reachable).
+- Cloud sessions push branches; merging to `main` deploys. The session's permission guard
+  refused a push to `main` (2026-10-27): the owner merges (HISTORY "Waiting for the owner").

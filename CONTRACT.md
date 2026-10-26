@@ -118,7 +118,17 @@ validate or does not hash to its version (`configFromServed`). The Worker uses t
 D1 row in `reader_configs` for a store and device that validates, else the bundled file;
 `scripts/publish-reader.mjs` writes those rows only after a dry run on every saved page.
 
-`Store` gained `num` (the stable number above).
+`Store` gained `num` (the stable number above) and `home` (the store's https front page,
+P4: Super Browse opens it). Page `/browse` (P4) lists the stores; the Android app opens each
+in its in-app browser.
+
+## The Android app (P4)
+
+Same API, same trust rules. Its readings and telemetry carry `client: "app"` and
+`readerVersion: "app-<version>"`; it asks for `device=mobile` reader configs. Its requests to
+Britto say `User-Agent: BrittoApp/<version> (Android)`; its WebView of the Britto site adds
+` BrittoApp/<version>` to the phone's own User-Agent (store pages see the phone's WebView
+unchanged).
 
 ## Planned (later sessions, not live)
 

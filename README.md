@@ -88,6 +88,18 @@ change, never a new extension release**.
 3. Open the site's `/alerts` page. The Worker finds the token, registers the bot's webhook
    with Telegram itself, and the page starts showing "Send any product link to @yourbot".
 
+## The Android app (Super Browse)
+
+`android/`: the Britto website in an app, plus **Super Browse**: shop on Amazon.in, Flipkart
+or Myntra inside the app and Britto's panel appears on every product page, reading the page
+you are looking at (the extension's own reader, run by the phone's WebView, only on the stores'
+own pages). **Share → Britto** from a store's app opens the product there. "Save page" keeps a
+copy of a page in Downloads so a reader can be built for it (nothing is uploaded).
+
+Build: `npm run build:apk` (Gradle; needs JDK 21, Node.js and an Android SDK). Tests:
+`npm run test:app`. Every push also builds the APK on GitHub Actions (run page → Artifacts).
+Not on the Play Store (needs the owner's developer account); install the APK directly.
+
 ## Install the extension (until it is on the Chrome Web Store)
 
 1. `npm install && npm run build:ext` (or use the already-built `extension/dist`).

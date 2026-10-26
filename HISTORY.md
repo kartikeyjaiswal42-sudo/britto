@@ -27,7 +27,30 @@ to this list and removes what is done.
    the extension, press "Save this page for Britto" in the panel, and put the downloaded
    `britto-page-flipkart-….html` file into the `britto/test/fixtures/` folder (or attach it
    to the next session). That lets a session check and switch on the Flipkart reader.
-4. **CPU check on production** (optional, 2 minutes): in the `britto` folder run
+4. **Try the Android app on your phone** (P4, about 10 minutes, after items 0 and 5):
+   download the APK (the file sent with this session's report, or GitHub → Actions → the
+   newest run of branch `p4-android` → Artifacts → `britto-apk`), open it on the phone, allow
+   "install unknown apps" for the app you opened it from, install. Then: open Britto → Shop →
+   Amazon.in → any product. Tell the next session what you saw (panel or not, price or
+   "cannot read"), plus anything that looked wrong (text under the status bar, Back button).
+   APKs from different builds are signed with different keys until item 6 is done, so
+   uninstall the old one before installing a newer one.
+5. **Save three phone pages for the mobile readers** (with item 4): in the app, open one
+   product each on Amazon.in, Flipkart and Myntra, press **Save page** at the top on each,
+   and send the three `britto-page-…-mobile-….html` files from your phone's Downloads to the
+   next session (or put them in `britto/test/fixtures/`). That is what makes the app able to
+   read prices on phones.
+6. **A signing key for the app** (5 minutes, once): on your Mac run
+   `keytool -genkeypair -keystore britto-release.keystore -alias britto -keyalg RSA -keysize 3072 -validity 10000`
+   (pick a strong password; keep the file and password safe, never in the repo). Then on
+   GitHub → Settings → Secrets and variables → Actions add `ANDROID_KEYSTORE_B64` (the output
+   of `base64 -i britto-release.keystore`) and `ANDROID_KEYSTORE_PASS` (the password). From
+   then on every APK from GitHub Actions can update the installed app.
+7. **Phone notifications (FCM)** (optional, 10 minutes): create a free Firebase project at
+   console.firebase.google.com, add an Android app with package name `app.britto`, download
+   `google-services.json` and give it to a session (it is not secret, but it is yours). Until
+   then the app's alerts come by Telegram.
+8. **CPU check on production** (optional, 2 minutes): in the `britto` folder run
    `npx wrangler tail britto --format json | grep cpuTime` for 10 minutes and paste the
    numbers into the next session. (Measures what the new reader costs on Cloudflare.)
 
@@ -467,3 +490,92 @@ the image → the 3 parity checks with an image.
 - The extension 0.3.0 has not been loaded into the owner's own browser.
 - No real-store page has been read by the extension since S2 (tests serve saved pages).
 
+
+## P4, 2026-10-27: the Android app (Super Browse) — on branch `p4-android`
+
+**Asked:** BLUEPRINT §24 P4: WebView shell + Super Browse grid + in-app readers (the same
+bundle as the extension) + share target + "Save this page" + FCM alerts. Unattended cloud
+session; the owner then allowed libraries ("use Gradle if it is best"), so the app is a
+standard Gradle project.
+
+### Decided
+
+- **Gradle + AndroidX, not the hand-made javac/d8 build** (a working no-Gradle APK was built
+  first, 45 KB, then replaced). Why: AndroidX WebKit's `addWebMessageListener` creates the
+  bridge ONLY in the stores' own https origins and answers only the top page, where
+  `addJavascriptInterface` would expose it to every page and frame, ads and payment pages
+  included; `addDocumentStartJavaScript` runs the reader in those origins only; the
+  project opens in Android Studio; Robolectric tests the Java on a computer; Firebase (FCM)
+  needs Gradle anyway. Versions read from the official indexes, each out ≥ 2 weeks:
+  AGP 9.4.1, Gradle 9.8.1 (wrapper, SHA-256 pinned), androidx.webkit 1.17.1,
+  androidx.activity 1.13.0, Robolectric 4.17, JUnit 4.13.2, org.json 20260719 (harness only).
+- **One reader for extension and app**: `extension/src/reader.ts` (`startReader(host)`); the
+  extension's `content.ts` and the app's `android/js/inject.ts` are thin hosts (transport,
+  device class, save action). The app asks for `device=mobile`; the server serves the
+  desktop recipe flagged `deviceFallback` until a mobile recipe is verified.
+- **Super Browse grid = the website's new `/browse` page** ("Shop" in the header, built from
+  `/api/stores`, `Store.home` added). In the app a store link opens `StoreActivity`; the
+  same page in a browser just opens the store.
+- "Save page" (app toolbar) writes the page's HTML to Downloads (`britto-page-<store>-mobile-
+  <time>.html`); nothing is uploaded. The bridge has no save message, so a store's scripts
+  cannot write files. The website tells app users that alerts come by Telegram (an Android
+  WebView cannot receive web push).
+
+### Built
+
+`android/` (Gradle): `MainActivity` (site in a WebView, Home/Shop/Alerts bar, share target,
+store links → Super Browse, Telegram/other links → their apps), `StoreActivity` (store
+WebView, unchanged User-Agent, reader at document start, bridge, toolbar Save page / Britto,
+`intent:` links stay in the browser via their fallback), `BridgeCore` (pure Java: the four
+§7.5 messages, 10-min config cache with If-None-Match, offline uses the stale config,
+`readerVersion app-0.1.0`, `client app`), `Bridge` (WebMessageListener), `Stores`
+(`assets/stores.json` from `core/stores.ts`), `Api` (Britto only, `BrittoApp/0.1.0`
+User-Agent). Gradle task `brittoAssets` builds the reader from the repo's TypeScript
+(`scripts/build-app-assets.mjs`). R8 shrinks the release APK to **254 KB** (5.8 MB without).
+CI job `android`: unit tests + release APK as a downloadable artifact (signs with the
+owner's key once the two secrets exist). `scripts/app.mjs` (`npm run test:app`).
+
+### Measured / found
+
+1. **No Android emulator here** (no `/dev/kvm`): nothing ran on Android itself.
+2. Robolectric's own downloader fails behind the cloud proxy (`Failed to fetch maven artifact
+   android-all-instrumented`); Gradle fetches it instead and Robolectric runs offline. On
+   Java 21 it also needs `--add-exports java.base/jdk.internal.access` (measured error).
+3. The saved Amazon pages are **desktop layouts**: on a 390 px phone screen the page (and the
+   panel) is shown zoomed out. A page laid out for phones keeps the panel on screen (checked).
+4. Two of my own test-harness mistakes were caught by the runs (a non-JSON message rejected
+   before it reached the Java bridge; a fit check measured against a desktop page), fixed in
+   the test, not the app.
+
+### Gates (this cloud session, final code)
+
+`npm test` 77/77 · typechecks clean · `check:readers` 8/8 · Gradle `testDebugUnitTest`
+**8/8** (Robolectric, Android 16) · `assembleRelease` OK incl. lintVital · `test:app`
+**28/28** (8 APK checks + the injected reader in Chromium at 390 px through the REAL
+`BridgeCore.java` to a local Worker: ₹265/₹305 read and posted as `client app`, parity with
+Node on 4 pages, one panel and one report after a double injection, foreign bridge messages
+dropped, no bridge outside the stores) · `extension.mjs` 30/30 · `prove` 73 passed, 0
+failed, 6 SKIP (Amazon refuses this network) · `browser.mjs` local **36/36** (seeded by one
+extension report into a throwaway local D1; Super Browse at 1280 light and 390 dark) ·
+GitHub Actions: test + android jobs green.
+
+### Proved able to fail (`npm run mutate app:`)
+
+bridge omits `client: app` → 1 red · never caches configs → 1 · accepts any version text → 1
+· store host matched anywhere in the address → 1 · share reads only a link at the start → 1
+· reader starts again on every injection → 1. All 6 exact.
+
+### NOT verified / not done
+
+- **Nothing has run on a real phone or emulator**: WebView behaviour (document-start script,
+  message listener, `target=_blank`, cookies/logins), Back, the share sheet, Downloads, insets
+  under the status bar, dark mode. Waiting for the owner's phone.
+- **Store pages on a phone are mobile layouts the recipes have never seen.** Until a mobile
+  page is saved (the app's "Save page") and a mobile recipe verified, expect "Britto cannot
+  read the price on this page yet" on Amazon/Flipkart/Myntra in the app; the panel still
+  shows Britto's history for the product.
+- **FCM push not built**: needs the owner's Firebase project (Waiting for the owner).
+- Not merged, not deployed (P3 first). The APK talks to production, which still runs the S3
+  code: until P3 is live, the app's reader gets no config (404) and says it cannot read.
+- AndroidX WebKit features need an up-to-date "Android System WebView"; on an old one the app
+  says so and has no panel.

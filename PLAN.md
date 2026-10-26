@@ -11,9 +11,13 @@
 > **P3 is DONE on branch `p3-reader-configs`, NOT yet merged/deployed** (2026-10-27,
 > HISTORY.md "P3"; the cloud session may not push to `main`: the owner merges). Readers are
 > JSON configs served by the Worker, one interpreter in every client, config CI, reader
-> health, D1 hot-fixes. Later phases branch from it. **Next:
-> P4 (Android app)**, then P6 (P5 waits for the owner's Claude Design export). Owner-only
-> steps are listed at the top of HISTORY.md under "Waiting for the owner".
+> health, D1 hot-fixes. Later phases branch from it.
+>
+> **P4 is DONE on branch `p4-android` (built on P3), NOT merged** (HISTORY.md "P4"): Android
+> app (Gradle, AndroidX WebKit), Super Browse, share target, Save page, one reader shared with
+> the extension. Not run on a phone yet. **Next: P6** (store coverage; P5 waits for the
+> owner's Claude Design export), branched from `p4-android`. Owner-only steps are listed at
+> the top of HISTORY.md under "Waiting for the owner".
 
 ## Unattended runs (the owner is away and cannot answer)
 
@@ -60,6 +64,10 @@ iPhone friends use the website and Telegram.
 - Run locally: `npm run db:local && npm run dev` → http://127.0.0.1:8787
 - Readers: `readers/<store>.<device>.json` (data, BLUEPRINT §6), run by `core/interpret.ts`
   everywhere; served at `GET /api/config/reader`; hot-fix with `scripts/publish-reader.mjs`.
+- Android app: `android/` (Gradle). `npm run build:apk` → `android/app/build/outputs/apk/
+  release/app-release.apk`; `npm run test:app` (Robolectric + APK checks + the injected reader
+  through the real Java bridge). Needs an Android SDK (`ANDROID_HOME` or
+  `android/local.properties`) and JDK 21.
 - Gates: `npm test` (unit) · `npm run typecheck` (core+api AND extension) ·
   `npm run check:readers` (every config vs every saved page) · `npm run mutate [name]`
   (deliberate breakages, each must redden exactly its checks) · `npm run prove`
