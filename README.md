@@ -41,7 +41,17 @@ affiliate data feeds, which need an affiliate account (not checked yet, see PLAN
 | Amazon.in | **Yes**, from Cloudflare's network (2026-10-26: ₹265, ₹155 and two unavailable pages; 2026-10-27: ₹1,763.31, the first price with paise) | Yes (tested in real Brave on saved pages) |
 | Myntra | No: no answer to an honest bot in 25 s | Yes (tested on a saved page; live site not yet checked) |
 | Flipkart | No: answers "Something went wrong! E002" | **Not yet.** The reader is off until it is checked against a real Flipkart page |
-| Croma | No: HTTP 403 (not in the app yet) | (S5) |
+| Vijay Sales | **Yes** (P6, 2026-10-26, from a cloud computer; Cloudflare not yet measured): ₹4,999 / M.R.P. ₹15,999 read by the Worker. Stock from the store's own schema.org data (its buttons are drawn by JavaScript) | Same reader |
+| Reliance Digital | **Yes** (P6, same): ₹1,739 / M.R.P. ₹2,245. Its schema.org data says "in stock" even for items it will not sell, so Britto reads the page's own `sellable` flag | Same reader |
+| Nykaa | **Yes** (P6, same): ₹749 / M.R.P. ₹1,150, from the state the page renders from. A listing showing "₹0" is read as no price | Same reader |
+| ShopClues | **Yes** (P6, same): ₹419 / M.R.P. ₹1,499; sold-out listings read as unavailable | Same reader |
+| Tata CLiQ | No price in the page the server gets (a 14 KB JavaScript shell) | Not yet (needs a page saved from a browser) |
+| FirstCry | Product data only under cryptic keys; the price is drawn by JavaScript | Not yet (needs a saved page) |
+| Croma, Snapdeal, Ajio, Meesho | No: they refuse even robots.txt to an honest bot (403 / Access Denied) | Not yet (needs a saved page) |
+
+Store sales (Amazon Great Indian Festival, Flipkart Big Billion Days, …) are marked on every
+price chart from `readers/sales.json`, each with the link its dates were read from; a sale
+whose end date is not published is marked at its start only.
 
 ## Readers are data (since P3)
 

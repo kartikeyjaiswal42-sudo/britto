@@ -15,7 +15,8 @@ to this list and removes what is done.
    → **New pull request** → base `main`, compare `p3-reader-configs` → **Create pull request**
    → **Merge**. GitHub Actions then updates the database, deploys the Worker and runs the live
    check by itself (about 1 minute; the Actions tab shows a green tick). Later phases are on
-   their own branches built on top of P3 (`p4-android`, …); merge them in order the same way.
+   their own branches, each built on the one before (`p4-android` on P3, `p6-stores` on P4);
+   merging the newest one brings all of them. Merge in order if you want to try each.
    Or tell the next session "you may merge to main".
 1. **Reload the Britto extension** (once P3 is on `main`): open `chrome://extensions` (or
    `brave://extensions`), find Britto, press the round reload arrow. Then open any Amazon.in
@@ -50,7 +51,11 @@ to this list and removes what is done.
    console.firebase.google.com, add an Android app with package name `app.britto`, download
    `google-services.json` and give it to a session (it is not secret, but it is yours). Until
    then the app's alerts come by Telegram.
-8. **CPU check on production** (optional, 2 minutes): in the `britto` folder run
+8. **Flipkart Affiliate account** (optional, 15 minutes; makes Flipkart prices work without the
+   extension): sign up at affiliate.flipkart.com, then in the dashboard go to API → API Token →
+   Generate. Do not paste the token anywhere; tell the next session "Flipkart affiliate token
+   is ready" and it will explain how to store it as a Worker secret yourself.
+9. **CPU check on production** (optional, 2 minutes): in the `britto` folder run
    `npx wrangler tail britto --format json | grep cpuTime` for 10 minutes and paste the
    numbers into the next session. (Measures what the new reader costs on Cloudflare.)
 
@@ -579,3 +584,93 @@ bridge omits `client: app` → 1 red · never caches configs → 1 · accepts an
   code: until P3 is live, the app's reader gets no config (404) and says it cannot read.
 - AndroidX WebKit features need an up-to-date "Android System WebView"; on an old one the app
   says so and has no panel.
+
+## P6, 2026-10-27: store coverage — on branch `p6-stores` (built on P4)
+
+**Asked:** BLUEPRINT §24 P6: new stores one at a time, each fixture-verified; generic platform
+recipes (Shopify & co.); official affiliate feeds checked first for any store the server
+can't read; sale-calendar config. Unattended cloud session.
+
+### Official feeds, checked first (read 2026-10-27)
+
+- **Flipkart Affiliate API**: "If you are a registered affiliate, you are granted access to the
+  Affiliate APIs using your private Affiliate API Token" (affiliate.flipkart.com/api-docs/
+  af_register.html); the token is generated from the affiliate dashboard; the docs list
+  product feeds, search by keyword/id, offers. Whether the feeds carry the selling price and
+  stock is **not stated** on the pages read. Needs the owner's affiliate account (Waiting).
+- **Amazon PA-API 5** is deprecated and answers 403; its successor the **Creators API**
+  requires "at least 10 qualifying sales within the past 30 days" (affiliate-program.amazon.com
+  /creatorsapi/docs/en-us/introduction). Not open to a new associate; not needed while the
+  server reads Amazon itself.
+
+### Measured, every request with the honest BrittoBot User-Agent (from this cloud container, USA)
+
+| Store | robots.txt | Product page to the bot | Decision |
+|---|---|---|---|
+| Vijay Sales | allows `/p/` | 200, ~840 KB, price box server-rendered, buttons hidden until JS | **added** |
+| Reliance Digital | allows `/product/` | 200, ~650 KB (14 pages), visible price server-rendered | **added** |
+| Nykaa | allows product pages | 200, ~200 KB (9 pages), price in hashed CSS classes, state in `__PRELOADED_STATE__` | **added** |
+| ShopClues | allows product pages | 200, ~200 KB; sitemap listings mostly sold out | **added** |
+| Tata CLiQ | allows | 200 but a 14 KB JavaScript shell, no product data | not added |
+| FirstCry | allows (incl. Claude) | 200 (after a 301 to the current name), data only under cryptic keys, price drawn by JS | not added |
+| Croma | "Access Denied" for robots.txt | — | not added |
+| Snapdeal, Ajio, Meesho | 403 for robots.txt | — | not added |
+
+FirstCry's robots.txt names Claude, Claude-User and ClaudeBot: checked before fetching (they
+are under `Allow: /`). No store fetched has a rule against Claude or BrittoBot.
+
+### Traps found by measuring (each now a fixture + a mutant)
+
+1. **Vijay Sales**: every buy/notify/unavailable button is hidden until the page's JavaScript
+   runs; the stock state the server can see is the store's schema.org availability. The page
+   has a second "offer price" block (null when there is none); the reader takes the VS price,
+   equal to the schema.org price on both pages. Mutant ignoring the stock statement: the
+   out-of-stock AirTag reads as priced ₹9,229.
+2. **Reliance Digital**: schema.org says **InStock on every page, including 5 the store will not
+   sell** (`product_meta.sellable:false, quantity 0`). The reader uses the sellable flag; the
+   mutant trusting schema.org records ₹74,990 for an unsellable GoPro. The page also has three
+   elements with `id="main-content"` (the first is the breadcrumb): the name comes from
+   `h1.product-name`.
+3. **Nykaa**: a real listing shows **"Price ₹0."** with an Add to Bag button. New rule for
+   every reader: a price under ₹1 is `unrecognised` (`implausible-price`). Mutant: ₹0 recorded.
+4. **ShopClues**: sold-out listings still show the price (₹220, M.R.P. ₹229): the reader uses
+   the microdata `OutOfStock` and the Sold Out badge. Mutant: the sold-out oil reads as ₹220.
+5. Config CI caught three wrong expectations of mine (a title guessed from the address, an
+   M.R.P. I thought absent, a store reader count of 3 hard-coded in a test).
+
+### Built
+
+- 4 stores: registry entries (numbers 4–7, `home`, measured lines), link parsers, readers
+  (`readers/<store>.desktop.json`), image hosts + CSP, extension matches, 11 new fixtures with
+  `expected.json` entries (when, where, how; every one HTTP 200 to the bot).
+- **Selector engine**: substring pre-check and a `.class` fast path (the Vijay Sales in-stock
+  page went 9.8 → 2.3 ms per read; a new test shows the fast path finds exactly what a full
+  scan finds, on every saved page); JSON-LD parsed once per reading.
+- **Sale calendar**: `readers/sales.json` (source + checked date required; `to: null` = no end
+  date published → start marker only), `core/sales.ts`, `ProductView.saleEvents`,
+  `chart.js saleMarks` (+ `chart.d.ts`). Two events: Amazon Great Indian Festival from
+  8 Oct 2026, Flipkart Big Billion Days from 9 Oct 2026 (articles cited in the file; no end
+  dates were published there).
+- `prove` makes one real read per server-readable store through the Worker.
+
+### Gates (final code, this cloud session)
+
+`npm test` 86/86 · typechecks clean · `check:readers` **21/21 fixtures** · `mutate` **30/30**
+caught exactly (incl. prove, extension and app mutants) · `prove` **77 passed, 0 failed, 6 SKIP**
+(Amazon refuses this network) with real Worker reads: Vijay Sales ₹4,999, Reliance Digital
+₹1,739, Nykaa ₹749, ShopClues ₹419 · `browser.mjs` local **38/38** (incl. sale marks drawn in
+real Chrome) · `extension.mjs` 30/30 · `test:app` 28/28 · Gradle unit tests 8/8.
+
+### NOT verified / not done
+
+- **Cloudflare's network has not read any of the 4 new stores** (only this cloud container).
+  After deploy, `prove --live` and reader health (`/api/health/readers`) will show it.
+- **No out-of-stock page seen** for Reliance Digital or Nykaa (only for Vijay Sales and
+  ShopClues); Nykaa products with variants (shades/sizes) not seen.
+- What shoppers SEE after the stores' JavaScript runs (stock buttons, an "offer price") is not
+  verified on any of the 4: the readers use what the server receives.
+- **Generic platform recipes (Shopify & co.) not built.** Reading any brand's own shop means the
+  server fetching hosts nobody has checked: it needs a per-host robots.txt check at run time
+  and abuse limits designed first. Left for its own step.
+- Sale end dates not published in the sources read; earlier sales not entered.
+- The Android APK must be rebuilt after store changes (app.mjs checks it; it caught a stale one).

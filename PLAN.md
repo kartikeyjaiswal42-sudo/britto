@@ -15,9 +15,13 @@
 >
 > **P4 is DONE on branch `p4-android` (built on P3), NOT merged** (HISTORY.md "P4"): Android
 > app (Gradle, AndroidX WebKit), Super Browse, share target, Save page, one reader shared with
-> the extension. Not run on a phone yet. **Next: P6** (store coverage; P5 waits for the
-> owner's Claude Design export), branched from `p4-android`. Owner-only steps are listed at
-> the top of HISTORY.md under "Waiting for the owner".
+> the extension. Not run on a phone yet.
+>
+> **P6 is DONE on branch `p6-stores` (built on P4), NOT merged** (HISTORY.md "P6"): Vijay
+> Sales, Reliance Digital, Nykaa and ShopClues read by the server, fixture-verified; sale
+> calendar on charts; affiliate feeds checked. Generic Shopify recipes not built. **Next: P7**
+> (grocery, app-first), branched from `p6-stores`. P5 waits for the owner's Claude Design
+> export. Owner-only steps: top of HISTORY.md, "Waiting for the owner".
 
 ## Unattended runs (the owner is away and cannot answer)
 

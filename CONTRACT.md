@@ -122,6 +122,19 @@ D1 row in `reader_configs` for a store and device that validates, else the bundl
 P4: Super Browse opens it). Page `/browse` (P4) lists the stores; the Android app opens each
 in its in-app browser.
 
+## Stores and sale events (P6)
+
+`StoreId` adds `vijaysales` (4), `reliancedigital` (5), `nykaa` (6), `shopclues` (7). Product
+keys: `vijaysales:<id>` (links `/p/<id>/<name>`; the name is required, `/p/<id>` alone is a 404),
+`reliancedigital:<handle>` (links `/product/<handle>`, lower-cased), `nykaa:<id>` (links
+`/<name>/p/<id>`), `shopclues:<id>` (links `/<name>-<id>.html`).
+
+`ProductView.saleEvents`: the store's sale events `{store, title, from, to, source}` (ms; `to`
+null = end date not published). From `readers/sales.json`, validated by `core/sales.ts`.
+
+Every reader: a price under ₹1 makes the reading `unrecognised` (rule `<store>:implausible-price`);
+an M.R.P. under ₹1 is dropped.
+
 ## The Android app (P4)
 
 Same API, same trust rules. Its readings and telemetry carry `client: "app"` and
