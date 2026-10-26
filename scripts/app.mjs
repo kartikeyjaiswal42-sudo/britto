@@ -148,7 +148,7 @@ try {
     const link = parseProductLink(url).link;
     const cfg = bundledReader(link.store).config;
     const node = confirmIdentity(link.store, link.pid, readPage(cfg, PAGES.get(url), url), cfg.reportsPid);
-    const diffs = ['status', 'price', 'mrp', 'inStock', 'pid', 'title', 'image', 'rule'].filter((k) => !isDeepStrictEqual(reading?.[k], node[k]));
+    const diffs = ['status', 'price', 'mrp', 'inStock', 'pid', 'title', 'image', 'rule', 'offers'].filter((k) => !isDeepStrictEqual(reading?.[k], node[k]));
     parity.push({ url, diffs: diffs.map((k) => `${k}: app ${JSON.stringify(reading?.[k])} vs node ${JSON.stringify(node[k])}`) });
   };
 
