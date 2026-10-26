@@ -23,6 +23,7 @@ import { fieldValue, readerEnough, readPage } from '../core/interpret.ts';
 import { confirmIdentity } from '../core/extract.ts';
 import { outerOf, selectFirst } from '../core/select.ts';
 import { parseProductLink } from '../core/stores.ts';
+import { validateSales } from '../core/sales.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const FIXTURES = join(ROOT, 'test/fixtures');
@@ -35,7 +36,14 @@ const diff = (name, what) => { diffs++; console.log(`DIFF ${name} ${what}`); };
 const readers = new Map(); // "store.device" -> { config, version, origin }
 for (const r of BUNDLED_READERS) readers.set(`${r.config.store}.${r.config.device}`, { ...r, origin: 'bundled' });
 for (const f of readdirSync(join(ROOT, 'readers')).filter((f) => f.endsWith('.json'))) {
-  const v = validateReader(JSON.parse(readFileSync(join(ROOT, 'readers', f), 'utf8')));
+  const json = JSON.parse(readFileSync(join(ROOT, 'readers', f), 'utf8'));
+  if (f === 'sales.json') {
+    const sales = validateSales(json);
+    if (!sales.ok) diff('readers/sales.json', `invalid: ${sales.errors.join('; ')}`);
+    continue;
+  }
+  if (!/^[a-z]+\.(desktop|mobile)\.json$/.test(f)) { diff(`readers/${f}`, 'is neither a reader (<store>.<device>.json) nor sales.json'); continue; }
+  const v = validateReader(json);
   if (!v.ok) diff(`readers/${f}`, `invalid: ${v.errors.join('; ')}`);
   else if (f !== `${v.config.store}.${v.config.device}.json`) diff(`readers/${f}`, `file name must be ${v.config.store}.${v.config.device}.json`);
 }
