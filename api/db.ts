@@ -194,12 +194,59 @@ export async function search(db: D1Database, q: string, limit = 30): Promise<Pro
   return results.map(card);
 }
 
-export async function deals(db: D1Database, limit = 48): Promise<ProductCard[]> {
+export interface DealFilter { store?: StoreId; minPct?: number; limit?: number }
+
+/**
+ * Verified real drops (BLUEPRINT §11): the trusted price is at least SALE.realDrop below the
+ * product's own 90-day usual price (saleCheck; M.R.P. plays no part), in stock, biggest drop
+ * first. Each card carries its last 90 days of prices so the drop can be checked by eye.
+ */
+export async function deals(db: D1Database, f: DealFilter = {}, now: Millis = Date.now()): Promise<ProductCard[]> {
+  const where = [`sale_status = 'real_drop'`, 'in_stock = 1'];
+  const args: unknown[] = [];
+  if (f.store) { where.push('store = ?'); args.push(f.store); }
+  if (f.minPct != null) { where.push('real_pct >= ?'); args.push(f.minPct); }
   const { results } = await db
-    .prepare(`SELECT * FROM products WHERE sale_status = 'real_drop' AND in_stock = 1 ORDER BY real_pct DESC LIMIT ?`)
-    .bind(limit)
+    .prepare(`SELECT * FROM products WHERE ${where.join(' AND ')} ORDER BY real_pct DESC LIMIT ?`)
+    .bind(...args, f.limit ?? 48)
     .all<ProductRow>();
-  return results.map(card);
+  const cards = results.map(card);
+  if (!cards.length) return cards;
+  const { results: pts } = await db
+    .prepare(`SELECT key, at, price, in_stock FROM prices WHERE key IN (${cards.map(() => '?').join(',')}) AND at >= ? ORDER BY key, at`)
+    .bind(...cards.map((c) => c.key), now - 90 * 86_400_000)
+    .all<{ key: string; at: number; price: number | null; in_stock: number }>();
+  for (const c of cards) c.spark = pts.filter((p) => p.key === c.key).map((p) => ({ at: p.at, price: p.in_stock ? p.price : null }));
+  return cards;
+}
+
+/** Title words that can tell products apart: 3+ letters, not numbers or units. */
+function titleWords(title: string): string[] {
+  const words = title.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
+  return [...new Set(words.filter((w) => w.length >= 3 && !/^\d/.test(w) && !['pack', 'for', 'and', 'with', 'the', 'set'].includes(w)))].slice(0, 10);
+}
+
+/**
+ * Look-alikes (BLUEPRINT §10.3), the plain way: other tracked products, in stock and cheaper,
+ * sharing at least two distinctive title words (FTS5, best match first). "Similar", never
+ * "the same product". Workers AI embeddings would match better; their cost is not measured yet.
+ */
+export async function similarCheaper(db: D1Database, row: ProductRow, limit = 8): Promise<ProductCard[]> {
+  const mine = titleWords(row.title ?? '');
+  if (mine.length < 2 || row.price == null) return [];
+  const { results } = await db
+    .prepare(
+      `SELECT p.* FROM products_fts f JOIN products p ON p.rowid = f.rowid
+       WHERE products_fts MATCH ? AND p.key != ? AND p.in_stock = 1 AND p.price IS NOT NULL AND p.price < ?
+       ORDER BY bm25(products_fts) LIMIT 40`,
+    )
+    .bind(mine.map((w) => `"${w}"*`).join(' OR '), row.key, row.price)
+    .all<ProductRow>();
+  const set = new Set(mine);
+  return results
+    .filter((r) => titleWords(r.title ?? '').filter((w) => set.has(w)).length >= 2)
+    .slice(0, limit)
+    .map(card);
 }
 
 export async function recent(db: D1Database, limit = 24): Promise<ProductCard[]> {

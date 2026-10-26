@@ -4,7 +4,7 @@ import { STORES, STORE_IDS, parseKey, parseProductLink, storeFromParam } from '.
 import { cleanObserved, judgeObservation } from '../core/trust.ts';
 import { GROCERY_PLATFORMS, cleanQuotes, compareBasket, compareItem, type GroceryPlatformId } from '../core/grocery.ts';
 import type { ServedConfig } from '../core/recipe.ts';
-import type { ApiError, AppConfig, Extracted, ProductKey } from '../core/types.ts';
+import type { ApiError, AppConfig, Extracted, ProductKey, StoreId } from '../core/types.ts';
 import {
   createDeviceOwner, createLinkCode, deleteAlert, evaluateAlerts, LINK_CODE_MS, meView, ownerByToken, setAlert, unlinkChat,
   type OwnerRow,
@@ -12,7 +12,7 @@ import {
 import { deliver, siteUrl, telegramBot, vapid } from './channels.ts';
 import {
   clearHeld, deals, getProduct, holdReport, insertProduct, loadHeld, loadPoints, markRecheck, popular, productView,
-  rateLimit, recent, recordObservation, refreshCandidates, search, sweepRate,
+  rateLimit, recent, recordObservation, refreshCandidates, search, similarCheaper, sweepRate,
 } from './db.ts';
 import type { Ctx, D1Database, Env } from './env.ts';
 import { countReading, getReader, healthReport, type HealthSource } from './readers.ts';
@@ -363,6 +363,13 @@ async function api(request: Request, env: Env, ctx: Ctx, url: URL): Promise<Resp
   if (path === '/api/alerts' || path.startsWith('/api/alerts/')) return alerts(request, env, path, method);
   if (path === '/api/telegram/webhook' && method === 'POST') return handleTelegram(request, env);
 
+  if (path.startsWith('/api/products/') && path.endsWith('/similar') && method === 'GET') {
+    const key = decodeURIComponent(path.slice('/api/products/'.length, -'/similar'.length));
+    if (!parseKey(key)) return fail(400, 'bad_key', 'Not a product key.');
+    const row = await getProduct(env.DB, key);
+    if (!row) return fail(404, 'not_tracked', 'We are not tracking this product yet. Add it by its link.');
+    return json({ results: await similarCheaper(env.DB, row), basis: 'Cheaper tracked products with similar titles. Similar, not the same product.' });
+  }
   if (path.startsWith('/api/products/') && method === 'GET') {
     const key = decodeURIComponent(path.slice('/api/products/'.length));
     if (!parseKey(key)) return fail(400, 'bad_key', 'Not a product key.');
@@ -376,7 +383,14 @@ async function api(request: Request, env: Env, ctx: Ctx, url: URL): Promise<Resp
     const q = (url.searchParams.get('q') ?? '').slice(0, 200);
     return json({ q, results: await search(env.DB, q) });
   }
-  if (path === '/api/deals' && method === 'GET') return json({ results: await deals(env.DB) });
+  if (path === '/api/deals' && method === 'GET') {
+    const store = url.searchParams.get('store');
+    const min = url.searchParams.get('min');
+    if (store && !STORE_IDS.includes(store as never)) return fail(400, 'bad_store', 'Unknown store.');
+    const minPct = min == null ? undefined : Number(min) / 100;
+    if (minPct !== undefined && !(Number.isFinite(minPct) && minPct >= 0.05 && minPct <= 0.9)) return fail(400, 'bad_min', 'min is a percentage from 5 to 90.');
+    return json({ results: await deals(env.DB, { ...(store ? { store: store as StoreId } : {}), ...(minPct !== undefined ? { minPct } : {}) }), computedAt: Date.now() });
+  }
   if (path === '/api/recent' && method === 'GET') return json({ results: await recent(env.DB) });
   if (path === '/api/popular' && method === 'GET') return json({ results: await popular(env.DB) });
 

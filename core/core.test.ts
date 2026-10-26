@@ -183,6 +183,16 @@ test('sale: a real drop against the usual price', () => {
   assert.equal(s.mrpInflated, false, '60% claimed vs 20% real is exactly 3x: inflated only at >= 3x');
 });
 
+test('sale: the usual price is the 90-day median (BLUEPRINT §11), not the last month', () => {
+  // 60 days at ₹1,000, then ₹800 for the last 30 days. Against the last 30 days alone ₹800
+  // would look "usual"; against 90 days it is a real 20% drop.
+  const pts = [pt(0, 1000_00), pt(60, 800_00)];
+  const s = saleCheck(pts, T0 + 90 * DAY);
+  assert.equal(s.usualPrice, 1000_00);
+  assert.equal(s.status, 'real_drop');
+  assert.equal(s.realPct, 0.2);
+});
+
 test('sale: hiked then "dropped" back to the old price', () => {
   // 1000 for 50 days, raised to 1300 for 12 days, "sale" at 999.
   const pts = [pt(0, 1000_00, { mrp: 3000_00 }), pt(50, 1300_00, { mrp: 3000_00 }), pt(62, 999_00, { mrp: 3000_00 })];

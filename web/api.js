@@ -25,7 +25,13 @@ export const getProduct = (key) => call(`/api/products/${encodeURIComponent(key)
 export const searchProducts = (q) => call(`/api/search?q=${encodeURIComponent(q)}`);
 
 /** Real price drops only (judged against the product's usual price). -> { results: ProductCard[] } */
-export const getDeals = () => call('/api/deals');
+export const getDeals = (filter = {}) => {
+  const q = new URLSearchParams();
+  if (filter.store) q.set('store', filter.store);
+  if (filter.min) q.set('min', String(filter.min));
+  return call(`/api/deals${q.size ? `?${q}` : ''}`);
+};
+export const getSimilar = (key) => call(`/api/products/${encodeURIComponent(key)}/similar`);
 
 /** -> { results: ProductCard[] } */
 export const getRecent = () => call('/api/recent');

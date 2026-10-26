@@ -121,7 +121,7 @@ export interface SaleCheck {
   status: SaleStatus;
   /** Discount the store claims, vs its M.R.P. 0.77 = 77%. */
   claimedPct: number | null;
-  /** Discount vs the product's usual price (time-weighted median, 30 days, last 48 h excluded). */
+  /** Discount vs the product's usual price (time-weighted median, 90 days, last 48 h excluded). */
   realPct: number | null;
   usualPrice: Paise | null;
   /** The store's claimed discount is at least 3x the real one, and at least 30%. */
@@ -180,6 +180,8 @@ export interface ProductCard {
   realPct: number | null;
   saleStatus: SaleStatus | null;
   lastCheckedAt: Millis | null;
+  /** Deals only: the last 90 days of recorded prices, oldest first, for a sparkline. */
+  spark?: { at: Millis; price: Paise | null }[];
 }
 
 /** Every API error has this body. `code` is stable; `message` is for people. */

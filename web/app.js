@@ -2,7 +2,7 @@
 // store (titles, image URLs) goes in via textContent / setAttribute — never innerHTML.
 import {
   ago, connectTelegram, date, deletePush, disconnectTelegram, getConfig, getDeals, getMe, getPopular, getProduct, getRecent, getStores,
-  pct, removeAlert, rupees, savePush, searchProducts, sendTest, setAlert, toPaise, trackProduct, getGroceryPlatforms,
+  pct, removeAlert, rupees, savePush, searchProducts, sendTest, setAlert, toPaise, trackProduct, getGroceryPlatforms, getSimilar,
 } from './api.js';
 import { drawChart } from './chart.js';
 
@@ -155,8 +155,14 @@ async function productPage(key) {
         stat('Lowest', s.lowest ? `${rupees(s.lowest.price)}` : '—', s.lowest ? date(s.lowest.at) : ''),
         stat('Highest', s.highest ? `${rupees(s.highest.price)}` : '—', s.highest ? date(s.highest.at) : ''),
         stat('Usual (median)', rupees(s.median), 'time-weighted'),
-        stat('Price changes', String(s.changes), `${Math.floor(s.daysTracked)} days watched`))));
+        stat('Price changes', String(s.changes), `${Math.floor(s.daysTracked)} days watched`)),
+      h('section', { id: 'similar' })));
   drawChart(chartHost, view, range);
+  // Look-alikes (BLUEPRINT §10.3): shown only when there are some, and labelled for what they are.
+  getSimilar(key).then(({ results, basis }) => {
+    if (!results.length) return;
+    document.getElementById('similar')?.replaceChildren(h('h2', {}, 'Similar, and cheaper'), h('p', { class: 'muted small' }, basis), grid(results, ''));
+  }).catch(() => {});
   if (location.hash === '#alert') document.getElementById('alert')?.scrollIntoView();
 }
 
@@ -187,13 +193,48 @@ async function searchPage(q) {
   }
 }
 
+/** A tiny step line of a deal's last 90 days, so the drop can be checked by eye. */
+function sparkline(points) {
+  const priced = (points ?? []).filter((p) => p.price != null);
+  if (priced.length < 2) return null;
+  const NS = 'http://www.w3.org/2000/svg';
+  const t0 = priced[0].at, t1 = priced[priced.length - 1].at;
+  const lo = Math.min(...priced.map((p) => p.price)), hi = Math.max(...priced.map((p) => p.price));
+  const x = (t) => (t1 === t0 ? 0 : ((t - t0) / (t1 - t0)) * 100);
+  const y = (p) => (hi === lo ? 12 : 22 - ((p - lo) / (hi - lo)) * 20);
+  let d = '';
+  priced.forEach((p, i) => { d += i === 0 ? `M${x(p.at)},${y(p.price)}` : `H${x(p.at)}V${y(p.price)}`; });
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 100 24');
+  svg.setAttribute('class', 'spark');
+  svg.setAttribute('aria-hidden', 'true');
+  const path = document.createElementNS(NS, 'path');
+  path.setAttribute('d', d);
+  svg.append(path);
+  return svg;
+}
+
 async function dealsPage() {
+  const params = new URLSearchParams(location.search);
+  const filter = { store: params.get('store') ?? '', min: Number(params.get('min')) || 0 };
   app.replaceChildren(h('h1', {}, 'Real price drops'), h('p', { class: 'muted' }, 'Loading…'));
-  const [d, p] = await Promise.all([getDeals(), getPopular()]);
+  const [{ stores }, d, p] = await Promise.all([getStores(), getDeals(filter), getPopular()]);
+  const apply = (next) => go(`/deals?${new URLSearchParams(Object.entries({ ...filter, ...next }).filter(([, v]) => v)).toString()}`);
+  const storeSelect = h('select', { 'aria-label': 'Store', onchange: (e) => apply({ store: e.target.value }) },
+    h('option', { value: '' }, 'All stores'), stores.map((s) => h('option', { value: s.id, selected: s.id === filter.store }, s.name)));
+  const minSelect = h('select', { 'aria-label': 'Smallest real drop', onchange: (e) => apply({ min: Number(e.target.value) }) },
+    [0, 10, 20, 30, 50].map((m) => h('option', { value: m, selected: m === filter.min }, m ? `${m}% or more below usual` : 'Any real drop (5%+)')));
+  const cards = d.results.map((c) => {
+    const card = productCard(c);
+    const spark = sparkline(c.spark);
+    if (spark) card.querySelector('.card-body')?.append(spark);
+    return card;
+  });
   app.replaceChildren(
     h('h1', {}, 'Real price drops'),
-    h('p', { class: 'muted' }, 'Only products at least 5% below their own usual price (30-day time-weighted median), and not raised just before the “sale”.'),
-    grid(d.results, 'No confirmed drops yet.'),
+    h('p', { class: 'muted' }, 'Only products at least 5% below their own usual price (90-day time-weighted median, M.R.P. ignored), and not raised just before the “sale”. The line under each shows its last 90 days.'),
+    h('div', { class: 'filters' }, storeSelect, minSelect),
+    cards.length ? h('div', { class: 'grid' }, cards) : h('p', { class: 'muted' }, 'No confirmed drops for this filter yet. A drop is only confirmed after a week of watching a product.'),
     h('h2', {}, 'Most viewed'), grid(p.results, 'Nothing yet.'));
 }
 

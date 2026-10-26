@@ -332,6 +332,26 @@ try {
     const fkRow = d1(`SELECT last_attempt_at FROM products WHERE key LIKE 'flipkart:%'`)[0];
     check('cron never fetches a store that refused us', fkRow.last_attempt_at == null, JSON.stringify(fkRow));
 
+    // ---- deals filters and look-alikes, on MADE-UP rows in this throwaway local D1 only
+    const now = Date.now();
+    d1(`INSERT INTO products (key, store, pid, url, title, created_at, last_checked_at, price, in_stock, real_pct, sale_status) VALUES
+      ('myntra:3100001', 'myntra', '3100001', 'https://www.myntra.com/3100001', 'HRX Men Yellow Printed Cotton T-shirt', ${now}, ${now}, 30000, 1, 0.25, 'real_drop'),
+      ('myntra:3100002', 'myntra', '3100002', 'https://www.myntra.com/3100002', 'HRX Men Blue Printed Cotton T-shirt', ${now}, ${now}, 25000, 1, 0.08, 'real_drop'),
+      ('myntra:3100003', 'myntra', '3100003', 'https://www.myntra.com/3100003', 'Roadster Women Printed Floral Dress', ${now}, ${now}, 10000, 1, null, 'no_real_drop'),
+      ('nykaa:3100004', 'nykaa', '3100004', 'https://www.nykaa.com/x/p/3100004', 'Lakme Kajal', ${now}, ${now}, 20000, 1, 0.4, 'real_drop')`);
+    d1(`INSERT INTO prices (key, at, price, mrp, in_stock, source) VALUES ('myntra:3100001', ${now - 50 * 86_400_000}, 40000, null, 1, 'server'), ('myntra:3100001', ${now - 86_400_000}, 30000, null, 1, 'server'), ('myntra:3100001', ${now - 200 * 86_400_000}, 99900, null, 1, 'server')`);
+    const dAll = await j('/api/deals');
+    check('deals: biggest real drop first, M.R.P. plays no part', dAll.body?.results?.map((r) => r.key).join() === 'nykaa:3100004,myntra:3100001,myntra:3100002', dAll.text.slice(0, 200));
+    const dFil = await j('/api/deals?store=myntra&min=20');
+    check('deals: filtered by store and by the smallest real drop', dFil.body?.results?.map((r) => r.key).join() === 'myntra:3100001', dFil.text.slice(0, 200));
+    check('…each deal carries its last 90 days for a sparkline (older points left out)', dFil.body?.results?.[0]?.spark?.map((p) => p.price).join() === '40000,30000', JSON.stringify(dFil.body?.results?.[0]?.spark));
+    check('deals: a bad filter is a 400', (await j('/api/deals?min=2')).body?.error?.code === 'bad_min' && (await j('/api/deals?store=ebay')).body?.error?.code === 'bad_store');
+    const sim = await j(`/api/products/${encodeURIComponent('myntra:3100001')}/similar`);
+    const simKeys = sim.body?.results?.map((r) => r.key) ?? [];
+    check('look-alikes: cheaper, in stock, sharing title words; not itself, not unrelated items', sim.status === 200 && simKeys.includes('myntra:3100002') && !simKeys.includes('myntra:3100001') && !simKeys.includes('myntra:3100003')
+      && sim.body.results.every((r) => r.price < 30000 && r.inStock) && /not the same product/.test(sim.body?.basis ?? ''), sim.text.slice(0, 200));
+    check('look-alikes of an untracked product: 404', (await j(`/api/products/${encodeURIComponent('myntra:3199999')}/similar`)).status === 404);
+
     // ---- rate limit on adding new products (Myntra ids: no fetch is made for them)
     let lastStatus = 0;
     let allowed = 6; // amazon + vijaysales + reliancedigital + nykaa + shopclues + flipkart above (the Myntra report came from another network: its own limit)

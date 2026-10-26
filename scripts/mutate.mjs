@@ -125,6 +125,21 @@ export const MUTANTS = [
     run: UNIT2, expect: [/an open-ended event is a start marker/],
   },
   {
+    name: 'usual price from the last 30 days instead of 90',
+    file: 'core/judge.ts', find: '  window: 90 * DAY,', replace: '  window: 30 * DAY,',
+    run: ['node', ['--test', 'core/core.test.ts']], expect: [/the usual price is the 90-day median/],
+  },
+  {
+    name: 'prove: look-alikes need only one shared word',
+    file: 'api/db.ts', find: "    .filter((r) => titleWords(r.title ?? '').filter((w) => set.has(w)).length >= 2)", replace: "    .filter((r) => titleWords(r.title ?? '').filter((w) => set.has(w)).length >= 0)",
+    run: PROVE, expect: [/look-alikes: cheaper, in stock, sharing title words/],
+  },
+  {
+    name: 'prove: deals ignore the store filter',
+    file: 'api/db.ts', find: "  if (f.store) { where.push('store = ?'); args.push(f.store); }\n", replace: '',
+    run: PROVE, expect: [/deals: filtered by store/, /each deal carries its last 90 days/],
+  },
+  {
     name: 'grocery compares prices from different delivery addresses',
     file: 'core/grocery.ts', find: "    if (q.address !== address) { leftOut.push({ platform: q.platform, reason: 'priced for another delivery address' }); continue; }\n", replace: '',
     run: GROCERY, expect: [/one item: same address only/],

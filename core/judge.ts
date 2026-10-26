@@ -13,7 +13,7 @@ export const VERDICT = {
 } as const;
 
 export const SALE = {
-  window: 30 * DAY,      // "usual price" = time-weighted median over the last 30 days ...
+  window: 90 * DAY,      // "usual price" = time-weighted median over the last 90 days (BLUEPRINT §11) ...
   exclude: 2 * DAY,      // ... leaving out the last 48 h, so a fresh sale is not its own baseline
   minPriced: 7 * DAY,    // fewer priced days in that window -> 'too_early', not 'clean'
   realDrop: 0.05,        // 5%+ under the usual price is a real drop
