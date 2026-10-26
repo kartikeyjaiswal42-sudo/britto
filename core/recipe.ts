@@ -360,3 +360,25 @@ export function readApiRows(recipe: ApiRecipe, json: unknown, vars: Record<strin
   }
   return [];
 }
+
+// ------------------------------------------------------------------ served configs
+
+/** GET /api/config/reader answers the config itself plus these three keys. */
+export interface ServedConfig extends ReaderConfig {
+  version: string;
+  storeNumber: number;
+  features: { deviceFallback: boolean };
+}
+
+/**
+ * A client's check of what the server sent: the config must validate AND hash to the version
+ * it is served under (a truncated or edited body is refused, never half-used).
+ */
+export function configFromServed(body: unknown): { ok: true; config: ReaderConfig; version: string; deviceFallback: boolean } | { ok: false; errors: string[] } {
+  if (!isObj(body) || typeof body['version'] !== 'string') return { ok: false, errors: ['not a served reader config'] };
+  const { version, storeNumber: _n, features, ...rest } = body;
+  const v = validateReader(rest);
+  if (!v.ok) return v;
+  if (configVersion(v.config) !== version) return { ok: false, errors: [`content does not match version ${String(version)}`] };
+  return { ok: true, config: v.config, version: version as string, deviceFallback: isObj(features) && features['deviceFallback'] === true };
+}

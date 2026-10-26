@@ -1,4 +1,5 @@
-import { enough, extract } from '../core/extract.ts';
+import { readerEnough, readPage } from '../core/interpret.ts';
+import type { ReaderConfig } from '../core/recipe.ts';
 import { STORES, parseProductLink, type ParsedLink } from '../core/stores.ts';
 import type { Extracted, StoreId } from '../core/types.ts';
 
@@ -16,7 +17,8 @@ export type FetchOutcome =
   | { ok: true; extracted: Extracted; httpStatus: number }
   | { ok: false; code: 'http_error' | 'timeout' | 'network' | 'too_large'; httpStatus: number | null; detail: string };
 
-export async function fetchProduct(store: StoreId, url: string, siteUrl: string | undefined): Promise<FetchOutcome> {
+/** Fetch a product page and read it with `reader` (the config getReader chose). */
+export async function fetchProduct(reader: ReaderConfig, url: string, siteUrl: string | undefined): Promise<FetchOutcome> {
   let res: Response;
   try {
     res = await fetch(url, {
@@ -34,17 +36,17 @@ export async function fetchProduct(store: StoreId, url: string, siteUrl: string 
     await res.body?.cancel();
     return { ok: false, code: 'http_error', httpStatus: res.status, detail: `HTTP ${res.status}` };
   }
-  const html = await readUntilEnough(res, store);
+  const html = await readUntilEnough(res, reader);
   if (html.length > MAX_BYTES) return { ok: false, code: 'too_large', httpStatus: 200, detail: `${html.length} chars` };
-  return { ok: true, extracted: extract(store, html), httpStatus: 200 };
+  return { ok: true, extracted: readPage(reader, html, url), httpStatus: 200 };
 }
 
 /**
- * Stream the page and stop as soon as `enough()` says the answer cannot change, then
+ * Stream the page and stop as soon as readerEnough() says the answer cannot change, then
  * cancel the rest of the download. Decoding a whole ~1 MB Amazon page measured 9 ms of
  * CPU on Cloudflare against a 10 ms free-plan limit; the parts we read sit in its first ~40%.
  */
-async function readUntilEnough(res: Response, store: StoreId): Promise<string> {
+async function readUntilEnough(res: Response, config: ReaderConfig): Promise<string> {
   if (!res.body) return '';
   const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
   const parts: string[] = [];
@@ -58,14 +60,14 @@ async function readUntilEnough(res: Response, store: StoreId): Promise<string> {
       size += value.length;
       sinceCheck += value.length;
       if (size > MAX_BYTES) break;
-      // Check every ~32 KB, not every chunk: enough() rescans the text so far.
+      // Check every ~32 KB, not every chunk: readerEnough() rescans the text so far.
       // Nothing we read is in the first 64 KB on any fixture (the earliest is ~13% of ~1 MB).
       if (size >= 65_536 && sinceCheck >= 32_768) {
         sinceCheck = 0;
         const text = parts.join('');
         parts.length = 0;
         parts.push(text);
-        if (enough(store, text)) break;
+        if (readerEnough(config, text)) break;
       }
     }
   } finally {

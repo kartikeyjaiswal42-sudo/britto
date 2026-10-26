@@ -34,6 +34,8 @@ export interface Env {
   VAPID_PRIVATE_JWK?: string;
   /** Tests only: an extra origin a push subscription may point at (a fake push service). */
   PUSH_TEST_ORIGIN?: string;
+  /** Tests only: how long (ms) an isolate keeps a reader config; default 60 000 (api/readers.ts). */
+  READER_MEMO_MS?: string;
 }
 
 export interface Ctx {

@@ -6,6 +6,10 @@ import { evaluateAlerts } from './alerts.ts';
 import { getProduct, insertProduct, rateLimit, recordFailure, recordObservation, type ProductRow } from './db.ts';
 import type { Ctx, Env } from './env.ts';
 import { fetchProduct, resolveShortLink } from './fetcher.ts';
+import { countReading, getReader } from './readers.ts';
+
+/** reader_version recorded for the Worker's own readings. */
+export const WORKER_READER = 'worker';
 
 /** New products one client (a network, or a Telegram chat) may add per hour. */
 export const ADDS_PER_HOUR = 30;
@@ -17,13 +21,19 @@ export const ADDS_PER_HOUR = 30;
  */
 export async function refresh(env: Env, row: Pick<ProductRow, 'key' | 'store' | 'url'> & { watchers?: number }, now: number): Promise<string> {
   if (STORES[row.store].serverFetch !== 'yes') return 'not_server_readable';
-  const out = await fetchProduct(row.store, row.url, env.SITE_URL);
+  const reader = await getReader(env, row.store, 'desktop', now);
+  if (!reader) return 'no_reader';
+  const health = (outcome: string) => countReading(env.DB, { store: row.store, source: 'server', configVersion: reader.version, readerVersion: WORKER_READER, outcome }, now);
+  const out = await fetchProduct(reader.config, row.url, env.SITE_URL);
   if (!out.ok) {
-    await recordFailure(env.DB, row.key, out.httpStatus ? `${out.code}_${out.httpStatus}` : out.code, now);
+    const status = out.httpStatus ? `${out.code}_${out.httpStatus}` : out.code;
+    await recordFailure(env.DB, row.key, status, now);
+    await health(status);
     return out.code;
   }
   // A redirect can land on another item: only a page that names THIS product counts.
-  const ex = confirmIdentity(row.store, parseKey(row.key)?.pid ?? '', out.extracted);
+  const ex = confirmIdentity(row.store, parseKey(row.key)?.pid ?? '', out.extracted, reader.config.reportsPid);
+  await health(ex.status);
   if (ex.status === 'priced' || ex.status === 'unavailable') {
     await recordObservation(env.DB, row.key, ex, 'server', now);
     if ((row.watchers ?? 0) > 0) await evaluateAlerts(env, row.key, now);

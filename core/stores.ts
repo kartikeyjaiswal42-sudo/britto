@@ -5,6 +5,7 @@ import type { ProductKey, Store, StoreId } from './types.ts';
 export const STORES: Record<StoreId, Store> = {
   amazon: {
     id: 'amazon',
+    num: 1,
     name: 'Amazon.in',
     hosts: ['amazon.in', 'www.amazon.in', 'm.amazon.in'],
     shortHosts: ['amzn.in', 'amzn.to'],
@@ -14,6 +15,7 @@ export const STORES: Record<StoreId, Store> = {
   },
   flipkart: {
     id: 'flipkart',
+    num: 2,
     name: 'Flipkart',
     hosts: ['flipkart.com', 'www.flipkart.com', 'dl.flipkart.com'],
     shortHosts: [],
@@ -23,6 +25,7 @@ export const STORES: Record<StoreId, Store> = {
   },
   myntra: {
     id: 'myntra',
+    num: 3,
     name: 'Myntra',
     hosts: ['myntra.com', 'www.myntra.com'],
     shortHosts: [],
@@ -33,6 +36,13 @@ export const STORES: Record<StoreId, Store> = {
 };
 
 export const STORE_IDS = Object.keys(STORES) as StoreId[];
+
+/** A store named by its id ("amazon") or its number ("1"); null when there is no such store. */
+export function storeFromParam(param: string | null | undefined): StoreId | null {
+  if (!param) return null;
+  if (/^\d{1,6}$/.test(param)) return STORE_IDS.find((id) => STORES[id].num === Number(param)) ?? null;
+  return Object.hasOwn(STORES, param) ? (param as StoreId) : null;
+}
 
 export interface ParsedLink {
   store: StoreId;

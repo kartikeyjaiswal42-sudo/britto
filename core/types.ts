@@ -23,6 +23,8 @@ export type ServerFetch = 'yes' | 'refused' | 'no_answer' | 'untested';
 
 export interface Store {
   id: StoreId;
+  /** Stable number, never reused (BLUEPRINT §4.1); clients may name a store by it. */
+  num: number;
   name: string;
   /** Hostnames we accept product links from (exact match, lower-case). */
   hosts: readonly string[];

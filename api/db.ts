@@ -4,6 +4,7 @@ import { STORES, type ParsedLink } from '../core/stores.ts';
 import { TRUST, type HeldReport, type Observed } from '../core/trust.ts';
 import type { Extracted, Millis, PricePoint, ProductCard, ProductKey, ProductView, SaleStatus, StoreId } from '../core/types.ts';
 import type { D1Database } from './env.ts';
+import { HEALTH } from './readers.ts';
 
 export interface ProductRow {
   key: string;
@@ -247,5 +248,6 @@ export async function sweepRate(db: D1Database, now: Millis): Promise<void> {
   await db.batch([
     db.prepare('DELETE FROM rate WHERE expires < ?').bind(now),
     db.prepare('DELETE FROM reports WHERE at < ?').bind(now - TRUST.confirmWindow),
+    db.prepare('DELETE FROM reader_health WHERE hour < ?').bind(now - HEALTH.keep),
   ]);
 }

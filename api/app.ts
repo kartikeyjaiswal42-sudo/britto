@@ -1,7 +1,8 @@
 import { ALERTS, parseRule, readingMovesAlerts } from '../core/alerts.ts';
 import { pickDue } from '../core/schedule.ts';
-import { STORES, STORE_IDS, parseKey, parseProductLink } from '../core/stores.ts';
+import { STORES, STORE_IDS, parseKey, parseProductLink, storeFromParam } from '../core/stores.ts';
 import { cleanObserved, judgeObservation } from '../core/trust.ts';
+import type { ServedConfig } from '../core/recipe.ts';
 import type { ApiError, AppConfig, Extracted, ProductKey } from '../core/types.ts';
 import {
   createDeviceOwner, createLinkCode, deleteAlert, evaluateAlerts, LINK_CODE_MS, meView, ownerByToken, setAlert, unlinkChat,
@@ -13,6 +14,7 @@ import {
   rateLimit, recent, recordObservation, refreshCandidates, search, sweepRate,
 } from './db.ts';
 import type { Ctx, D1Database, Env } from './env.ts';
+import { countReading, getReader, healthReport, type HealthSource } from './readers.ts';
 import { ADDS_PER_HOUR, addProduct, background, refresh, resolveLink } from './refresh.ts';
 import { handleTelegram } from './telegram.ts';
 import { allowedEndpoint, parseSubscription } from './webpush.ts';
@@ -27,6 +29,10 @@ export const DEVICES_PER_HOUR = 60;
 /** Alerts one owner may create per hour, and test messages one owner may ask for. */
 export const ALERT_WRITES_PER_HOUR = 120;
 export const TESTS_PER_HOUR = 5;
+/** Reader telemetry one network may send per hour ("could not read this page" reports). */
+export const TELEMETRY_PER_HOUR = 600;
+/** Clients may keep a served reader config this long before asking again (BLUEPRINT §6.3). */
+export const READER_CACHE_SECONDS = 600;
 
 const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' };
 
@@ -69,7 +75,7 @@ async function track(request: Request, env: Env): Promise<Response> {
  * shape-checked (cleanObserved), rate-limited per network, then judged by core/trust.ts.
  */
 async function observe(request: Request, env: Env, ctx: Ctx): Promise<Response> {
-  let body: { url?: unknown; observed?: unknown };
+  let body: { url?: unknown; observed?: unknown; configVersion?: unknown; readerVersion?: unknown; client?: unknown };
   try {
     body = (await request.json()) as typeof body;
   } catch {
@@ -81,12 +87,16 @@ async function observe(request: Request, env: Env, ctx: Ctx): Promise<Response> 
   const link = parsed.link;
   const clean = cleanObserved(body.observed);
   if (!clean.ok) return fail(422, 'bad_observation', clean.reason);
+  const versions = readerVersions(body);
+  if (!versions.ok) return fail(422, 'bad_observation', versions.reason);
 
   const now = Date.now();
   const reporter = await clientId(request);
   if (!(await rateLimit(env.DB, `observe:${reporter}`, OBSERVATIONS_PER_HOUR, 3_600_000, now))) {
     return fail(429, 'rate_limited', `At most ${OBSERVATIONS_PER_HOUR} price reports an hour from one network.`);
   }
+  // Which config read it (BLUEPRINT §5 rule 5): a bad config deploy shows up in reader health.
+  await countReading(env.DB, { store: link.store, source: versions.client, configVersion: versions.configVersion, readerVersion: versions.readerVersion, outcome: clean.obs.inStock ? 'priced' : 'unavailable' }, now);
   let row = await getProduct(env.DB, link.key);
   if (!row) {
     if (!(await rateLimit(env.DB, `add:${reporter}`, ADDS_PER_HOUR, 3_600_000, now))) {
@@ -119,6 +129,70 @@ async function observe(request: Request, env: Env, ctx: Ctx): Promise<Response> 
   }
   const fresh = await getProduct(env.DB, link.key);
   return json({ recorded: decision.action, reason: decision.reason, product: await productView(env.DB, fresh ?? row) });
+}
+
+const VERSION_TEXT = /^[\w.-]{1,80}$/;
+
+/** The optional reader/config versions a client sends with a reading or a telemetry report. */
+function readerVersions(body: { configVersion?: unknown; readerVersion?: unknown; client?: unknown }):
+  { ok: true; configVersion: string; readerVersion: string; client: HealthSource } | { ok: false; reason: string } {
+  for (const k of ['configVersion', 'readerVersion'] as const) {
+    const v = body[k];
+    if (v !== undefined && !(typeof v === 'string' && VERSION_TEXT.test(v))) return { ok: false, reason: `${k} must be 1-80 letters, digits, dots, dashes or underscores` };
+  }
+  if (body.client !== undefined && body.client !== 'extension' && body.client !== 'app') return { ok: false, reason: 'client must be "extension" or "app"' };
+  return {
+    ok: true,
+    configVersion: (body.configVersion as string | undefined) ?? 'unknown',
+    readerVersion: (body.readerVersion as string | undefined) ?? 'unknown',
+    client: (body.client as HealthSource | undefined) ?? 'extension',
+  };
+}
+
+/**
+ * GET /api/config/reader?store=<id|number>&device=desktop|mobile — the reader config clients
+ * run (BLUEPRINT §6.3). ETag is the content-derived version, so a client revalidates cheaply
+ * and a hot-fix changes it without anyone bumping a number.
+ */
+async function readerConfig(request: Request, env: Env, url: URL): Promise<Response> {
+  const store = storeFromParam(url.searchParams.get('store'));
+  if (!store) return fail(404, 'no_reader', 'No reader for that store.');
+  const device = url.searchParams.get('device') ?? 'desktop';
+  if (device !== 'desktop' && device !== 'mobile') return fail(400, 'bad_device', 'device must be desktop or mobile.');
+  let reader = await getReader(env, store, device);
+  let deviceFallback = false;
+  if (!reader && device === 'mobile') {
+    reader = await getReader(env, store, 'desktop');
+    deviceFallback = true;
+  }
+  if (!reader) return fail(404, 'no_reader', 'No reader for that store.');
+  const etag = `"${reader.version}"`;
+  const headers = { 'content-type': 'application/json; charset=utf-8', 'cache-control': `public, max-age=${READER_CACHE_SECONDS}`, etag };
+  const asked = (request.headers.get('if-none-match') ?? '').split(',').map((t) => t.trim().replace(/^W\//, ''));
+  if (asked.includes(etag) || asked.includes('*')) return new Response(null, { status: 304, headers });
+  const body: ServedConfig = { ...reader.config, version: reader.version, storeNumber: STORES[store].num, features: { deviceFallback } };
+  return new Response(JSON.stringify(body), { status: 200, headers });
+}
+
+/**
+ * POST /api/telemetry: a client could not read a page (BLUEPRINT §20). Counts only: the store,
+ * what happened, and which config and client version; never the page or who sent it.
+ */
+async function telemetry(request: Request, env: Env): Promise<Response> {
+  const body = await readJson<{ feature?: unknown; store?: unknown; outcome?: unknown; configVersion?: unknown; readerVersion?: unknown; client?: unknown }>(request);
+  if (!body) return fail(400, 'bad_json', 'Send JSON: {"feature": "read", "store": …, "outcome": …}.');
+  if (body.feature !== 'read') return fail(422, 'bad_telemetry', 'feature must be "read".');
+  const store = typeof body.store === 'string' || typeof body.store === 'number' ? storeFromParam(String(body.store)) : null;
+  if (!store) return fail(422, 'bad_telemetry', 'Unknown store.');
+  if (body.outcome !== 'blocked' && body.outcome !== 'unrecognised') return fail(422, 'bad_telemetry', 'outcome must be "blocked" or "unrecognised".');
+  const versions = readerVersions(body);
+  if (!versions.ok) return fail(422, 'bad_telemetry', versions.reason);
+  const now = Date.now();
+  if (!(await rateLimit(env.DB, `telemetry:${await clientId(request)}`, TELEMETRY_PER_HOUR, 3_600_000, now))) {
+    return fail(429, 'rate_limited', `At most ${TELEMETRY_PER_HOUR} reports an hour from one network.`);
+  }
+  await countReading(env.DB, { store, source: versions.client, configVersion: versions.configVersion, readerVersion: versions.readerVersion, outcome: body.outcome }, now);
+  return json({ ok: true }, 202);
 }
 
 /** The browser's owner, from `Authorization: Bearer <device token>`. */
@@ -227,6 +301,9 @@ async function api(request: Request, env: Env, ctx: Ctx, url: URL): Promise<Resp
   if (path === '/api/products' && method === 'POST') return track(request, env);
   if (path === '/api/observations' && method === 'POST') return observe(request, env, ctx);
   if (path === '/api/config' && method === 'GET') return config(env);
+  if (path === '/api/config/reader' && method === 'GET') return readerConfig(request, env, url);
+  if (path === '/api/telemetry' && method === 'POST') return telemetry(request, env);
+  if (path === '/api/health/readers' && method === 'GET') return json(await healthReport(env.DB, STORE_IDS, Date.now()));
   if (path === '/api/me' || path.startsWith('/api/me/')) return me(request, env, path, method);
   if (path === '/api/alerts' || path.startsWith('/api/alerts/')) return alerts(request, env, path, method);
   if (path === '/api/telegram/webhook' && method === 'POST') return handleTelegram(request, env);
@@ -308,6 +385,11 @@ export async function runSchedule(db: D1Database, env: Env): Promise<{ checked: 
   for (const row of due) checked.push({ key: row.key, result: await refresh(env, row, Date.now()) });
   await sweepRate(db, now);
   if (checked.length) console.log('schedule', JSON.stringify(checked));
+  // Once an hour (the first run after the hour turns): say when a store's reader looks broken.
+  if (now % 3_600_000 < 5 * 60_000) {
+    const { warnings } = await healthReport(db, STORE_IDS, now);
+    for (const w of warnings) console.warn('reader health', w.code, w.message);
+  }
   return { checked };
 }
 

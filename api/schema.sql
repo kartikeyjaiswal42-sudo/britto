@@ -123,3 +123,37 @@ CREATE TABLE IF NOT EXISTS meta (
   k TEXT PRIMARY KEY,
   v TEXT NOT NULL
 );
+
+-- ---- Readers as data (P3, BLUEPRINT §6.3 / §20).
+-- A D1 HOT-FIX for a store's reader: the newest row for a store and device that passes
+-- validateReader replaces the bundled readers/<store>.<device>.json, with no deploy and no
+-- client release. Written only by scripts/publish-reader.mjs after a fixture dry-run.
+CREATE TABLE IF NOT EXISTS reader_configs (
+  store      TEXT NOT NULL,
+  device     TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  json       TEXT NOT NULL,
+  PRIMARY KEY (store, device, created_at)
+) WITHOUT ROWID;
+
+-- Every reader version the Worker has served or used, and when it first did: a store that
+-- breaks can be lined up against the config change that came just before.
+CREATE TABLE IF NOT EXISTS config_log (
+  version       TEXT PRIMARY KEY,           -- '<store>.<device>.r<revision>.<content hash>'
+  store         TEXT NOT NULL,
+  device        TEXT NOT NULL,
+  origin        TEXT NOT NULL,              -- 'bundled' | 'd1'
+  first_seen_at INTEGER NOT NULL
+);
+
+-- Reader health: how readings turned out, counted per hour. No page content, no client id.
+CREATE TABLE IF NOT EXISTS reader_health (
+  hour           INTEGER NOT NULL,          -- start of the hour, ms
+  store          TEXT NOT NULL,
+  source         TEXT NOT NULL,             -- 'server' | 'extension' | 'app'
+  config_version TEXT NOT NULL,
+  reader_version TEXT NOT NULL,             -- 'worker', or the client's version
+  outcome        TEXT NOT NULL,             -- priced | unavailable | blocked | unrecognised | a fetch error
+  n              INTEGER NOT NULL,
+  PRIMARY KEY (hour, store, source, config_version, reader_version, outcome)
+) WITHOUT ROWID;
