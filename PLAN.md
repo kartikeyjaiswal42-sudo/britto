@@ -8,8 +8,10 @@
 > only as history. Start prompt for any session (local or cloud):
 > `Read PLAN.md "Start here", HISTORY.md and BLUEPRINT.md. Build only the next phase, keep every gate green.`
 >
-> **P3 is DONE** (2026-10-27, HISTORY.md "P3"): readers are JSON configs served by the
-> Worker, one interpreter in every client, config CI, reader health, D1 hot-fixes. **Next:
+> **P3 is DONE on branch `p3-reader-configs`, NOT yet merged/deployed** (2026-10-27,
+> HISTORY.md "P3"; the cloud session may not push to `main`: the owner merges). Readers are
+> JSON configs served by the Worker, one interpreter in every client, config CI, reader
+> health, D1 hot-fixes. Later phases branch from it. **Next:
 > P4 (Android app)**, then P6 (P5 waits for the owner's Claude Design export). Owner-only
 > steps are listed at the top of HISTORY.md under "Waiting for the owner".
 

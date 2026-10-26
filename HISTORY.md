@@ -8,6 +8,15 @@ the old name and addresses as they were at the time.
 Things only the owner can do, in plain English with the exact steps. Each later session adds
 to this list and removes what is done.
 
+0. **Put P3 live (merge it into `main`)** — this cloud session was not allowed to push to
+   `main` (the merge deploys to production, and the session's permission guard stops a
+   production deploy without you). Every gate is green on branch `p3-reader-configs`
+   (HISTORY "P3"). To do it: on github.com open the `britto` repository → **Pull requests**
+   → **New pull request** → base `main`, compare `p3-reader-configs` → **Create pull request**
+   → **Merge**. GitHub Actions then updates the database, deploys the Worker and runs the live
+   check by itself (about 1 minute; the Actions tab shows a green tick). Later phases are on
+   their own branches built on top of P3 (`p4-android`, …); merge them in order the same way.
+   Or tell the next session "you may merge to main".
 1. **Reload the Britto extension** (once P3 is on `main`): open `chrome://extensions` (or
    `brave://extensions`), find Britto, press the round reload arrow. Then open any Amazon.in
    product: the panel should appear as before. The version under the popup's "Open Britto"
@@ -447,6 +456,9 @@ the image → the 3 parity checks with an image.
 
 ### NOT verified / not done
 
+- **Not merged, not deployed.** The push to `main` was refused by the session's permission
+  guard ("Production Deploy"); not worked around. Production still runs the S3 code. Waiting
+  for the owner (top of this file). The branch is `p3-reader-configs` (`560f9cf`).
 - **Anything that needs Amazon to answer this network**: the 6 prove SKIPs and the alerts
   Amazon section. They run green where Amazon answers (S3 on the Mac; the live check after a
   deploy reads through the production Worker).
