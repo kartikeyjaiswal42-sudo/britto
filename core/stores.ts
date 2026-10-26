@@ -47,6 +47,17 @@ export const STORES: Record<StoreId, Store> = {
     measured:
       '2026-10-26: two product pages fetched with an honest bot User-Agent (from a cloud computer in the USA, not yet from Cloudflare) returned the price box: ₹9,229 (M.R.P. ₹11,900, the store says out of stock) and ₹4,999 (M.R.P. ₹15,999, in stock).',
   },
+  reliancedigital: {
+    id: 'reliancedigital',
+    num: 5,
+    name: 'Reliance Digital',
+    hosts: ['reliancedigital.in', 'www.reliancedigital.in'],
+    shortHosts: [],
+    home: 'https://www.reliancedigital.in/',
+    serverFetch: 'yes',
+    measured:
+      '2026-10-26: 14 product pages fetched with an honest bot User-Agent (from a cloud computer in the USA, not yet from Cloudflare) all returned the price box, e.g. ₹999 (M.R.P. ₹2,999). Its search-engine data says "in stock" even for items it will not sell; Britto reads the page\'s own "sellable" flag instead.',
+  },
 };
 
 export const STORE_IDS = Object.keys(STORES) as StoreId[];
@@ -106,6 +117,7 @@ export function parseProductLink(input: string): LinkResult {
   if (hit.store === 'amazon') return amazon(u);
   if (hit.store === 'flipkart') return flipkart(u);
   if (hit.store === 'vijaysales') return vijaysales(u);
+  if (hit.store === 'reliancedigital') return reliancedigital(u);
   return myntra(u);
 }
 
@@ -150,6 +162,14 @@ function vijaysales(u: URL): LinkResult {
   return ok('vijaysales', m[1]!, `https://www.vijaysales.com/p/${m[1]}/${m[2]!.toLowerCase()}`);
 }
 
+function reliancedigital(u: URL): LinkResult {
+  // /product/<name-with-codes>: the store's own handle for the product (its canonical link).
+  const m = /^\/product\/([a-z0-9][a-z0-9-]{2,299})\/?$/i.exec(u.pathname);
+  if (!m) return { ok: false, reason: 'not_a_product' };
+  const slug = m[1]!.toLowerCase();
+  return ok('reliancedigital', slug, `https://www.reliancedigital.in/product/${slug}`);
+}
+
 /** Split "amazon:B09X5DK382" safely; null for anything that is not a known key shape. */
 export function parseKey(key: string): { store: StoreId; pid: string } | null {
   const i = key.indexOf(':');
@@ -162,6 +182,7 @@ export function parseKey(key: string): { store: StoreId; pid: string } | null {
     flipkart: /^itm[a-z0-9]{6,20}(\.[A-Z0-9]{12,20})?$/,
     myntra: /^\d{5,10}$/,
     vijaysales: /^\d{4,8}$/,
+    reliancedigital: /^[a-z0-9][a-z0-9-]{2,299}$/,
   };
   return shape[store].test(pid) ? { store, pid } : null;
 }

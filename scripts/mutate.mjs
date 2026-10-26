@@ -96,6 +96,13 @@ export const MUTANTS = [
     run: CHECK, expect: [/^vijaysales-airtag-outofstock\.html (status|price|mrp|inStock|deleting)/],
   },
   {
+    name: 'Reliance Digital recipe trusts schema.org stock instead of the page\'s sellable flag',
+    file: 'readers/reliancedigital.desktop.json',
+    find: '"fields": [{ "selector": [], "attribute": "innerHTML", "global": true, "regex": ["\\"product_meta\\":\\\\{\\"sellable\\":(true|false)"] }]',
+    replace: '"fields": [{ "selector": [], "attribute": "textContent", "jsonld": "offers.availability" }]',
+    run: CHECK, expect: [/^reliancedigital-gopro-notsellable\.html (status|price|mrp|inStock|deleting)/],
+  },
+  {
     name: 'early stop before the price box has arrived',
     file: 'core/interpret.ts', find: '  if (!es.thenUnavailableOr?.length) return true;\n', replace: '  return true;\n',
     run: CHECK, expect: [/^amazon-cello-(25pens|10pens)-instock\.html early stop/, /^amazon-cello-technotip-paise\.html early stop/],

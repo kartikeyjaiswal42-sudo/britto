@@ -41,6 +41,16 @@
       home: "https://www.vijaysales.com/",
       serverFetch: "yes",
       measured: "2026-10-26: two product pages fetched with an honest bot User-Agent (from a cloud computer in the USA, not yet from Cloudflare) returned the price box: \u20B99,229 (M.R.P. \u20B911,900, the store says out of stock) and \u20B94,999 (M.R.P. \u20B915,999, in stock)."
+    },
+    reliancedigital: {
+      id: "reliancedigital",
+      num: 5,
+      name: "Reliance Digital",
+      hosts: ["reliancedigital.in", "www.reliancedigital.in"],
+      shortHosts: [],
+      home: "https://www.reliancedigital.in/",
+      serverFetch: "yes",
+      measured: `2026-10-26: 14 product pages fetched with an honest bot User-Agent (from a cloud computer in the USA, not yet from Cloudflare) all returned the price box, e.g. \u20B9999 (M.R.P. \u20B92,999). Its search-engine data says "in stock" even for items it will not sell; Britto reads the page's own "sellable" flag instead.`
     }
   };
   var STORE_IDS = Object.keys(STORES);
@@ -70,6 +80,7 @@
     if (hit.store === "amazon") return amazon(u);
     if (hit.store === "flipkart") return flipkart(u);
     if (hit.store === "vijaysales") return vijaysales(u);
+    if (hit.store === "reliancedigital") return reliancedigital(u);
     return myntra(u);
   }
   function ok(store, pid, url) {
@@ -105,6 +116,12 @@
     const m = /^\/p\/(\d{4,8})\/([a-z0-9][a-z0-9-]*)\/?$/i.exec(u.pathname);
     if (!m) return { ok: false, reason: "not_a_product" };
     return ok("vijaysales", m[1], `https://www.vijaysales.com/p/${m[1]}/${m[2].toLowerCase()}`);
+  }
+  function reliancedigital(u) {
+    const m = /^\/product\/([a-z0-9][a-z0-9-]{2,299})\/?$/i.exec(u.pathname);
+    if (!m) return { ok: false, reason: "not_a_product" };
+    const slug = m[1].toLowerCase();
+    return ok("reliancedigital", slug, `https://www.reliancedigital.in/product/${slug}`);
   }
 
   // web/api.js

@@ -72,6 +72,15 @@ test('Vijay Sales product links: /p/<id>/<name>, the name is required', () => {
   assert.equal(parseKey('vijaysales:22x'), null);
 });
 
+test('Reliance Digital product links: /product/<handle>', () => {
+  const r = parseProductLink('https://www.reliancedigital.in/product/GoPro-Mission-1-Action-Camera-mqau6g-10163404?internal_source=search#specs');
+  assert.ok(r.ok && r.link.key === 'reliancedigital:gopro-mission-1-action-camera-mqau6g-10163404');
+  assert.equal(r.ok && r.link.url, 'https://www.reliancedigital.in/product/gopro-mission-1-action-camera-mqau6g-10163404');
+  assert.deepEqual(parseProductLink('https://www.reliancedigital.in/c/smart-devices'), { ok: false, reason: 'not_a_product' });
+  assert.equal(parseKey('reliancedigital:gopro-mission-1-action-camera-mqau6g-10163404')?.store, 'reliancedigital');
+  assert.equal(parseKey('reliancedigital:../etc'), null);
+});
+
 test('Look-alike hosts, non-product pages and junk are refused', () => {
   assert.deepEqual(parseProductLink('https://amazon.in.evil.example/dp/B09X5DK382'), { ok: false, reason: 'unsupported_store' });
   assert.deepEqual(parseProductLink('https://www.amazon.com/dp/B09X5DK382'), { ok: false, reason: 'unsupported_store' });

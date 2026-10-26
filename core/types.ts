@@ -8,7 +8,7 @@ export type Paise = number;
 /** Milliseconds since the Unix epoch. */
 export type Millis = number;
 
-export type StoreId = 'amazon' | 'flipkart' | 'myntra' | 'vijaysales';
+export type StoreId = 'amazon' | 'flipkart' | 'myntra' | 'vijaysales' | 'reliancedigital';
 
 /** `${StoreId}:${store's own product id}` — e.g. "amazon:B09X5DK382". */
 export type ProductKey = string;

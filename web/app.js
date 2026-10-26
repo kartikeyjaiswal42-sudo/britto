@@ -41,7 +41,7 @@ document.getElementById('search-form').addEventListener('submit', (e) => {
   else go(`/search?q=${encodeURIComponent(q)}`);
 });
 
-const STORE_NAMES = { amazon: 'Amazon', flipkart: 'Flipkart', myntra: 'Myntra', vijaysales: 'Vijay Sales' };
+const STORE_NAMES = { amazon: 'Amazon', flipkart: 'Flipkart', myntra: 'Myntra', vijaysales: 'Vijay Sales', reliancedigital: 'Reliance Digital' };
 
 function productCard(c) {
   const badge = c.saleStatus === 'real_drop' && c.realPct != null ? h('span', { class: 'badge good' }, `${pct(c.realPct)} below usual`) : null;
@@ -168,6 +168,7 @@ function keyToLink(key) {
   const [store, pid] = key.split(':');
   if (store === 'amazon') return `https://www.amazon.in/dp/${pid}`;
   if (store === 'myntra') return `https://www.myntra.com/${pid}`;
+  if (store === 'reliancedigital') return `https://www.reliancedigital.in/product/${pid}`;
   if (store === 'flipkart') {
     const [itm, p] = pid.split('.');
     return `https://www.flipkart.com/p/${itm}${p ? `?pid=${p}` : ''}`;

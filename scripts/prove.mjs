@@ -116,7 +116,10 @@ try {
   check('product view by key', view.status === 200 && view.body?.product?.key === KEY);
 
   // ---- one real read per other server-readable store (BLUEPRINT §22), through the Worker
-  for (const [store, url] of [['vijaysales', 'https://www.vijaysales.com/p/222878/morphy-richards-digital-5-litres-air-fryer-with-adjustable-time-temperature-control-8-pre-set-menus-black']]) {
+  for (const [store, url] of [
+    ['vijaysales', 'https://www.vijaysales.com/p/222878/morphy-richards-digital-5-litres-air-fryer-with-adjustable-time-temperature-control-8-pre-set-menus-black'],
+    ['reliancedigital', 'https://www.reliancedigital.in/product/philips-bt342115-beard-trimmer-for-men-moiojw-10047748'],
+  ]) {
     const r = await post(url);
     const v = r.body?.product;
     const priced = Number.isInteger(v?.stats?.current) && v.stats.current > 0;
@@ -311,7 +314,7 @@ try {
 
     // ---- rate limit on adding new products (Myntra ids: no fetch is made for them)
     let lastStatus = 0;
-    let allowed = 3; // amazon + vijaysales + flipkart above (the Myntra report came from another network: its own limit)
+    let allowed = 4; // amazon + vijaysales + reliancedigital + flipkart above (the Myntra report came from another network: its own limit)
     for (let i = 0; allowed < 30 && i < 40; i++) {
       lastStatus = (await post(`https://www.myntra.com/${1000001 + i}`)).status;
       if (lastStatus === 201) allowed++;

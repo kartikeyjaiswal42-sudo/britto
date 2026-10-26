@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "store": "reliancedigital",
+  "device": "desktop",
+  "revision": 1,
+  "verified": "2026-10-26",
+  "reportsPid": true,
+  "domRecipe": {
+    "name": [{ "selector": ["h1.product-name"], "attribute": "textContent" }],
+    "pid": [{ "selector": ["link[rel=canonical]"], "attribute": "href", "regex": ["/product/([a-z0-9-]+)"] }],
+    "itm": [],
+    "image": [{ "selector": ["meta[property=\"og:image\"]"], "attribute": "content" }],
+    "availability": {
+      "selectors": [],
+      "outOfStockText": ["false"],
+      "fields": [{ "selector": [], "attribute": "innerHTML", "global": true, "regex": ["\"product_meta\":\\{\"sellable\":(true|false)"] }]
+    },
+    "price": [{ "selector": [".product-price"], "attribute": "textContent" }],
+    "mrp": [{ "selector": [".product-marked-price"], "attribute": "textContent" }]
+  }
+}

@@ -107,5 +107,38 @@
     "inStock": true,
     "pid": "222878",
     "title": "Morphy Richards Digital Air Fryer 5L | 1500W"
+  },
+  "reliancedigital-jiotag-instock.html": {
+    "fetched": "2026-10-26 22:33-22:36 UTC, Claude cloud container (USA), honest BrittoBot User-Agent and the Worker's headers: HTTP 200, 679 KB. sellable:true, quantity 14.",
+    "store": "reliancedigital",
+    "url": "https://www.reliancedigital.in/product/jiotag-go-yellow-indias-first-google-find-my-device-network-item-finder-worldwide-tracking-for-your-items-like-keys-wallets-luggage-gadgets-and-pets-upto-1-year-battery-life-no-sim-needed-for-android-phones-only-m4qq07-8769344",
+    "status": "priced",
+    "price": 99900,
+    "mrp": 299900,
+    "inStock": true,
+    "pid": "jiotag-go-yellow-indias-first-google-find-my-device-network-item-finder-worldwide-tracking-for-your-items-like-keys-wallets-luggage-gadgets-and-pets-upto-1-year-battery-life-no-sim-needed-for-android-phones-only-m4qq07-8769344",
+    "title": "JioTag Go Yellow for Android"
+  },
+  "reliancedigital-lg-fridge-instock-lakh.html": {
+    "fetched": "2026-10-26 22:33-22:36 UTC, Claude cloud container (USA), honest BrittoBot User-Agent and the Worker's headers: HTTP 200, 646 KB. A price in lakhs with Indian digit grouping (₹1,06,540.00).",
+    "store": "reliancedigital",
+    "url": "https://www.reliancedigital.in/product/lg-574-l-3-star-convertible-french-door-refrigerator-prime-silver-gv-b23fflmb-mou0db-10056092",
+    "status": "priced",
+    "price": 10654000,
+    "mrp": 13699000,
+    "inStock": true,
+    "pid": "lg-574-l-3-star-convertible-french-door-refrigerator-prime-silver-gv-b23fflmb-mou0db-10056092",
+    "title": "LG"
+  },
+  "reliancedigital-gopro-notsellable.html": {
+    "fetched": "2026-10-26 22:33-22:36 UTC, Claude cloud container (USA), honest BrittoBot User-Agent and the Worker's headers: HTTP 200, 649 KB. THE TRAP: schema.org says InStock and the price box shows ₹74,990, but the page's own product_meta says sellable:false, quantity 0.",
+    "store": "reliancedigital",
+    "url": "https://www.reliancedigital.in/product/gopro-mission-1-action-camera-mqau6g-10163404",
+    "status": "unavailable",
+    "price": null,
+    "mrp": null,
+    "inStock": false,
+    "pid": "gopro-mission-1-action-camera-mqau6g-10163404",
+    "title": "GoPro Mission 1 Action Camera"
   }
 }

@@ -7,6 +7,7 @@ import type { StoreId } from '../core/types.ts';
 import amazon from './amazon.desktop.json' with { type: 'json' };
 import flipkart from './flipkart.desktop.json' with { type: 'json' };
 import myntra from './myntra.desktop.json' with { type: 'json' };
+import reliancedigital from './reliancedigital.desktop.json' with { type: 'json' };
 import vijaysales from './vijaysales.desktop.json' with { type: 'json' };
 
 export interface Reader { config: ReaderConfig; version: string }
@@ -17,7 +18,7 @@ function load(json: unknown): Reader {
   return { config: v.config, version: configVersion(v.config) };
 }
 
-const ALL: Reader[] = [amazon, flipkart, myntra, vijaysales].map(load);
+const ALL: Reader[] = [amazon, flipkart, myntra, vijaysales, reliancedigital].map(load);
 
 /** The bundled config for a store and device, or null when there is none for that device. */
 export function bundledReader(store: StoreId, device: Device = 'desktop'): Reader | null {
