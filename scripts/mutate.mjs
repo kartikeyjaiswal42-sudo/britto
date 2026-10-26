@@ -113,6 +113,11 @@ export const MUTANTS = [
     run: CHECK, expect: [/^nykaa-(carbamide-instock|boots-last-one)\.html price/],
   },
   {
+    name: 'ShopClues recipe ignores the sold-out markers',
+    file: 'readers/shopclues.desktop.json', find: '"outOfStockText": ["outofstock", "sold out", "soldout"]', replace: '"outOfStockText": ["discontinued-forever"]',
+    run: CHECK, expect: [/^shopclues-babyoil-soldout\.html (status|price|mrp|inStock|deleting)/],
+  },
+  {
     name: 'early stop before the price box has arrived',
     file: 'core/interpret.ts', find: '  if (!es.thenUnavailableOr?.length) return true;\n', replace: '  return true;\n',
     run: CHECK, expect: [/^amazon-cello-(25pens|10pens)-instock\.html early stop/, /^amazon-cello-technotip-paise\.html early stop/],

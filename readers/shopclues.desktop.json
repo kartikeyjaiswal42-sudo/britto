@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "store": "shopclues",
+  "device": "desktop",
+  "revision": 1,
+  "verified": "2026-10-26",
+  "reportsPid": true,
+  "domRecipe": {
+    "name": [{ "selector": ["h1[itemprop=name]"], "attribute": "textContent" }],
+    "pid": [{ "selector": ["meta[itemprop=sku]"], "attribute": "content" }],
+    "itm": [],
+    "image": [{ "selector": ["img[itemprop=image]"], "attribute": "attr:src" }],
+    "availability": {
+      "selectors": [".stock_out_img"],
+      "outOfStockText": ["outofstock", "sold out", "soldout"],
+      "fields": [{ "selector": [".price", "link[itemprop=availability]"], "attribute": "href" }]
+    },
+    "price": [{ "selector": [".price", ".f_price"], "attribute": "textContent" }],
+    "mrp": [{ "selector": ["#sec_list_price_"], "attribute": "attr:content" }]
+  }
+}

@@ -69,6 +69,17 @@ export const STORES: Record<StoreId, Store> = {
     measured:
       '2026-10-26: 9 product pages fetched with an honest bot User-Agent (from a cloud computer in the USA, not yet from Cloudflare) all returned the product, e.g. ₹749 (M.R.P. ₹1,150). One real listing shows ₹0; Britto treats that as no price.',
   },
+  shopclues: {
+    id: 'shopclues',
+    num: 7,
+    name: 'ShopClues',
+    hosts: ['shopclues.com', 'www.shopclues.com'],
+    shortHosts: [],
+    home: 'https://www.shopclues.com/',
+    serverFetch: 'yes',
+    measured:
+      '2026-10-26: product pages fetched with an honest bot User-Agent (from a cloud computer in the USA, not yet from Cloudflare) returned the price box, e.g. ₹419; old listings say "This product is currently out of stock".',
+  },
 };
 
 export const STORE_IDS = Object.keys(STORES) as StoreId[];
@@ -130,6 +141,7 @@ export function parseProductLink(input: string): LinkResult {
   if (hit.store === 'vijaysales') return vijaysales(u);
   if (hit.store === 'reliancedigital') return reliancedigital(u);
   if (hit.store === 'nykaa') return nykaa(u);
+  if (hit.store === 'shopclues') return shopclues(u);
   return myntra(u);
 }
 
@@ -189,6 +201,13 @@ function nykaa(u: URL): LinkResult {
   return ok('nykaa', m[2]!, `https://www.nykaa.com/${m[1]!.toLowerCase()}/p/${m[2]}`);
 }
 
+function shopclues(u: URL): LinkResult {
+  // /<name>-<product id>.html
+  const m = /^\/([a-z0-9][a-z0-9-]*-(\d{6,10}))\.html$/i.exec(u.pathname);
+  if (!m) return { ok: false, reason: 'not_a_product' };
+  return ok('shopclues', m[2]!, `https://www.shopclues.com/${m[1]!.toLowerCase()}.html`);
+}
+
 /** Split "amazon:B09X5DK382" safely; null for anything that is not a known key shape. */
 export function parseKey(key: string): { store: StoreId; pid: string } | null {
   const i = key.indexOf(':');
@@ -203,6 +222,7 @@ export function parseKey(key: string): { store: StoreId; pid: string } | null {
     vijaysales: /^\d{4,8}$/,
     reliancedigital: /^[a-z0-9][a-z0-9-]{2,299}$/,
     nykaa: /^\d{5,10}$/,
+    shopclues: /^\d{6,10}$/,
   };
   return shape[store].test(pid) ? { store, pid } : null;
 }

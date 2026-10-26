@@ -172,5 +172,36 @@
     "inStock": null,
     "pid": null,
     "title": "RSVP by Nykaa Fashion State Of Style Crossbody Bag"
+  },
+  "shopclues-iron-instock.html": {
+    "fetched": "2026-10-26 22:45-22:50 UTC, Claude cloud container (USA), honest BrittoBot User-Agent and the Worker's headers: HTTP 200, 209 KB. Found from a category page (the product sitemaps list mostly sold-out listings). Shows 'MRP: ₹1,499, 72% off'.",
+    "store": "shopclues",
+    "url": "https://www.shopclues.com/ank-hub-portable-foldable-electric-mini-iron-with-quick-heating-153656207.html",
+    "status": "priced",
+    "price": 41900,
+    "mrp": 149900,
+    "inStock": true,
+    "pid": "153656207",
+    "title": "ANK Hub Portable Foldable Electric Mini Iron"
+  },
+  "shopclues-steam-iron-instock.html": {
+    "fetched": "2026-10-26 22:45-22:50 UTC, Claude cloud container (USA), honest BrittoBot User-Agent and the Worker's headers: HTTP 200, 212 KB.",
+    "store": "shopclues",
+    "url": "https://www.shopclues.com/digimate-impress-750w-lightweight-dry-iron-with-premium-german-coating-dg-ig-750w-02-teal-153725631.html",
+    "status": "priced",
+    "price": 47900,
+    "inStock": true,
+    "pid": "153725631"
+  },
+  "shopclues-babyoil-soldout.html": {
+    "fetched": "2026-10-26 22:45-22:50 UTC, Claude cloud container (USA), honest BrittoBot User-Agent and the Worker's headers: HTTP 200, 201 KB. Sold out: 'This product is currently out of stock' and microdata OutOfStock, while the price box still shows ₹220 (M.R.P. ₹229).",
+    "store": "shopclues",
+    "url": "https://www.shopclues.com/mee-mee-nourishing-baby-oil-200ml-153072595.html",
+    "status": "unavailable",
+    "price": null,
+    "mrp": null,
+    "inStock": false,
+    "pid": "153072595",
+    "title": "Mee Mee Nourishing Baby Oil 200ml"
   }
 }

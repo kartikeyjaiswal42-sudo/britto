@@ -61,6 +61,16 @@
       home: "https://www.nykaa.com/",
       serverFetch: "yes",
       measured: "2026-10-26: 9 product pages fetched with an honest bot User-Agent (from a cloud computer in the USA, not yet from Cloudflare) all returned the product, e.g. \u20B9749 (M.R.P. \u20B91,150). One real listing shows \u20B90; Britto treats that as no price."
+    },
+    shopclues: {
+      id: "shopclues",
+      num: 7,
+      name: "ShopClues",
+      hosts: ["shopclues.com", "www.shopclues.com"],
+      shortHosts: [],
+      home: "https://www.shopclues.com/",
+      serverFetch: "yes",
+      measured: '2026-10-26: product pages fetched with an honest bot User-Agent (from a cloud computer in the USA, not yet from Cloudflare) returned the price box, e.g. \u20B9419; old listings say "This product is currently out of stock".'
     }
   };
   var STORE_IDS = Object.keys(STORES);
@@ -92,6 +102,7 @@
     if (hit.store === "vijaysales") return vijaysales(u);
     if (hit.store === "reliancedigital") return reliancedigital(u);
     if (hit.store === "nykaa") return nykaa(u);
+    if (hit.store === "shopclues") return shopclues(u);
     return myntra(u);
   }
   function ok(store, pid, url) {
@@ -138,6 +149,11 @@
     const m = /^\/([a-z0-9][a-z0-9-]*)\/p\/(\d{5,10})\/?$/i.exec(u.pathname);
     if (!m) return { ok: false, reason: "not_a_product" };
     return ok("nykaa", m[2], `https://www.nykaa.com/${m[1].toLowerCase()}/p/${m[2]}`);
+  }
+  function shopclues(u) {
+    const m = /^\/([a-z0-9][a-z0-9-]*-(\d{6,10}))\.html$/i.exec(u.pathname);
+    if (!m) return { ok: false, reason: "not_a_product" };
+    return ok("shopclues", m[2], `https://www.shopclues.com/${m[1].toLowerCase()}.html`);
   }
 
   // web/api.js

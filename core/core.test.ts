@@ -89,6 +89,14 @@ test('Nykaa product links: /<name>/p/<id>', () => {
   assert.deepEqual(parseKey('nykaa:1003586'), { store: 'nykaa', pid: '1003586' });
 });
 
+test('ShopClues product links: /<name>-<id>.html', () => {
+  const r = parseProductLink('https://www.shopclues.com/mee-mee-nourishing-baby-oil-200ml-153072595.html?adz_page=plp');
+  assert.ok(r.ok && r.link.key === 'shopclues:153072595');
+  assert.equal(r.ok && r.link.url, 'https://www.shopclues.com/mee-mee-nourishing-baby-oil-200ml-153072595.html');
+  assert.deepEqual(parseProductLink('https://www.shopclues.com/appliances-irons.html'), { ok: false, reason: 'not_a_product' });
+  assert.deepEqual(parseKey('shopclues:153072595'), { store: 'shopclues', pid: '153072595' });
+});
+
 test('Look-alike hosts, non-product pages and junk are refused', () => {
   assert.deepEqual(parseProductLink('https://amazon.in.evil.example/dp/B09X5DK382'), { ok: false, reason: 'unsupported_store' });
   assert.deepEqual(parseProductLink('https://www.amazon.com/dp/B09X5DK382'), { ok: false, reason: 'unsupported_store' });
