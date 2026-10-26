@@ -64,6 +64,34 @@ export const MUTANTS = [
     replace: "  const price = parseRupees(firstOf(d.price, ctx)) ?? parseRupees(/₹\\s*([\\d,]+(?:\\.\\d{1,2})?)/.exec(html.replace(/<[^>]+>/g, ''))?.[1]);\n",
     run: UNIT, expect: [/never a price from outside the price fields/, /price box present but no "price to pay"/],
   },
+  // ---- config CI (scripts/check-readers.mjs) on the real fixtures
+  {
+    name: 'Amazon recipe forgets "currently unavailable"',
+    file: 'readers/amazon.desktop.json', find: '"currently unavailable", ', replace: '',
+    run: CHECK, expect: [/^amazon-boat-variant-unavailable\.html (status|inStock|pid)/, /^amazon-iphone15-unavailable\.html (status|inStock|pid)/],
+  },
+  {
+    name: 'Myntra recipe reads the M.R.P. as the price',
+    file: 'readers/myntra.desktop.json', find: '"json": "pdpData.price.discounted"', replace: '"json": "pdpData.price.mrp"',
+    run: CHECK, expect: [/^myntra-instock\.html price/],
+  },
+  {
+    name: 'Flipkart recipe loses its error-page markers',
+    file: 'readers/flipkart.desktop.json', find: '"blocked": [["Something went wrong!", "\\\\bE00\\\\d\\\\b"]],', replace: '',
+    run: CHECK, expect: [/^flipkart-blocked-e002\.html (status|deleting the blocked marker)/],
+  },
+  {
+    name: 'early stop before the price box has arrived',
+    file: 'core/interpret.ts', find: '  if (!es.thenUnavailableOr?.length) return true;\n', replace: '  return true;\n',
+    run: CHECK, expect: [/^amazon-cello-(25pens|10pens)-instock\.html early stop/, /^amazon-cello-technotip-paise\.html early stop/],
+  },
+  {
+    name: 'interpreter falls back to the price in the page\'s own JSON',
+    file: 'core/interpret.ts',
+    find: "  const price = parseRupees(firstOf(d.price, ctx));\n",
+    replace: "  const price = parseRupees(firstOf(d.price, ctx)) ?? parseRupees(/\"priceAmount\":([\\d.]+)/.exec(html)?.[1]);\n",
+    run: CHECK, expect: [/^amazon-cello-(25pens|10pens)-instock\.html deleting the price/, /^amazon-cello-technotip-paise\.html deleting the price/],
+  },
 ];
 
 const only = process.argv[2];

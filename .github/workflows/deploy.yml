@@ -1,6 +1,6 @@
 # Test and deploy Britto
 #
-# Every push and pull request: typecheck (both configs) and the unit tests.
+# Every push and pull request: typecheck (both configs), the unit tests and the reader check.
 # Every push to `main`: then the D1 schema, THEN the Worker (the order is load-bearing: new code
 # must never meet a database without its tables), then the live end-to-end check.
 #
@@ -30,6 +30,8 @@ jobs:
       # node --test strips types without checking them: tsc is the real gate.
       - run: npm run typecheck
       - run: npm test
+      # Config CI (BLUEPRINT §22): every reader config valid, every saved page reads as expected.
+      - run: npm run check:readers
 
   deploy:
     needs: test

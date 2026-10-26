@@ -7,6 +7,8 @@
   "scripts": {
     "test": "node --test core/*.test.ts api/*.test.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.ext.json",
+    "check:readers": "node scripts/check-readers.mjs",
+    "mutate": "node scripts/mutate.mjs",
     "build:ext": "node scripts/build-ext.mjs",
     "test:ext": "node scripts/extension.mjs",
     "dev": "wrangler dev --local --persist-to .wrangler/dev-state",

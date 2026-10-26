@@ -1,0 +1,49 @@
+{
+  "_about": "What each saved page must read as (scripts/check-readers.mjs). Every fixture in this folder needs an entry. Pages are real and unmodified; 'fetched' says when and how.",
+  "amazon-cello-25pens-instock.html": {
+    "fetched": "2026-10-26 (S1); the page echoes a DaamBot/0.1 User-Agent",
+    "store": "amazon", "url": "https://www.amazon.in/dp/B09X5DK382",
+    "status": "priced", "price": 26500, "mrp": 29900, "inStock": true, "pid": "B09X5DK382",
+    "title": "Cello Butterflow Simply Ball Pen Set | Pack of 25"
+  },
+  "amazon-cello-10pens-instock.html": {
+    "fetched": "2026-10-26 (S1); the page echoes a DaamBot/0.1 User-Agent",
+    "store": "amazon", "url": "https://www.amazon.in/dp/B01INWEX9U",
+    "status": "priced", "price": 15500, "mrp": 19900, "inStock": true, "pid": "B01INWEX9U",
+    "title": "Cello Pinpoint Ballpoint Pens, Blue - Pack of 10"
+  },
+  "amazon-cello-technotip-paise.html": {
+    "fetched": "2026-10-26 (S2); the page echoes the DaamBot/0.1 User-Agent with the daam workers.dev address",
+    "store": "amazon", "url": "https://www.amazon.in/dp/B00IEA1G4M",
+    "status": "priced", "price": 176331, "mrp": null, "inStock": true, "pid": "B00IEA1G4M",
+    "title": "1 X 10 Cello Technotip Pen"
+  },
+  "amazon-boat-variant-unavailable.html": {
+    "fetched": "2026-10-26 (S1); the page echoes a DaamBot/0.1 User-Agent",
+    "store": "amazon", "url": "https://www.amazon.in/dp/B09N3ZNHTY",
+    "status": "unavailable", "price": null, "mrp": null, "inStock": false, "pid": "B09N3ZNHTY",
+    "title": "boAt Airdopes 141"
+  },
+  "amazon-iphone15-unavailable.html": {
+    "fetched": "2026-10-26 (S1); the page echoes a Mozilla/5.0 (Macintosh) User-Agent; how it was fetched is not recorded",
+    "store": "amazon", "url": "https://www.amazon.in/dp/B0CHX1W1XY",
+    "status": "unavailable", "price": null, "mrp": null, "inStock": false, "pid": "B0CHX1W1XY",
+    "title": "Apple iPhone 15 (128 GB) - Black"
+  },
+  "amazon-refused-503-automated-access.html": {
+    "fetched": "2026-10-26 21:10 UTC, Claude cloud container (CloudFront ORD58, USA), curl with the BrittoBot User-Agent: HTTP 503. The same product read normally through the local Worker minutes earlier.",
+    "store": "amazon", "url": "https://www.amazon.in/dp/B09X5DK382",
+    "status": "blocked", "price": null, "mrp": null, "inStock": null, "pid": null
+  },
+  "flipkart-blocked-e002.html": {
+    "fetched": "2026-10-26 (S1); how it was fetched is not recorded",
+    "store": "flipkart", "url": "https://www.flipkart.com/apple-iphone-15-black-128-gb/p/itm6ac6485515ae4",
+    "status": "blocked", "price": null, "mrp": null, "inStock": null, "pid": null
+  },
+  "myntra-instock.html": {
+    "fetched": "2026-10-26 (S1); how it was fetched is not recorded",
+    "store": "myntra", "url": "https://www.myntra.com/tshirts/hrx-by-hrithik-roshan/x/1700944/buy",
+    "status": "priced", "price": 30500, "mrp": 69900, "inStock": true, "pid": "1700944",
+    "title": "HRX by Hrithik Roshan Men Yellow Printed Cotton"
+  }
+}
