@@ -119,6 +119,7 @@ try {
   for (const [store, url] of [
     ['vijaysales', 'https://www.vijaysales.com/p/222878/morphy-richards-digital-5-litres-air-fryer-with-adjustable-time-temperature-control-8-pre-set-menus-black'],
     ['reliancedigital', 'https://www.reliancedigital.in/product/philips-bt342115-beard-trimmer-for-men-moiojw-10047748'],
+    ['nykaa', 'https://www.nykaa.com/carbamide-forte-multivitamin-for-men/p/1003586'],
   ]) {
     const r = await post(url);
     const v = r.body?.product;
@@ -314,7 +315,7 @@ try {
 
     // ---- rate limit on adding new products (Myntra ids: no fetch is made for them)
     let lastStatus = 0;
-    let allowed = 4; // amazon + vijaysales + reliancedigital + flipkart above (the Myntra report came from another network: its own limit)
+    let allowed = 5; // amazon + vijaysales + reliancedigital + nykaa + flipkart above (the Myntra report came from another network: its own limit)
     for (let i = 0; allowed < 30 && i < 40; i++) {
       lastStatus = (await post(`https://www.myntra.com/${1000001 + i}`)).status;
       if (lastStatus === 201) allowed++;

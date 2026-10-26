@@ -117,6 +117,16 @@
       home: "https://www.reliancedigital.in/",
       serverFetch: "yes",
       measured: `2026-10-26: 14 product pages fetched with an honest bot User-Agent (from a cloud computer in the USA, not yet from Cloudflare) all returned the price box, e.g. \u20B9999 (M.R.P. \u20B92,999). Its search-engine data says "in stock" even for items it will not sell; Britto reads the page's own "sellable" flag instead.`
+    },
+    nykaa: {
+      id: "nykaa",
+      num: 6,
+      name: "Nykaa",
+      hosts: ["nykaa.com", "www.nykaa.com"],
+      shortHosts: [],
+      home: "https://www.nykaa.com/",
+      serverFetch: "yes",
+      measured: "2026-10-26: 9 product pages fetched with an honest bot User-Agent (from a cloud computer in the USA, not yet from Cloudflare) all returned the product, e.g. \u20B9749 (M.R.P. \u20B91,150). One real listing shows \u20B90; Britto treats that as no price."
     }
   };
   var STORE_IDS = Object.keys(STORES);
@@ -147,6 +157,7 @@
     if (hit.store === "flipkart") return flipkart(u);
     if (hit.store === "vijaysales") return vijaysales(u);
     if (hit.store === "reliancedigital") return reliancedigital(u);
+    if (hit.store === "nykaa") return nykaa(u);
     return myntra(u);
   }
   function ok(store, pid, url) {
@@ -188,6 +199,11 @@
     if (!m) return { ok: false, reason: "not_a_product" };
     const slug = m[1].toLowerCase();
     return ok("reliancedigital", slug, `https://www.reliancedigital.in/product/${slug}`);
+  }
+  function nykaa(u) {
+    const m = /^\/([a-z0-9][a-z0-9-]*)\/p\/(\d{5,10})\/?$/i.exec(u.pathname);
+    if (!m) return { ok: false, reason: "not_a_product" };
+    return ok("nykaa", m[2], `https://www.nykaa.com/${m[1].toLowerCase()}/p/${m[2]}`);
   }
 
   // core/recipe.ts

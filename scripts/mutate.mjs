@@ -103,6 +103,16 @@ export const MUTANTS = [
     run: CHECK, expect: [/^reliancedigital-gopro-notsellable\.html (status|price|mrp|inStock|deleting)/],
   },
   {
+    name: 'interpreter accepts a ₹0 price',
+    file: 'core/interpret.ts', find: "  if (price < MIN_PRICE) return result({ status: 'unrecognised', title, image, rule: rule('implausible-price') });\n", replace: '',
+    run: CHECK, expect: [/^nykaa-zero-price-listing\.html (status|price|inStock|pid)/],
+  },
+  {
+    name: 'Nykaa recipe reads the M.R.P. as the price',
+    file: 'readers/nykaa.desktop.json', find: '"json": "productPage.product.offerPrice"', replace: '"json": "productPage.product.mrp"',
+    run: CHECK, expect: [/^nykaa-(carbamide-instock|boots-last-one)\.html price/],
+  },
+  {
     name: 'early stop before the price box has arrived',
     file: 'core/interpret.ts', find: '  if (!es.thenUnavailableOr?.length) return true;\n', replace: '  return true;\n',
     run: CHECK, expect: [/^amazon-cello-(25pens|10pens)-instock\.html early stop/, /^amazon-cello-technotip-paise\.html early stop/],

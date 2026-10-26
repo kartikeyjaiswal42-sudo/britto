@@ -97,7 +97,7 @@ export function cleanObserved(input: unknown): { ok: true; obs: Observed & { tit
   return { ok: true, obs: { price, mrp, inStock: status === 'priced', title, image: cleanImage(o['image']) } };
 }
 
-const IMAGE_HOSTS = [/^m\.media-amazon\.com$/, /^rukminim\d*\.flixcart\.com$/, /^assets\.myntassets\.com$/, /^vsprod\.vijaysales\.com$/, /^cdn\.jiostore\.online$/];
+const IMAGE_HOSTS = [/^m\.media-amazon\.com$/, /^rukminim\d*\.flixcart\.com$/, /^assets\.myntassets\.com$/, /^vsprod\.vijaysales\.com$/, /^cdn\.jiostore\.online$/, /^images-static\.nykaa\.com$/];
 
 /** Only https images from the stores' own image hosts; anything else becomes null. */
 export function cleanImage(v: unknown): string | null {

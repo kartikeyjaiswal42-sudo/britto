@@ -81,6 +81,14 @@ test('Reliance Digital product links: /product/<handle>', () => {
   assert.equal(parseKey('reliancedigital:../etc'), null);
 });
 
+test('Nykaa product links: /<name>/p/<id>', () => {
+  const r = parseProductLink('https://www.nykaa.com/carbamide-forte-multivitamin-for-men/p/1003586?productId=1003586&pps=1');
+  assert.ok(r.ok && r.link.key === 'nykaa:1003586');
+  assert.equal(r.ok && r.link.url, 'https://www.nykaa.com/carbamide-forte-multivitamin-for-men/p/1003586');
+  assert.deepEqual(parseProductLink('https://www.nykaa.com/makeup/c/12'), { ok: false, reason: 'not_a_product' });
+  assert.deepEqual(parseKey('nykaa:1003586'), { store: 'nykaa', pid: '1003586' });
+});
+
 test('Look-alike hosts, non-product pages and junk are refused', () => {
   assert.deepEqual(parseProductLink('https://amazon.in.evil.example/dp/B09X5DK382'), { ok: false, reason: 'unsupported_store' });
   assert.deepEqual(parseProductLink('https://www.amazon.com/dp/B09X5DK382'), { ok: false, reason: 'unsupported_store' });

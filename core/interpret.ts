@@ -16,6 +16,9 @@ import type { Extracted, StoreId } from './types.ts';
 
 interface Ctx { html: string; url: string; memo: Map<string, unknown> }
 
+/** 100 paise = ₹1: the smallest price a reading may carry. */
+const MIN_PRICE = 100;
+
 const once = <T>(ctx: Ctx, key: string, make: () => T): T => {
   if (!ctx.memo.has(key)) ctx.memo.set(key, make());
   return ctx.memo.get(key) as T;
@@ -140,7 +143,11 @@ export function readPage(cfg: ReaderConfig, html: string, url = ''): Extracted {
 
   const price = parseRupees(firstOf(d.price, ctx));
   if (price == null) return result({ status: 'unrecognised', title, image, rule: rule('no-price') });
-  const mrp = parseRupees(firstOf(d.mrp, ctx));
+  // Under ₹1 is a broken listing, not a price (measured: a real Nykaa page shows "₹0" with an
+  // Add to Bag button). The same floor extension reports have (core/trust.ts TRUST.minPrice).
+  if (price < MIN_PRICE) return result({ status: 'unrecognised', title, image, rule: rule('implausible-price') });
+  const mrpRead = parseRupees(firstOf(d.mrp, ctx));
+  const mrp = mrpRead != null && mrpRead >= MIN_PRICE ? mrpRead : null;
   return result({ status: 'priced', title, image, pid, price, mrp, inStock: true, rule: rule('priced') });
 }
 

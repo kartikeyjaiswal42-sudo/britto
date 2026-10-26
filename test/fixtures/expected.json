@@ -140,5 +140,37 @@
     "inStock": false,
     "pid": "gopro-mission-1-action-camera-mqau6g-10163404",
     "title": "GoPro Mission 1 Action Camera"
+  },
+  "nykaa-carbamide-instock.html": {
+    "fetched": "2026-10-26 22:39-22:41 UTC, Claude cloud container (USA), honest BrittoBot User-Agent and the Worker's headers: HTTP 200, 218 KB. State productPage.product: offerPrice 749, mrp 1150, inStock, quantity 17; the page shows 'Regular price ₹1150. Discounted price ₹749.'",
+    "store": "nykaa",
+    "url": "https://www.nykaa.com/carbamide-forte-multivitamin-for-men/p/1003586",
+    "status": "priced",
+    "price": 74900,
+    "mrp": 115000,
+    "inStock": true,
+    "pid": "1003586",
+    "title": "Carbamide Forte Multivitamin For Men"
+  },
+  "nykaa-boots-last-one.html": {
+    "fetched": "2026-10-26 22:39-22:41 UTC, Claude cloud container (USA), honest BrittoBot User-Agent and the Worker's headers: HTTP 200, 245 KB. quantity 1 (the last one), still in stock.",
+    "store": "nykaa",
+    "url": "https://www.nykaa.com/delize-cherry-womens-vegan-leather-mid-heel-casual-boots/p/22864629",
+    "status": "priced",
+    "price": 258000,
+    "mrp": 599900,
+    "inStock": true,
+    "pid": "22864629"
+  },
+  "nykaa-zero-price-listing.html": {
+    "fetched": "2026-10-26 22:39-22:41 UTC, Claude cloud container (USA), honest BrittoBot User-Agent and the Worker's headers: HTTP 200, 187 KB. THE TRAP: the page shows 'Price ₹0.' with an Add to Bag button; state and schema.org say 0 and in stock. No price, never ₹0.",
+    "store": "nykaa",
+    "url": "https://www.nykaa.com/rsvp-by-nykaa-fashion-state-of-style-crossbody-bag/p/5243271",
+    "status": "unrecognised",
+    "price": null,
+    "mrp": null,
+    "inStock": null,
+    "pid": null,
+    "title": "RSVP by Nykaa Fashion State Of Style Crossbody Bag"
   }
 }

@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "store": "nykaa",
+  "device": "desktop",
+  "revision": 1,
+  "verified": "2026-10-26",
+  "reportsPid": true,
+  "domRecipe": {
+    "name": [{ "selector": [], "attribute": "innerHTML", "global": true, "sub_regex": "window\\.__PRELOADED_STATE__ = ([\\s\\S]*?)</script>", "json": "productPage.product.name" }],
+    "pid": [{ "selector": [], "attribute": "innerHTML", "global": true, "sub_regex": "window\\.__PRELOADED_STATE__ = ([\\s\\S]*?)</script>", "json": "productPage.product.id" }],
+    "itm": [],
+    "image": [{ "selector": [], "attribute": "innerHTML", "global": true, "sub_regex": "window\\.__PRELOADED_STATE__ = ([\\s\\S]*?)</script>", "json": "productPage.product.imageUrl" }],
+    "availability": {
+      "selectors": [],
+      "outOfStockText": ["false", "outofstock", "soldout"],
+      "fields": [
+        { "selector": [], "attribute": "innerHTML", "global": true, "sub_regex": "window\\.__PRELOADED_STATE__ = ([\\s\\S]*?)</script>", "json": "productPage.product.inStock" },
+        { "selector": [], "attribute": "textContent", "jsonld": "offers.availability" }
+      ]
+    },
+    "price": [{ "selector": [], "attribute": "innerHTML", "global": true, "sub_regex": "window\\.__PRELOADED_STATE__ = ([\\s\\S]*?)</script>", "json": "productPage.product.offerPrice" }],
+    "mrp": [{ "selector": [], "attribute": "innerHTML", "global": true, "sub_regex": "window\\.__PRELOADED_STATE__ = ([\\s\\S]*?)</script>", "json": "productPage.product.mrp" }]
+  }
+}

@@ -58,6 +58,17 @@ export const STORES: Record<StoreId, Store> = {
     measured:
       '2026-10-26: 14 product pages fetched with an honest bot User-Agent (from a cloud computer in the USA, not yet from Cloudflare) all returned the price box, e.g. ₹999 (M.R.P. ₹2,999). Its search-engine data says "in stock" even for items it will not sell; Britto reads the page\'s own "sellable" flag instead.',
   },
+  nykaa: {
+    id: 'nykaa',
+    num: 6,
+    name: 'Nykaa',
+    hosts: ['nykaa.com', 'www.nykaa.com'],
+    shortHosts: [],
+    home: 'https://www.nykaa.com/',
+    serverFetch: 'yes',
+    measured:
+      '2026-10-26: 9 product pages fetched with an honest bot User-Agent (from a cloud computer in the USA, not yet from Cloudflare) all returned the product, e.g. ₹749 (M.R.P. ₹1,150). One real listing shows ₹0; Britto treats that as no price.',
+  },
 };
 
 export const STORE_IDS = Object.keys(STORES) as StoreId[];
@@ -118,6 +129,7 @@ export function parseProductLink(input: string): LinkResult {
   if (hit.store === 'flipkart') return flipkart(u);
   if (hit.store === 'vijaysales') return vijaysales(u);
   if (hit.store === 'reliancedigital') return reliancedigital(u);
+  if (hit.store === 'nykaa') return nykaa(u);
   return myntra(u);
 }
 
@@ -170,6 +182,13 @@ function reliancedigital(u: URL): LinkResult {
   return ok('reliancedigital', slug, `https://www.reliancedigital.in/product/${slug}`);
 }
 
+function nykaa(u: URL): LinkResult {
+  // /<name>/p/<id> (the sitemap's form).
+  const m = /^\/([a-z0-9][a-z0-9-]*)\/p\/(\d{5,10})\/?$/i.exec(u.pathname);
+  if (!m) return { ok: false, reason: 'not_a_product' };
+  return ok('nykaa', m[2]!, `https://www.nykaa.com/${m[1]!.toLowerCase()}/p/${m[2]}`);
+}
+
 /** Split "amazon:B09X5DK382" safely; null for anything that is not a known key shape. */
 export function parseKey(key: string): { store: StoreId; pid: string } | null {
   const i = key.indexOf(':');
@@ -183,6 +202,7 @@ export function parseKey(key: string): { store: StoreId; pid: string } | null {
     myntra: /^\d{5,10}$/,
     vijaysales: /^\d{4,8}$/,
     reliancedigital: /^[a-z0-9][a-z0-9-]{2,299}$/,
+    nykaa: /^\d{5,10}$/,
   };
   return shape[store].test(pid) ? { store, pid } : null;
 }
