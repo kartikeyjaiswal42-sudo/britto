@@ -9,6 +9,7 @@ export const STORES: Record<StoreId, Store> = {
     name: 'Amazon.in',
     hosts: ['amazon.in', 'www.amazon.in', 'm.amazon.in'],
     shortHosts: ['amzn.in', 'amzn.to'],
+    home: 'https://www.amazon.in/',
     serverFetch: 'yes',
     measured:
       '2026-10-26: in-stock /dp/ pages fetched with an honest bot User-Agent (from India, not yet from Cloudflare) returned the price box: ₹265, M.R.P. ₹299, "In stock".',
@@ -19,6 +20,7 @@ export const STORES: Record<StoreId, Store> = {
     name: 'Flipkart',
     hosts: ['flipkart.com', 'www.flipkart.com', 'dl.flipkart.com'],
     shortHosts: [],
+    home: 'https://www.flipkart.com/',
     serverFetch: 'refused',
     measured:
       '2026-10-26: product pages answered "Something went wrong! E002" instead of the product. Prices come from the browser extension.',
@@ -29,6 +31,7 @@ export const STORES: Record<StoreId, Store> = {
     name: 'Myntra',
     hosts: ['myntra.com', 'www.myntra.com'],
     shortHosts: [],
+    home: 'https://www.myntra.com/',
     serverFetch: 'no_answer',
     measured:
       '2026-10-26: no response within 25 s to an honest bot User-Agent. Prices come from the browser extension.',

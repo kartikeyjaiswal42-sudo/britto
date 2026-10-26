@@ -30,6 +30,8 @@ export interface Store {
   hosts: readonly string[];
   /** Link-shortener hosts whose redirect must be followed to reach a product URL. */
   shortHosts: readonly string[];
+  /** The store's front page: where Super Browse opens it (BLUEPRINT §18). */
+  home: string;
   serverFetch: ServerFetch;
   /** What was measured, when, and what came back. Shown on the stores page. */
   measured: string;

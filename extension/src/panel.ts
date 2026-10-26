@@ -59,7 +59,8 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: 
   return n;
 }
 
-export function renderPanel(store: StoreId) {
+/** savePage: what the "Save this page" button does; null when the host has its own control. */
+export function renderPanel(store: StoreId, savePage: ((store: StoreId) => void) | null) {
   document.querySelector('britto-panel')?.remove();
   const host = document.createElement('britto-panel');
   const root = host.attachShadow({ mode: BRITTO_SHADOW });
@@ -100,9 +101,13 @@ export function renderPanel(store: StoreId) {
       body.replaceChildren();
       if (problem) {
         body.append(el('p', 'note', problem));
-        const save = el('button', '', 'Save this page for Britto (stays on your computer)');
-        save.addEventListener('click', () => savePage(store));
-        body.append(save);
+        if (savePage) {
+          const save = el('button', '', 'Save this page for Britto (stays on your computer)');
+          save.addEventListener('click', () => savePage(store));
+          body.append(save);
+        } else {
+          body.append(el('p', 'small', 'Press "Save page" at the top to keep a copy of this page on your phone (nothing is uploaded), so Britto can learn to read it.'));
+        }
       }
       if (!reply.ok) {
         if (reply.code !== 'not_tracked') body.append(el('p', 'small', reply.message));
@@ -162,7 +167,7 @@ export function renderPanel(store: StoreId) {
 }
 
 /** Save the page as an .html file in Downloads, so a reader for it can be built. Nothing is uploaded. */
-function savePage(store: StoreId): void {
+export function savePageAsFile(store: StoreId): void {
   const blob = new Blob(['<!-- saved by the Britto extension from ', location.href.replace(/--/g, ''), ' -->\n', document.documentElement.outerHTML], { type: 'text/html' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);

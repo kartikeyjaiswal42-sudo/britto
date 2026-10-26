@@ -341,10 +341,10 @@ function prefixRedirect(request: Request, url: URL): Response | null {
 }
 
 async function page(request: Request, env: Env, url: URL): Promise<Response> {
-  // The app is one page; /p/<key>, /search, /deals and /stores are its client routes.
+  // The app is one page; /p/<key>, /search, /deals, /stores, /alerts and /browse are its client routes.
   // html_handling is "none" (wrangler.jsonc): with the default, a request for /index.html
   // is answered 307 -> "/", which sent every /p/<key> link to the home page.
-  if (/^\/(|p\/[^/]+|search|deals|stores|alerts)\/?$/.test(url.pathname)) {
+  if (/^\/(|p\/[^/]+|search|deals|stores|alerts|browse)\/?$/.test(url.pathname)) {
     return env.ASSETS.fetch(new Request(new URL('/index.html', url), request));
   }
   if (url.pathname === '/bot') return env.ASSETS.fetch(new Request(new URL('/bot.html', url), request));

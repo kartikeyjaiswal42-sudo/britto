@@ -206,6 +206,25 @@ async function storesPage() {
       h('tbody', {}, stores.map((s) => h('tr', {}, h('td', {}, s.name), h('td', {}, label[s.serverFetch]), h('td', { class: 'small' }, s.measured))))));
 }
 
+/** Inside the Britto Android app (it adds "BrittoApp/<version>" to its WebView's User-Agent). */
+const inApp = /\bBrittoApp\//.test(navigator.userAgent);
+
+/**
+ * Super Browse (BLUEPRINT §18): every store Britto knows, opened in the app's in-app browser,
+ * where Britto reads the page you are looking at. In a normal browser the tiles just open the
+ * store (the extension reads it there).
+ */
+async function browsePage() {
+  const { stores } = await getStores();
+  app.replaceChildren(h('h1', {}, 'Super Browse'),
+    h('p', { class: 'muted' }, inApp
+      ? 'Open a store and shop as usual. On every product page Britto shows its price history and reads the price from the page you are looking at.'
+      : 'Open a store and shop as usual. With the Britto extension (or the Britto Android app) you see the price history on every product page.'),
+    h('div', { class: 'store-grid' }, stores.map((s) => h('a', { class: 'store-tile', href: s.home, rel: 'noopener', 'data-store': s.id },
+      h('span', { class: 'store-name' }, s.name),
+      h('span', { class: 'small muted' }, s.serverFetch === 'yes' ? 'Prices also checked by our server' : 'Prices from shoppers\u2019 own pages')))));
+}
+
 // ------------------------------------------------------------------ alerts
 
 let configPromise = null;
@@ -332,7 +351,8 @@ async function enablePush(cfg) {
   if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
     throw new Error(isIOS
       ? 'On iPhone, notifications need Britto on your Home Screen: tap Share, then "Add to Home Screen", open Britto from there and try again. Or connect Telegram.'
-      : 'This browser cannot show notifications from websites. Connect Telegram instead.');
+      : inApp ? 'In the Britto app, alerts arrive by Telegram for now. Connect Telegram instead.'
+        : 'This browser cannot show notifications from websites. Connect Telegram instead.');
   }
   const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
   await navigator.serviceWorker.ready;
@@ -419,6 +439,7 @@ function route() {
   if (pathname === '/search') return done(searchPage(new URLSearchParams(search).get('q') ?? ''));
   if (pathname === '/deals') return done(dealsPage());
   if (pathname === '/stores') return done(storesPage());
+  if (pathname === '/browse') return done(browsePage());
   if (pathname === '/alerts') return done(alertsPage());
   return done(home());
 }

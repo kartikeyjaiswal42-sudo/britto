@@ -110,7 +110,7 @@ export const MUTANTS = [
   },
   {
     name: 'extension: the browser drops the image it read (parity)',
-    file: 'extension/src/content.ts',
+    file: 'extension/src/reader.ts',
     find: '    last = confirmIdentity(config.store, pid, readPage(config, document.documentElement.outerHTML, location.href), config.reportsPid);\n',
     replace: '    last = { ...confirmIdentity(config.store, pid, readPage(config, document.documentElement.outerHTML, location.href), config.reportsPid), image: null };\n',
     run: EXTENSION, expect: [/^parity: the browser reads (amazon\.in\/Cello|amazon\.in\/dp\/B09N3ZNHTY|myntra)/],
