@@ -309,6 +309,7 @@ button { font: inherit; border: 0; background: var(--neutral-bg); color: var(--i
 .card.bad { background: var(--bad-bg); } .card.bad b { color: var(--bad); }
 .small { font-size: 12px; color: var(--muted); }
 .note { font-size: 13px; border-left: 3px solid var(--accent); padding-left: 8px; }
+.offers .small { display: block; margin-top: 2px; }
 .chart-host { position: relative; }
 .chart { width: 100%; height: auto; display: block; }
 .chart .grid { stroke: var(--line); } .chart .axis { fill: var(--muted); font-size: 11px; }
@@ -407,6 +408,12 @@ a.go { display: inline-block; background: var(--accent); color: var(--on-accent)
         const sale = el2("div", `card ${saleClass}`);
         sale.append(el2("b", "", saleTitle), el2("span", "small", v.sale.explanation));
         body.append(verdict, sale);
+        if (ex.offers?.length) {
+          const offers = el2("div", "card offers");
+          offers.append(el2("b", "", "Offers on this page"));
+          for (const o of ex.offers.slice(0, 4)) offers.append(el2("span", "small", `${o.title}: ${o.text}`));
+          body.append(offers);
+        }
         if (v.points.length) {
           const chart = el2("div", "chart-host");
           body.append(chart);
@@ -624,6 +631,11 @@ a.go { display: inline-block; background: var(--accent); color: var(--on-accent)
   }
   var TAG = /<!--[\s\S]*?(?:-->|$)|<![^>]*>|<\?[^>]*>|<(\/?)([A-Za-z][\w:-]*)((?:[^>"']|"[^"]*"|'[^']*')*)>/g;
   function scan(html, sel, from, to) {
+    const out = [];
+    scanInto(html, sel, from, to, out, 1);
+    return out[0] ?? null;
+  }
+  function scanInto(html, sel, from, to, out, limit) {
     TAG.lastIndex = from;
     let top = null;
     for (let m = TAG.exec(html); m && m.index < to; m = TAG.exec(html)) {
@@ -638,18 +650,20 @@ a.go { display: inline-block; background: var(--accent); color: var(--on-accent)
       }
       if (SELF_SIBLING.has(name) && top?.tag === name) top = top.parent;
       const el3 = { tag: name, open: m[0], start: m.index, parent: top };
-      if (matches(el3, sel, sel.parts.length - 1)) return { start: el3.start, tag: el3.tag, open: el3.open, attrs: attrsOf(el3) };
+      if (matches(el3, sel, sel.parts.length - 1)) {
+        out.push({ start: el3.start, tag: el3.tag, open: el3.open, attrs: attrsOf(el3) });
+        if (out.length >= limit) return;
+      }
       const selfClosing = /\/\s*>$/.test(m[0]);
       if (RAW.has(name)) {
         const close = closeTagAt(html, name, TAG.lastIndex);
-        if (close === -1) return null;
+        if (close === -1) return;
         TAG.lastIndex = close;
         top = el3;
       } else if (!VOID2.has(name) && !selfClosing) {
         top = el3;
       }
     }
-    return null;
   }
   function insideRawText(html, pos) {
     if (html.lastIndexOf("<!--", pos) > html.lastIndexOf("-->", pos)) return true;
@@ -724,6 +738,28 @@ a.go { display: inline-block; background: var(--accent); color: var(--on-accent)
       if (hit) return hit;
     }
     return null;
+  }
+  function selectAll(html, selector, limit = 50) {
+    const sel = typeof selector === "string" ? compile(selector) : selector;
+    const head = sel.parts[0];
+    const out = [];
+    if (!head.id && !head.classes.length) {
+      scanInto(html, sel, 0, html.length, out, limit);
+      return out;
+    }
+    const seen = /* @__PURE__ */ new Set();
+    const anchors = [...head.id ? idPositions(html, head.id) : classPositions(html, head.classes[0])];
+    for (const start of anchors) {
+      const outer = sel.parts.length === 1 ? null : elementFrom(html, start);
+      const found = [];
+      scanInto(html, sel, start, sel.parts.length === 1 ? start + 1 : outer ? start + outer.length : html.length, found, limit);
+      for (const f of found) if (!seen.has(f.start)) {
+        seen.add(f.start);
+        out.push(f);
+      }
+      if (out.length >= limit) break;
+    }
+    return out.sort((a, b) => a.start - b.start).slice(0, limit);
   }
   function outerOf(html, found) {
     if (RAW.has(found.tag)) {
@@ -888,6 +924,20 @@ a.go { display: inline-block; background: var(--accent); color: var(--on-accent)
     }
     return false;
   }
+  function readOffers(cfg, html) {
+    const rule = cfg.domRecipe.offers;
+    if (!rule) return [];
+    const out = [];
+    for (const el3 of selectAll(html, rule.items, rule.max ?? 8)) {
+      const part = outerOf(html, el3);
+      if (part == null) continue;
+      const title = fieldValue(rule.title, part);
+      const text = fieldValue(rule.text, part);
+      if (!title || !text) continue;
+      out.push({ title: title.slice(0, 80), text: text.slice(0, 200), count: rule.count ? fieldValue(rule.count, part)?.slice(0, 40) ?? null : null });
+    }
+    return out;
+  }
   function readPage(cfg, html, url = "") {
     const rule = (why) => `${cfg.store}:${why}`;
     const d = cfg.domRecipe;
@@ -905,14 +955,16 @@ a.go { display: inline-block; background: var(--accent); color: var(--on-accent)
     if (price < MIN_PRICE) return result({ status: "unrecognised", title, image, rule: rule("implausible-price") });
     const mrpRead = parseRupees(firstOf(d.mrp, ctx));
     const mrp = mrpRead != null && mrpRead >= MIN_PRICE ? mrpRead : null;
-    return result({ status: "priced", title, image, pid, price, mrp, inStock: true, rule: rule("priced") });
+    const offers = d.offers ? { offers: readOffers(cfg, html) } : {};
+    return result({ status: "priced", title, image, pid, price, mrp, inStock: true, rule: rule("priced"), ...offers });
   }
   function confirmIdentity(store, linkPid, ex, reportsPid) {
     if (ex.status !== "priced" && ex.status !== "unavailable") return ex;
     const expected = store === "flipkart" ? linkPid.split(".")[0] : linkPid;
     if (ex.pid === expected) return ex;
     if (ex.pid == null && !reportsPid) return ex;
-    return { ...ex, status: "unrecognised", price: null, mrp: null, inStock: null, rule: `${ex.rule}+identity-mismatch(${ex.pid ?? "none"})` };
+    const { offers: _otherItemsOffers, ...rest } = ex;
+    return { ...rest, status: "unrecognised", price: null, mrp: null, inStock: null, rule: `${ex.rule}+identity-mismatch(${ex.pid ?? "none"})` };
   }
 
   // extension/src/reader.ts

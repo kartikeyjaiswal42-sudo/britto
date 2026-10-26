@@ -60,6 +60,16 @@ export interface Extracted {
   pid: string | null;
   /** Which rule produced the result — for debugging, and shown nowhere to shoppers. */
   rule: string;
+  /** Offers the page itself shows (bank offers, cashback), when the store's recipe reads them. */
+  offers?: Offer[];
+}
+
+/** One offer as the store's page shows it (BLUEPRINT §15): never invented, never checked by us. */
+export interface Offer {
+  title: string;
+  text: string;
+  /** The page's own count, e.g. "27 offers". */
+  count: string | null;
 }
 
 /**
@@ -165,6 +175,8 @@ export interface ProductView {
   pending: string | null;
   /** The store's sale events (core/sales.ts), for the chart. */
   saleEvents: import('./sales.ts').SaleEvent[];
+  /** Offers our server last read on the store's page, and when; null when none were read. */
+  offers: { at: Millis; items: Offer[] } | null;
 }
 
 /** A row in search results, deal lists and "recently tracked". */

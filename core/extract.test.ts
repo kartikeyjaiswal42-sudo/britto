@@ -77,7 +77,9 @@ test('early stop: reading a prefix gives the same answer as the whole page, well
     for (let n = 16_384; n < html.length; n += 16_384) {
       if (enough('amazon', html.slice(0, n))) { cut = n; break; }
     }
-    assert.ok(cut < html.length * 0.5, `${name}: stopped at ${Math.round((cut / html.length) * 100)}%`);
+    // The offers box (P8) closes after the price box, so a priced page stops a little later:
+    // 36-51% of these pages (was 33-45% before offers were read).
+    assert.ok(cut < html.length * 0.6, `${name}: stopped at ${Math.round((cut / html.length) * 100)}%`);
     assert.deepEqual(extract('amazon', html.slice(0, cut)), extract('amazon', html), name);
   }
 });
@@ -86,6 +88,9 @@ test('early stop never fires on a page cut before the price box closes', () => {
   const html = fx('amazon-cello-25pens-instock.html');
   const core = html.indexOf('id="corePriceDisplay_desktop_feature_div"');
   assert.equal(enough('amazon', html.slice(0, core + 500)), false);
+  const offers = html.indexOf('id="vsxoffers_feature_div"');
+  assert.ok(offers > core, 'on this page the offers box comes after the price box');
+  assert.equal(enough('amazon', html.slice(0, offers + 500)), false, 'nor before the offers box closes');
 });
 
 test('Myntra: pdpData price and M.R.P.', () => {
@@ -140,6 +145,8 @@ test('confirmIdentity: a page showing ANOTHER product is never filed under this 
   assert.equal(wrong.status, 'unrecognised');
   assert.equal(wrong.price, null);
   assert.match(wrong.rule, /identity-mismatch\(B09X5DK382\)/);
+  assert.equal(page.offers?.length, 3, 'the page shows three offer cards');
+  assert.equal(wrong.offers, undefined, "another item's offers are dropped with its price");
   // Single-page navigation: Myntra URL already says 999999, page still shows 1700944.
   assert.equal(confirmIdentity('myntra', '999999', extract('myntra', fx('myntra-instock.html'))).status, 'unrecognised');
   // A reader that should name the product but does not is not trusted either.

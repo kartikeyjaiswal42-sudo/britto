@@ -135,6 +135,11 @@ export const MUTANTS = [
     run: PROVE, expect: [/look-alikes: cheaper, in stock, sharing title words/],
   },
   {
+    name: 'prove: offers read days ago are still shown',
+    file: 'api/db.ts', find: '  if (!row || now - row.at > OFFERS.showFor) return null;', replace: '  if (!row) return null;',
+    run: PROVE, expect: [/offers read more than 3 days ago are not shown/],
+  },
+  {
     name: 'prove: deals ignore the store filter',
     file: 'api/db.ts', find: "  if (f.store) { where.push('store = ?'); args.push(f.store); }\n", replace: '',
     run: PROVE, expect: [/deals: filtered by store/, /each deal carries its last 90 days/],
@@ -163,6 +168,36 @@ export const MUTANTS = [
     name: 'early stop before the price box has arrived',
     file: 'core/interpret.ts', find: '  if (!es.thenUnavailableOr?.length) return true;\n', replace: '  return true;\n',
     run: CHECK, expect: [/^amazon-cello-(25pens|10pens)-instock\.html early stop/, /^amazon-cello-technotip-paise\.html early stop/],
+  },
+  {
+    name: 'offers read from anywhere on the page, not inside each offer card',
+    file: 'core/interpret.ts', find: '    const title = fieldValue(rule.title, part);', replace: '    const title = fieldValue(rule.title, html);',
+    run: UNIT, expect: [/readOffers: every offer card in page order/],
+  },
+  {
+    name: 'offer text not capped at 200 characters',
+    file: 'core/interpret.ts', find: 'text: text.slice(0, 200)', replace: 'text',
+    run: UNIT, expect: [/readOffers: every offer card in page order/],
+  },
+  {
+    name: "another item's offers kept on an identity mismatch",
+    file: 'core/interpret.ts', find: '  return { ...rest, status:', replace: '  return { ...ex, status:',
+    run: UNIT, expect: [/confirmIdentity: a page showing ANOTHER product/],
+  },
+  {
+    name: 'validator does not check offers',
+    file: 'core/recipe.ts', find: '    if (of !== undefined) {', replace: '    if (false) {',
+    run: UNIT, expect: [/refuses what it does not understand/],
+  },
+  {
+    name: 'Amazon: early stop before the offers box has closed',
+    file: 'readers/amazon.desktop.json', find: '"corePriceDisplay_desktop_feature_div", "vsxoffers_feature_div"', replace: '"corePriceDisplay_desktop_feature_div"',
+    run: CHECK, expect: [/^amazon-cello-(25pens|10pens)-instock\.html early stop/, /^amazon-cello-technotip-paise\.html early stop/],
+  },
+  {
+    name: 'Amazon: offer titles read from the wrong element',
+    file: 'readers/amazon.desktop.json', find: '"title": { "selector": [".offers-items-title"]', replace: '"title": { "selector": [".vsx-offers-count"]',
+    run: CHECK, expect: [/^amazon-cello-(25pens|10pens)-instock\.html offers/, /^amazon-cello-technotip-paise\.html offers/],
   },
   {
     name: 'interpreter falls back to the price in the page\'s own JSON',

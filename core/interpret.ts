@@ -11,8 +11,8 @@ import { decodeEntities, elementById, textOf } from './html.ts';
 import { jsonLdPath, jsonLdProductNode } from './jsonld.ts';
 import { parseRupees } from './money.ts';
 import { jsonPath, type Field, type ReaderConfig } from './recipe.ts';
-import { innerOf, outerOf, selectFirst } from './select.ts';
-import type { Extracted, StoreId } from './types.ts';
+import { innerOf, outerOf, selectAll, selectFirst } from './select.ts';
+import type { Extracted, Offer, StoreId } from './types.ts';
 
 interface Ctx { html: string; url: string; memo: Map<string, unknown> }
 
@@ -123,6 +123,25 @@ function isUnavailable(cfg: ReaderConfig, ctx: Ctx): boolean {
 }
 
 /**
+ * The offers the page shows (BLUEPRINT §15), read inside each offer element: at most `max`
+ * (default 8), each text capped at 200 characters. Empty when the recipe reads none.
+ */
+export function readOffers(cfg: ReaderConfig, html: string): Offer[] {
+  const rule = cfg.domRecipe.offers;
+  if (!rule) return [];
+  const out: Offer[] = [];
+  for (const el of selectAll(html, rule.items, rule.max ?? 8)) {
+    const part = outerOf(html, el);
+    if (part == null) continue;
+    const title = fieldValue(rule.title, part);
+    const text = fieldValue(rule.text, part);
+    if (!title || !text) continue;
+    out.push({ title: title.slice(0, 80), text: text.slice(0, 200), count: rule.count ? fieldValue(rule.count, part)?.slice(0, 40) ?? null : null });
+  }
+  return out;
+}
+
+/**
  * Read one product page with one config. Order of decisions: bot wall -> recipe applies ->
  * the product's name -> not buyable -> the price-to-pay -> priced.
  */
@@ -148,7 +167,8 @@ export function readPage(cfg: ReaderConfig, html: string, url = ''): Extracted {
   if (price < MIN_PRICE) return result({ status: 'unrecognised', title, image, rule: rule('implausible-price') });
   const mrpRead = parseRupees(firstOf(d.mrp, ctx));
   const mrp = mrpRead != null && mrpRead >= MIN_PRICE ? mrpRead : null;
-  return result({ status: 'priced', title, image, pid, price, mrp, inStock: true, rule: rule('priced') });
+  const offers = d.offers ? { offers: readOffers(cfg, html) } : {};
+  return result({ status: 'priced', title, image, pid, price, mrp, inStock: true, rule: rule('priced'), ...offers });
 }
 
 /**
@@ -179,5 +199,6 @@ export function confirmIdentity(store: StoreId, linkPid: string, ex: Extracted, 
   const expected = store === 'flipkart' ? linkPid.split('.')[0] : linkPid;
   if (ex.pid === expected) return ex;
   if (ex.pid == null && !reportsPid) return ex;
-  return { ...ex, status: 'unrecognised', price: null, mrp: null, inStock: null, rule: `${ex.rule}+identity-mismatch(${ex.pid ?? 'none'})` };
+  const { offers: _otherItemsOffers, ...rest } = ex;
+  return { ...rest, status: 'unrecognised', price: null, mrp: null, inStock: null, rule: `${ex.rule}+identity-mismatch(${ex.pid ?? 'none'})` };
 }

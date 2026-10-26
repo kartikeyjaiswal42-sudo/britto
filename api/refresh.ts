@@ -3,7 +3,7 @@
 import { confirmIdentity } from '../core/extract.ts';
 import { STORES, STORE_IDS, parseKey, parseProductLink, type ParsedLink } from '../core/stores.ts';
 import { evaluateAlerts } from './alerts.ts';
-import { getProduct, insertProduct, rateLimit, recordFailure, recordObservation, type ProductRow } from './db.ts';
+import { getProduct, insertProduct, rateLimit, recordFailure, recordObservation, recordOffers, type ProductRow } from './db.ts';
 import type { Ctx, Env } from './env.ts';
 import { fetchProduct, resolveShortLink } from './fetcher.ts';
 import { countReading, getReader } from './readers.ts';
@@ -36,6 +36,8 @@ export async function refresh(env: Env, row: Pick<ProductRow, 'key' | 'store' | 
   await health(ex.status);
   if (ex.status === 'priced' || ex.status === 'unavailable') {
     await recordObservation(env.DB, row.key, ex, 'server', now);
+    // Offers only from our own read (BLUEPRINT §15); an unavailable page offers nothing.
+    if (reader.config.domRecipe.offers) await recordOffers(env.DB, row.key, ex.status === 'priced' ? ex.offers ?? [] : [], now);
     if ((row.watchers ?? 0) > 0) await evaluateAlerts(env, row.key, now);
   } else {
     await recordFailure(env.DB, row.key, ex.status, now);

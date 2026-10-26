@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { BUNDLED_READERS, bundledReader } from '../readers/index.ts';
 import { STORE_IDS } from './stores.ts';
-import { fieldValue, readPage } from './interpret.ts';
+import { fieldValue, readOffers, readPage } from './interpret.ts';
 import { canonicalJson, configVersion, fillTemplate, jsonPath, readApiRows, validateReader, type ApiRecipe, type Field, type ReaderConfig } from './recipe.ts';
 
 // A small page made by hand to exercise every Field feature. The real-page checks live in
@@ -153,6 +153,9 @@ test('validateReader: refuses what it does not understand', () => {
     ['API recipe without root', (c) => { c.apiRecipes = [{ ...API, parse: { ...API.parse, root: [] } }]; }, /parse\.root/],
     ['bad oosDefault', (c) => { c.apiRecipes = [{ ...API, parse: { ...API.parse, oosDefault: 2 } }]; }, /oosDefault/],
     ['API method PUT', (c) => { c.apiRecipes = [{ ...API, method: 'PUT' }]; }, /method GET\|POST/],
+    ['offers without items', (c) => { c.domRecipe.offers = { title: { selector: ['b'], attribute: 'textContent' }, text: { selector: ['p'], attribute: 'textContent' } }; }, /domRecipe\.offers\.items/],
+    ['offers max 50', (c) => { c.domRecipe.offers = { items: '.o', title: { selector: ['b'], attribute: 'textContent' }, text: { selector: ['p'], attribute: 'textContent' }, max: 50 }; }, /offers\.max: 1 to 20/],
+    ['unknown offers key', (c) => { c.domRecipe.offers = { items: '.o', title: { selector: ['b'], attribute: 'textContent' }, text: { selector: ['p'], attribute: 'textContent' }, link: {} }; }, /domRecipe\.offers: unknown key "link"/],
   ];
   for (const [name, mutate, want] of cases) {
     const c = good() as unknown as Record<string, any>;
@@ -166,13 +169,13 @@ test('validateReader: refuses what it does not understand', () => {
 test('configVersion: same content same id (key order irrelevant), any change a new id', () => {
   const a = good();
   const v = configVersion(a);
-  assert.match(v, /^amazon\.desktop\.r1\.[0-9a-f]{12}$/);
+  assert.match(v, new RegExp(`^amazon\\.desktop\\.r${a.revision}\\.[0-9a-f]{12}$`));
   const shuffled = Object.fromEntries(Object.entries(a).reverse()) as unknown as ReaderConfig;
   shuffled.domRecipe = Object.fromEntries(Object.entries(a.domRecipe).reverse()) as unknown as ReaderConfig['domRecipe'];
   assert.equal(configVersion(shuffled), v, 'keys in another order');
   assert.equal(canonicalJson(shuffled), canonicalJson(a));
   const changes: ((c: any) => void)[] = [
-    (c) => { c.revision = 2; },
+    (c) => { c.revision += 1; },
     (c) => { c.verified = null; },
     (c) => { c.domRecipe.price[0].regex[0] += '?'; },
     (c) => { c.domRecipe.availability.outOfStockText.push('sold out'); },
@@ -210,4 +213,22 @@ test('readPage: decisions in order, never a price from outside the price fields'
   assert.equal(noPrice.status, 'unrecognised', 'the page is full of numbers, none from the price field');
   assert.equal(noPrice.price, null);
   assert.equal(readPage(cfg({ price: [{ selector: ['#none'], attribute: 'textContent' }, { selector: ['#box'], attribute: 'textContent', squash: true, regex: ['([\\d,]+(?:\\.\\d{1,2})?)'] }] }), PAGE).price, 123450, 'fallback chain: the second field');
+});
+
+test('readOffers: every offer card in page order, each read inside its own card, capped', () => {
+  const cfg = good();
+  cfg.domRecipe.offers = {
+    items: '#offers .card', max: 3,
+    title: { selector: ['h6'], attribute: 'textContent' },
+    text: { selector: ['.full'], attribute: 'textContent' },
+    count: { selector: ['.n'], attribute: 'textContent' },
+  };
+  const card = (t: string, x: string, n = '') => `<div class="card"><h6>${t}</h6><span class="full">${x}</span>${n ? `<a class="n">${n}</a>` : ''}</div>`;
+  const page = `<div class="card"><h6>Outside</h6><span class="full">not an offer box</span></div>
+    <div id="offers">${card('Bank Offer', 'Upto &#8377;1,000 off', '27 offers')}<div class="card"><h6>No text</h6></div>${card('Cashback', 'x'.repeat(300))}${card('EMI', 'No cost')}${card('Fourth', 'over the cap')}</div>`;
+  assert.deepEqual(readOffers(cfg, page), [
+    { title: 'Bank Offer', text: 'Upto ₹1,000 off', count: '27 offers' },
+    { title: 'Cashback', text: 'x'.repeat(200), count: null },
+  ], 'outside the box: no; a card without text: skipped; text capped at 200; max counts cards looked at');
+  assert.equal(readOffers(good(), page).length, 0, 'a recipe without offers reads none');
 });

@@ -157,3 +157,13 @@ CREATE TABLE IF NOT EXISTS reader_health (
   n              INTEGER NOT NULL,
   PRIMARY KEY (hour, store, source, config_version, reader_version, outcome)
 ) WITHOUT ROWID;
+
+-- ---- Offers on the store's page (P8, BLUEPRINT §15).
+-- What the store's own page showed (bank offers, cashback), as read by OUR server only: offer
+-- text sent by a client is never stored or shown to anyone else. One row per product, replaced
+-- on every server read whose reader reads offers; removed when the page shows none.
+CREATE TABLE IF NOT EXISTS product_offers (
+  key  TEXT PRIMARY KEY,
+  at   INTEGER NOT NULL,
+  json TEXT NOT NULL                         -- [{title, text, count}] from core/interpret.ts readOffers
+);

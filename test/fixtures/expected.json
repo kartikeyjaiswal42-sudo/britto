@@ -9,7 +9,24 @@
     "mrp": 29900,
     "inStock": true,
     "pid": "B09X5DK382",
-    "title": "Cello Butterflow Simply Ball Pen Set | Pack of 25"
+    "title": "Cello Butterflow Simply Ball Pen Set | Pack of 25",
+    "offers": [
+      {
+        "title": "Cashback",
+        "text": "Upto ₹7.00 cashback as Amazon Pay Balance when you pay with Amazon Pay ICICI Bank Credit Cards",
+        "count": "1 offer"
+      },
+      {
+        "title": "Bank Offer",
+        "text": "Upto ₹1,000.00 discount on select Credit Cards",
+        "count": "27 offers"
+      },
+      {
+        "title": "Partner Offers",
+        "text": "Get GST invoice and save up to 18% on business purchases. Sign up for free",
+        "count": "1 offer"
+      }
+    ]
   },
   "amazon-cello-10pens-instock.html": {
     "fetched": "2026-10-26 (S1); the page echoes a DaamBot/0.1 User-Agent",
@@ -20,7 +37,24 @@
     "mrp": 19900,
     "inStock": true,
     "pid": "B01INWEX9U",
-    "title": "Cello Pinpoint Ballpoint Pens, Blue - Pack of 10"
+    "title": "Cello Pinpoint Ballpoint Pens, Blue - Pack of 10",
+    "offers": [
+      {
+        "title": "Cashback",
+        "text": "Upto ₹4.00 cashback as Amazon Pay Balance when you pay with Amazon Pay ICICI Bank Credit Cards",
+        "count": "1 offer"
+      },
+      {
+        "title": "Bank Offer",
+        "text": "Upto ₹1,000.00 discount on select Credit Cards",
+        "count": "27 offers"
+      },
+      {
+        "title": "Partner Offers",
+        "text": "Spend INR 100.00 or more and get 3% off on Qualifying Items offered by Smart Seller India. Shop items View products",
+        "count": "2 offers"
+      }
+    ]
   },
   "amazon-cello-technotip-paise.html": {
     "fetched": "2026-10-26 (S2); the page echoes the DaamBot/0.1 User-Agent with the daam workers.dev address",
@@ -31,7 +65,29 @@
     "mrp": null,
     "inStock": true,
     "pid": "B00IEA1G4M",
-    "title": "1 X 10 Cello Technotip Pen"
+    "title": "1 X 10 Cello Technotip Pen",
+    "offers": [
+      {
+        "title": "Cashback",
+        "text": "Upto ₹52.00 cashback as Amazon Pay Balance when you pay with Amazon Pay ICICI Bank Credit Cards",
+        "count": "1 offer"
+      },
+      {
+        "title": "No Cost EMI",
+        "text": "Upto ₹45.97 EMI interest savings on Amazon Pay ICICI Bank Credit Cards",
+        "count": "1 offer"
+      },
+      {
+        "title": "Bank Offer",
+        "text": "Upto ₹1,000.00 discount on select Credit Cards",
+        "count": "27 offers"
+      },
+      {
+        "title": "Partner Offers",
+        "text": "Get GST invoice and save up to 18% on business purchases. Sign up for free",
+        "count": "1 offer"
+      }
+    ]
   },
   "amazon-boat-variant-unavailable.html": {
     "fetched": "2026-10-26 (S1); the page echoes a DaamBot/0.1 User-Agent",

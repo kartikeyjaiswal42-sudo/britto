@@ -62,6 +62,7 @@ code { background: var(--neutral-bg); padding: 1px 6px; border-radius: 4px; }
 .now { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .big-price { font-size: 32px; font-weight: 800; }
 .cards2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 20px; }
+.offers ul { margin: 0; padding-left: 18px; } .offers li { margin: 4px 0; }
 .verdict { border-radius: 10px; padding: 14px 16px; border: 1px solid var(--line); background: var(--neutral-bg); }
 .verdict h2 { margin: 0 0 6px; font-size: 18px; }
 .verdict ul { margin: 0; padding-left: 18px; }

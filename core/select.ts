@@ -146,6 +146,13 @@ export interface Found {
 
 /** First element (document order) matching `sel`, scanning html[from, to). */
 function scan(html: string, sel: Complex, from: number, to: number): Found | null {
+  const out: Found[] = [];
+  scanInto(html, sel, from, to, out, 1);
+  return out[0] ?? null;
+}
+
+/** Every element matching `sel` in html[from, to), in document order, up to `limit`. */
+function scanInto(html: string, sel: Complex, from: number, to: number, out: Found[], limit: number): void {
   TAG.lastIndex = from;
   let top = null as El | null;
   for (let m = TAG.exec(html); m && m.index < to; m = TAG.exec(html)) {
@@ -157,18 +164,20 @@ function scan(html: string, sel: Complex, from: number, to: number): Found | nul
     }
     if (SELF_SIBLING.has(name) && top?.tag === name) top = top.parent;
     const el: El = { tag: name, open: m[0], start: m.index, parent: top };
-    if (matches(el, sel, sel.parts.length - 1)) return { start: el.start, tag: el.tag, open: el.open, attrs: attrsOf(el) };
+    if (matches(el, sel, sel.parts.length - 1)) {
+      out.push({ start: el.start, tag: el.tag, open: el.open, attrs: attrsOf(el) });
+      if (out.length >= limit) return;
+    }
     const selfClosing = /\/\s*>$/.test(m[0]);
     if (RAW.has(name)) {
       const close = closeTagAt(html, name, TAG.lastIndex);
-      if (close === -1) return null; // the rest of the text is this element's content
+      if (close === -1) return; // the rest of the text is this element's content
       TAG.lastIndex = close;
       top = el; // the close tag pops it
     } else if (!VOID.has(name) && !selfClosing) {
       top = el;
     }
   }
-  return null;
 }
 
 /**
@@ -274,6 +283,31 @@ export function selectFirst(html: string, selector: string | Complex, full = fal
     if (hit) return hit;
   }
   return null;
+}
+
+/**
+ * Every element matching `selector`, in document order, at most `limit` (the same fast path
+ * as selectFirst). Collected eagerly: the scanner's state is shared, so nothing may run between
+ * steps of a lazy walk.
+ */
+export function selectAll(html: string, selector: string | Complex, limit = 50): Found[] {
+  const sel = typeof selector === 'string' ? compile(selector) : selector;
+  const head = sel.parts[0]!;
+  const out: Found[] = [];
+  if (!head.id && !head.classes.length) {
+    scanInto(html, sel, 0, html.length, out, limit);
+    return out;
+  }
+  const seen = new Set<number>();
+  const anchors = [...(head.id ? idPositions(html, head.id) : classPositions(html, head.classes[0]!))];
+  for (const start of anchors) {
+    const outer = sel.parts.length === 1 ? null : elementFrom(html, start);
+    const found: Found[] = [];
+    scanInto(html, sel, start, sel.parts.length === 1 ? start + 1 : outer ? start + outer.length : html.length, found, limit);
+    for (const f of found) if (!seen.has(f.start)) { seen.add(f.start); out.push(f); }
+    if (out.length >= limit) break;
+  }
+  return out.sort((a, b) => a.start - b.start).slice(0, limit);
 }
 
 /** Outer HTML of a found element, or null when the page ends before it closes. */

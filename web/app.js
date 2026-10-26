@@ -149,6 +149,7 @@ async function productPage(key) {
           h('h2', {}, SALE_TITLE[view.sale.status]),
           h('p', {}, view.sale.explanation),
           view.sale.claimedPct != null ? h('p', { class: 'small' }, `Claimed: ${pct(view.sale.claimedPct)} off M.R.P. · Real: ${view.sale.realPct == null ? 'not known yet' : pct(view.sale.realPct) + ' vs usual'}`) : null)),
+      offersSection(view),
       h('section', {}, h('div', { class: 'chart-head' }, h('h2', {}, 'Price history'), rangeBar), chartHost),
       alertBox(view),
       h('dl', { class: 'stats' },
@@ -164,6 +165,16 @@ async function productPage(key) {
     document.getElementById('similar')?.replaceChildren(h('h2', {}, 'Similar, and cheaper'), h('p', { class: 'muted small' }, basis), grid(results, ''));
   }).catch(() => {});
   if (location.hash === '#alert') document.getElementById('alert')?.scrollIntoView();
+}
+
+// Offers the store's own page showed when OUR server last read it (BLUEPRINT §15): quoted as
+// the page put them, not checked by Britto. Offer text from shoppers' browsers is never shown here.
+function offersSection(view) {
+  if (!view.offers?.items.length) return null;
+  return h('section', { class: 'offers', id: 'offers' },
+    h('h2', {}, `Offers on ${view.store.name}'s page`),
+    h('ul', {}, view.offers.items.map((o) => h('li', {}, h('b', {}, o.title), ' ', o.text, o.count ? h('span', { class: 'muted small' }, ` · ${o.count}`) : null))),
+    h('p', { class: 'muted small' }, `As the page showed them ${ago(view.offers.at)}. Britto does not check offers or their terms: read them on ${view.store.name} before you pay.`));
 }
 
 function stat(label, value, note) {

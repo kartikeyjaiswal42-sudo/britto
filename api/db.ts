@@ -3,7 +3,7 @@ import { saleCheck, verdict } from '../core/judge.ts';
 import { saleEventsFor } from '../core/sales.ts';
 import { STORES, type ParsedLink } from '../core/stores.ts';
 import { TRUST, type HeldReport, type Observed } from '../core/trust.ts';
-import type { Extracted, Millis, PricePoint, ProductCard, ProductKey, ProductView, SaleStatus, StoreId } from '../core/types.ts';
+import type { Extracted, Millis, Offer, PricePoint, ProductCard, ProductKey, ProductView, SaleStatus, StoreId } from '../core/types.ts';
 import type { D1Database } from './env.ts';
 import { HEALTH } from './readers.ts';
 
@@ -139,7 +139,28 @@ function pendingReason(row: ProductRow, hasPoints: boolean): string | null {
   return `We could not read the price yet (${row.last_status ?? 'unknown'}). We will try again automatically.`;
 }
 
-export async function productView(db: D1Database, row: ProductRow): Promise<ProductView> {
+/** Offers our server read on a store's page (BLUEPRINT §15) are shown for this long after the read. */
+export const OFFERS = { showFor: 3 * 86_400_000 };
+
+/** Replace a product's offers with what our server just read; none read removes them. */
+export async function recordOffers(db: D1Database, key: ProductKey, offers: Offer[], now: Millis): Promise<void> {
+  if (!offers.length) {
+    await db.prepare('DELETE FROM product_offers WHERE key = ?').bind(key).run();
+    return;
+  }
+  await db
+    .prepare('INSERT INTO product_offers (key, at, json) VALUES (?, ?, ?) ON CONFLICT (key) DO UPDATE SET at = excluded.at, json = excluded.json')
+    .bind(key, now, JSON.stringify(offers))
+    .run();
+}
+
+async function loadOffers(db: D1Database, key: ProductKey, now: Millis): Promise<ProductView['offers']> {
+  const row = await db.prepare('SELECT at, json FROM product_offers WHERE key = ?').bind(key).first<{ at: number; json: string }>();
+  if (!row || now - row.at > OFFERS.showFor) return null;
+  return { at: row.at, items: JSON.parse(row.json) as Offer[] };
+}
+
+export async function productView(db: D1Database, row: ProductRow, now: Millis = Date.now()): Promise<ProductView> {
   const points = await loadPoints(db, row.key);
   const s = stats(points, row.last_checked_at);
   const store = STORES[row.store];
@@ -155,6 +176,7 @@ export async function productView(db: D1Database, row: ProductRow): Promise<Prod
     sale: saleCheck(points, row.last_checked_at),
     pending: pendingReason(row, points.length > 0),
     saleEvents: saleEventsFor(row.store),
+    offers: await loadOffers(db, row.key, now),
   };
 }
 

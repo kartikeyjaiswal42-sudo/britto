@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { innerOf, outerOf, parseAttrs, parseSelector, selectFirst, SelectorError } from './select.ts';
+import { innerOf, outerOf, parseAttrs, parseSelector, selectAll, selectFirst, SelectorError } from './select.ts';
 import { textOf } from './html.ts';
 import { readFileSync, readdirSync } from 'node:fs';
 import { BUNDLED_READERS } from '../readers/index.ts';
@@ -117,4 +117,15 @@ test('.class fast path: a class name in text, another attribute or a script is n
   const html = `<script>var c = '<div class="hit">no</div>';</script><p data-x="hit">x</p><p>hit</p><div class="a hit b"><span>yes</span></div>`;
   assert.equal(textOf(outerOf(html, selectFirst(html, '.hit span')!)!), 'yes');
   assert.equal(selectFirst(html, '.hit')?.start, html.indexOf('<div class="a hit b">'));
+});
+
+test('selectAll: every match in page order, with and without an id/class anchor, limited', () => {
+  assert.deepEqual(selectAll(PAGE, 'li.item').map((f) => f.open), ['<li class="item">', '<li class="item hot">']);
+  assert.deepEqual(selectAll(PAGE, '.a-price .a-offscreen').map((f) => innerOf(PAGE, f)), ['₹9', '₹265'], 'not the copy inside the script');
+  assert.deepEqual(selectAll(PAGE, '#main p').length, 2);
+  assert.deepEqual(selectAll(PAGE, 'li.item', 1).map((f) => f.open), ['<li class="item">']);
+  assert.deepEqual(selectAll(PAGE, '.nothing-here'), []);
+  for (const sel of ['li.item', '.a-price .a-offscreen', '#main p', 'span']) {
+    assert.deepEqual(selectAll(PAGE, sel)[0], selectFirst(PAGE, sel), `${sel}: the first of all is selectFirst`);
+  }
 });

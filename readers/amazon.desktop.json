@@ -2,7 +2,7 @@
   "schema": 1,
   "store": "amazon",
   "device": "desktop",
-  "revision": 1,
+  "revision": 2,
   "verified": "2026-10-26",
   "reportsPid": true,
   "domRecipe": {
@@ -38,6 +38,13 @@
         "regex": ["([\\d,]+(?:\\.\\d{1,2})?)"]
       }
     ],
-    "earlyStop": { "complete": ["productTitle", "availability"], "thenUnavailableOr": ["corePriceDisplay_desktop_feature_div"] }
+    "offers": {
+      "items": "#vsxoffers_feature_div .offers-items",
+      "title": { "selector": [".offers-items-title"], "attribute": "textContent" },
+      "text": { "selector": [".a-truncate-full"], "attribute": "textContent" },
+      "count": { "selector": [".vsx-offers-count"], "attribute": "textContent" },
+      "max": 8
+    },
+    "earlyStop": { "complete": ["productTitle", "availability"], "thenUnavailableOr": ["corePriceDisplay_desktop_feature_div", "vsxoffers_feature_div"] }
   }
 }

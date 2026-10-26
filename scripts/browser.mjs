@@ -53,6 +53,30 @@ try {
     check('chart line has a colour', stroke !== 'none' && stroke !== '', stroke);
     check('"Open on Amazon.in" links to the clean product URL', (await page.locator('a.button').getAttribute('href')) === 'https://www.amazon.in/dp/B09X5DK382');
 
+    // Offers (BLUEPRINT §15) on a view whose offers are MADE UP in this browser only (the real
+    // server stores offers only from its own reads of a store page).
+    const productApi = /\/api\/products\/amazon(%3A|:)B09X5DK382$/;
+    await page.route(productApi, async (route) => {
+      const res = await route.fetch();
+      const body = await res.json();
+      body.product.offers = { at: Date.now() - 2 * 3_600_000, items: [
+        { title: 'Bank Offer', text: 'Upto ₹1,000.00 discount <img src=x onerror="document.title=1"> on select Credit Cards', count: '27 offers' },
+        { title: 'Cashback', text: 'Upto ₹7.00 cashback as Amazon Pay Balance', count: null },
+      ] };
+      await route.fulfill({ response: res, json: body });
+    });
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForSelector('#offers li');
+    const offerItems = await page.locator('#offers li').allInnerTexts();
+    check('offers: each listed as the store page put it, markup shown as text, never run', offerItems.length === 2 && offerItems[0].startsWith('Bank Offer Upto ₹1,000.00 discount <img')
+      && offerItems[0].endsWith('· 27 offers') && (await page.locator('#offers img').count()) === 0, JSON.stringify(offerItems));
+    const offerNote = await page.locator('#offers p').innerText();
+    check('…with when they were read, and that Britto does not check them', /showed them 2 h ago/.test(offerNote) && /does not check offers/.test(offerNote), offerNote);
+    await page.unroute(productApi);
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForSelector('.big-price');
+    check('…and no offers section when none were read', (await page.locator('#offers').count()) === 0);
+
     // No sideways scrolling: try to scroll right and see whether anything moved.
     await page.evaluate(() => window.scrollTo(500, 0));
     check('no horizontal scroll', (await page.evaluate(() => window.scrollX)) === 0);

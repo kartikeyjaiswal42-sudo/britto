@@ -59,6 +59,8 @@ export interface DomRecipe {
   discontinuedText?: { sel: string; txt: string }[];
   /** Alternatives; each is a list of regexes that must ALL match the page source. */
   blocked?: string[][];
+  /** Offers the page shows: every element matching `items` is one offer (BLUEPRINT §15). */
+  offers?: { items: string; title: Field; text: Field; count?: Field; max?: number };
   /** Server early stop: every id in `complete` is a closed element, and then either the page
    * reads as unavailable or every id in `thenUnavailableOr` is closed too. */
   earlyStop?: { complete: string[]; thenUnavailableOr?: string[] };
@@ -112,7 +114,7 @@ const FIELD_KEYS = new Set(['selector', 'attribute', 'regex', 'match', 'global',
 const TOP_KEYS = new Set(['schema', 'store', 'device', 'revision', 'verified', 'reportsPid', 'toCacheLong', 'domRecipe', 'apiRecipes']);
 const DOM_KEYS = new Set([
   'classSelector', 'name', 'price', 'mrp', 'image', 'pid', 'itm', 'availability', 'discontinuedText', 'blocked', 'earlyStop',
-  'rating', 'ratingsCount', 'reviewsCount', 'brand', 'categoryPath', 'seller', 'pincodeFromStorageKeys',
+  'rating', 'ratingsCount', 'reviewsCount', 'brand', 'categoryPath', 'seller', 'pincodeFromStorageKeys', 'offers',
 ]);
 // sellerPageFallback (§6.1) is not implemented: refused, so no recipe can rely on it silently.
 const AVAIL_KEYS = new Set(['selectors', 'outOfStockText', 'fields']);
@@ -231,6 +233,18 @@ export function validateReader(input: unknown): Check {
     }
     for (const k of ['rating', 'ratingsCount', 'reviewsCount', 'brand', 'categoryPath', 'seller'] as const) checkFields(d[k], `domRecipe.${k}`, errors, false);
     if (d['classSelector'] !== undefined) checkSelector(d['classSelector'], 'domRecipe.classSelector', errors);
+    const of = d['offers'];
+    if (of !== undefined) {
+      if (!isObj(of)) errors.push('domRecipe.offers: must be an object');
+      else {
+        unknownKeys(of, new Set(['items', 'title', 'text', 'count', 'max']), 'domRecipe.offers', errors);
+        checkSelector(of['items'], 'domRecipe.offers.items', errors);
+        checkField(of['title'], 'domRecipe.offers.title', errors);
+        checkField(of['text'], 'domRecipe.offers.text', errors);
+        if (of['count'] !== undefined) checkField(of['count'], 'domRecipe.offers.count', errors);
+        if (of['max'] !== undefined && !(Number.isInteger(of['max']) && (of['max'] as number) >= 1 && (of['max'] as number) <= 20)) errors.push('domRecipe.offers.max: 1 to 20');
+      }
+    }
     const av = d['availability'];
     if (!isObj(av)) errors.push('domRecipe.availability: must be an object');
     else {

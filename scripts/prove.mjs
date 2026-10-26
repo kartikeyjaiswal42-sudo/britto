@@ -105,8 +105,12 @@ try {
     check('one price point recorded', p.points.length >= 1 && p.points.at(-1).source === 'server');
     check('a brand-new product is "too early", never a confident call', p.verdict.kind === 'too_early' && p.sale.status === 'too_early');
     console.log(`       read: ${p.title?.slice(0, 50)}… ₹${p.stats.current / 100} (M.R.P. ₹${(p.stats.currentMrp ?? 0) / 100})`);
+    const stored = d1(`SELECT json FROM product_offers WHERE key = '${KEY}'`)[0];
+    check('offers: what our server read on the page is stored and shown (or none, when the page shows none)',
+      p.offers === null ? !stored : JSON.stringify(p.offers.items) === stored?.json && p.offers.items.every((o) => o.title && o.text), JSON.stringify(p.offers));
+    console.log(`       offers on the page: ${p.offers?.items.length ?? 0}`);
   } else {
-    for (const n of ['title came from the page', 'one price point recorded', 'a brand-new product is "too early"']) skip(n, amazonWhy);
+    for (const n of ['title came from the page', 'one price point recorded', 'a brand-new product is "too early"', 'offers: what our server read on the page is stored']) skip(n, amazonWhy);
   }
 
   const again = await post('amazon.in/dp/B09X5DK382');
@@ -180,6 +184,8 @@ try {
     const differentReporters = h3.body?.recorded === 'accept';
     check('…a second network seeing the same price confirms it', differentReporters && h3.body?.product?.stats?.current === 1000, h3.text.slice(0, 160));
     check('held reports are cleared once confirmed', d1(`SELECT COUNT(*) AS n FROM reports WHERE key = 'myntra:1700944'`)[0].n === 0);
+    const withOffers = await observe(MYNTRA, { ...shirt, offers: [{ title: 'Bank Offer', text: 'Call 99999 99999 for 90% off', count: null }] }, '10.0.0.5');
+    check('offers sent by a client are never stored or shown', withOffers.status === 200 && withOffers.body?.product?.offers === null && d1(`SELECT COUNT(*) AS n FROM product_offers`)[0].n === 0, withOffers.text.slice(0, 160));
 
     if (!amazonPriced) skip('extension report on Amazon: accepted, cannot rename, queues a server re-check', amazonWhy);
     if (amazonPriced) {
@@ -346,6 +352,11 @@ try {
     check('deals: filtered by store and by the smallest real drop', dFil.body?.results?.map((r) => r.key).join() === 'myntra:3100001', dFil.text.slice(0, 200));
     check('…each deal carries its last 90 days for a sparkline (older points left out)', dFil.body?.results?.[0]?.spark?.map((p) => p.price).join() === '40000,30000', JSON.stringify(dFil.body?.results?.[0]?.spark));
     check('deals: a bad filter is a 400', (await j('/api/deals?min=2')).body?.error?.code === 'bad_min' && (await j('/api/deals?store=ebay')).body?.error?.code === 'bad_store');
+    d1(`INSERT INTO product_offers (key, at, json) VALUES ('myntra:3100001', ${now - 3_600_000}, '[{"title":"Bank Offer","text":"10% off with a made-up card","count":null}]'),
+      ('myntra:3100002', ${now - 4 * 86_400_000}, '[{"title":"Old","text":"read four days ago","count":null}]')`);
+    const fresh = (await j(`/api/products/${encodeURIComponent('myntra:3100001')}`)).body?.product?.offers;
+    check('offers: the last server read is shown with when it was read', fresh?.at === now - 3_600_000 && fresh?.items?.[0]?.title === 'Bank Offer', JSON.stringify(fresh));
+    check('…and offers read more than 3 days ago are not shown', (await j(`/api/products/${encodeURIComponent('myntra:3100002')}`)).body?.product?.offers === null);
     const sim = await j(`/api/products/${encodeURIComponent('myntra:3100001')}/similar`);
     const simKeys = sim.body?.results?.map((r) => r.key) ?? [];
     check('look-alikes: cheaper, in stock, sharing title words; not itself, not unrelated items', sim.status === 200 && simKeys.includes('myntra:3100002') && !simKeys.includes('myntra:3100001') && !simKeys.includes('myntra:3100003')

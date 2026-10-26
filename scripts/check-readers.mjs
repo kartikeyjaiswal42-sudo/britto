@@ -12,6 +12,7 @@
 //   2. Early stop: whenever readerEnough(prefix) is true, readPage(prefix) equals
 //      readPage(whole page), for every 16 KB prefix (the server stops downloading there).
 //   3. Every fixture has an entry, and every entry a fixture.
+// Offers are compared exactly; a priced page whose recipe reads offers must list them.
 // Prints "ok <fixture>" or "DIFF <fixture> <what>: …" lines; exits 1 on any DIFF.
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
@@ -154,6 +155,9 @@ for (const f of files) {
     if (k in want && got[k] !== want[k]) diff(f, `${k}: expected ${fmt(want[k])}, got ${fmt(got[k])} (${got.rule})`);
   }
   if (want.title && !(got.title ?? '').startsWith(want.title)) diff(f, `title: expected to start ${fmt(want.title)}, got ${fmt(got.title)}`);
+  // Offers (§15): a priced page whose recipe reads offers must list them, exactly as read.
+  if (cfg.domRecipe.offers && got.status === 'priced' && !('offers' in want)) diff(f, 'the recipe reads offers, so expected.json must list this page\'s offers ([] for none)');
+  if ('offers' in want && !isDeepStrictEqual(got.offers ?? [], want.offers)) diff(f, `offers: expected ${fmt(want.offers)}, got ${fmt(got.offers ?? [])}`);
 
   // Rule 1: deleting what was read changes the reading.
   const d = cfg.domRecipe;

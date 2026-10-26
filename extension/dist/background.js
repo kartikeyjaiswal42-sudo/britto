@@ -244,7 +244,8 @@
     "brand",
     "categoryPath",
     "seller",
-    "pincodeFromStorageKeys"
+    "pincodeFromStorageKeys",
+    "offers"
   ]);
   var AVAIL_KEYS = /* @__PURE__ */ new Set(["selectors", "outOfStockText", "fields"]);
   var API_KEYS = /* @__PURE__ */ new Set(["url", "method", "headers", "bodyTemplate", "parse", "imageTemplateReplacements"]);
@@ -369,6 +370,18 @@
       }
       for (const k of ["rating", "ratingsCount", "reviewsCount", "brand", "categoryPath", "seller"]) checkFields(d[k], `domRecipe.${k}`, errors, false);
       if (d["classSelector"] !== void 0) checkSelector(d["classSelector"], "domRecipe.classSelector", errors);
+      const of = d["offers"];
+      if (of !== void 0) {
+        if (!isObj(of)) errors.push("domRecipe.offers: must be an object");
+        else {
+          unknownKeys(of, /* @__PURE__ */ new Set(["items", "title", "text", "count", "max"]), "domRecipe.offers", errors);
+          checkSelector(of["items"], "domRecipe.offers.items", errors);
+          checkField(of["title"], "domRecipe.offers.title", errors);
+          checkField(of["text"], "domRecipe.offers.text", errors);
+          if (of["count"] !== void 0) checkField(of["count"], "domRecipe.offers.count", errors);
+          if (of["max"] !== void 0 && !(Number.isInteger(of["max"]) && of["max"] >= 1 && of["max"] <= 20)) errors.push("domRecipe.offers.max: 1 to 20");
+        }
+      }
       const av = d["availability"];
       if (!isObj(av)) errors.push("domRecipe.availability: must be an object");
       else {

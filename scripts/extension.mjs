@@ -59,7 +59,7 @@ async function recordParity(page, url) {
   const link = parseProductLink(url).link;
   const cfg = bundledReader(link.store).config;
   const node = confirmIdentity(link.store, link.pid, readPage(cfg, PAGES.get(url), url), cfg.reportsPid);
-  const fields = ['status', 'price', 'mrp', 'inStock', 'pid', 'title', 'image', 'rule'];
+  const fields = ['status', 'price', 'mrp', 'inStock', 'pid', 'title', 'image', 'rule', 'offers'];
   const diffs = fields.filter((k) => !isDeepStrictEqual(reading?.[k], node[k])).map((k) => `${k}: browser ${JSON.stringify(reading?.[k])} vs node ${JSON.stringify(node[k])}`);
   parity.push({ url, diffs });
 }
@@ -126,6 +126,10 @@ try {
   let v = await api('/api/products/amazon%3AB09X5DK382');
   check('the reading reached Britto as an extension report', v.body?.product?.points?.length === 1 && v.body.product.points[0].source === 'extension' && v.body.product.points[0].price === 26500, JSON.stringify(v.body?.product?.points));
   await recordParity(page, 'https://www.amazon.in/Cello-Butterflow/dp/B09X5DK382');
+  // Offers (BLUEPRINT §15): shown from this page, on this screen only; never sent to Britto.
+  check('…and the offers this page shows (3 cards)', /Offers on this page/.test(t) && /Bank Offer: Upto ₹1,000\.00 discount on select Credit Cards/.test(t)
+    && (await panel().locator('.offers .small').count()) === 3, t.slice(0, 600));
+  check('…which stay on the shopper\'s screen: nothing stored, nothing shown to others', d1(`SELECT COUNT(*) AS n FROM product_offers`)[0].n === 0 && v.body?.product?.offers === null, JSON.stringify(v.body?.product?.offers));
   const used = d1(`SELECT source, config_version, reader_version, outcome, n FROM reader_health WHERE store = 'amazon'`);
   check('…read with the config the server served (reader health: extension, bundled version, 0.3.0)', used.some((r) => r.source === 'extension' && r.config_version === AMAZON.version && r.reader_version === '0.3.0' && r.outcome === 'priced'), JSON.stringify(used));
   const shots = arg('--shots', null);

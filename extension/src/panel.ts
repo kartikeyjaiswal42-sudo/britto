@@ -32,6 +32,7 @@ button { font: inherit; border: 0; background: var(--neutral-bg); color: var(--i
 .card.bad { background: var(--bad-bg); } .card.bad b { color: var(--bad); }
 .small { font-size: 12px; color: var(--muted); }
 .note { font-size: 13px; border-left: 3px solid var(--accent); padding-left: 8px; }
+.offers .small { display: block; margin-top: 2px; }
 .chart-host { position: relative; }
 .chart { width: 100%; height: auto; display: block; }
 .chart .grid { stroke: var(--line); } .chart .axis { fill: var(--muted); font-size: 11px; }
@@ -141,6 +142,14 @@ export function renderPanel(store: StoreId, savePage: ((store: StoreId) => void)
       const sale = el('div', `card ${saleClass}`);
       sale.append(el('b', '', saleTitle), el('span', 'small', v.sale.explanation));
       body.append(verdict, sale);
+      // Offers as THIS page shows them, read on the shopper's own screen (BLUEPRINT §15). They
+      // stay here: offer text is never sent to the server.
+      if (ex.offers?.length) {
+        const offers = el('div', 'card offers');
+        offers.append(el('b', '', 'Offers on this page'));
+        for (const o of ex.offers.slice(0, 4)) offers.append(el('span', 'small', `${o.title}: ${o.text}`));
+        body.append(offers);
+      }
 
       if (v.points.length) {
         const chart = el('div', 'chart-host');
