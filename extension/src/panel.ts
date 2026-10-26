@@ -37,6 +37,8 @@ button { font: inherit; border: 0; background: var(--neutral-bg); color: var(--i
 .chart .grid { stroke: var(--line); } .chart .axis { fill: var(--muted); font-size: 11px; }
 .chart .line { fill: none; stroke: var(--accent); stroke-width: 2.5; }
 .chart .gap { fill: var(--gap); opacity: .6; } .chart .low { fill: var(--good); }
+.chart .sale-band { fill: var(--accent); opacity: .12; } .chart .sale-start { stroke: var(--accent); stroke-dasharray: 4 3; }
+.chart .sale-label { fill: var(--accent); font-size: 11px; }
 .chart .cursor { stroke: var(--muted); stroke-dasharray: 3 3; }
 .tip { position: absolute; top: 4px; background: var(--ink); color: var(--bg); font-size: 12px; padding: 3px 7px; border-radius: 6px; pointer-events: none; white-space: nowrap; }
 [hidden] { display: none !important; }

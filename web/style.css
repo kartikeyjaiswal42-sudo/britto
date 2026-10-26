@@ -72,6 +72,9 @@ code { background: var(--neutral-bg); padding: 1px 6px; border-radius: 4px; }
 .chart-host { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px; }
 .chart { width: 100%; height: auto; display: block; touch-action: pan-y; }
 .chart .grid { stroke: var(--line); }
+.chart .sale-band { fill: var(--accent); opacity: .12; }
+.chart .sale-start { stroke: var(--accent); stroke-dasharray: 4 3; }
+.chart .sale-label { fill: var(--accent); font-size: 11px; }
 .chart .axis { fill: var(--muted); font-size: 12px; }
 .chart .line { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; }
 .chart .gap { fill: var(--gap); opacity: .6; }

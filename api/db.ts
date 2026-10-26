@@ -1,5 +1,6 @@
 import { isChange, stats } from '../core/history.ts';
 import { saleCheck, verdict } from '../core/judge.ts';
+import { saleEventsFor } from '../core/sales.ts';
 import { STORES, type ParsedLink } from '../core/stores.ts';
 import { TRUST, type HeldReport, type Observed } from '../core/trust.ts';
 import type { Extracted, Millis, PricePoint, ProductCard, ProductKey, ProductView, SaleStatus, StoreId } from '../core/types.ts';
@@ -153,6 +154,7 @@ export async function productView(db: D1Database, row: ProductRow): Promise<Prod
     verdict: verdict(s),
     sale: saleCheck(points, row.last_checked_at),
     pending: pendingReason(row, points.length > 0),
+    saleEvents: saleEventsFor(row.store),
   };
 }
 

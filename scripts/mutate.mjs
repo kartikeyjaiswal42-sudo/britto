@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const UNIT = ['node', ['--test', 'core/recipe.test.ts', 'core/extract.test.ts', 'core/select.test.ts']];
 const CHECK = ['node', ['scripts/check-readers.mjs']];
+const UNIT2 = ['node', ['--test', 'core/sales.test.ts']];
 // The slow ones (a real Worker; prove also makes its real amazon.in requests): run them by name.
 const PROVE = ['node', ['scripts/prove.mjs']];
 const EXTENSION = ['node', ['scripts/extension.mjs']];
@@ -116,6 +117,11 @@ export const MUTANTS = [
     name: 'ShopClues recipe ignores the sold-out markers',
     file: 'readers/shopclues.desktop.json', find: '"outOfStockText": ["outofstock", "sold out", "soldout"]', replace: '"outOfStockText": ["discontinued-forever"]',
     run: CHECK, expect: [/^shopclues-babyoil-soldout\.html (status|price|mrp|inStock|deleting)/],
+  },
+  {
+    name: 'chart guesses an end date for an open-ended sale',
+    file: 'web/chart.js', find: "to: e.to == null ? null : Math.min(e.to, t1), ongoing: e.to == null }));", replace: "to: Math.min(e.to ?? t1, t1), ongoing: false }));",
+    run: UNIT2, expect: [/an open-ended event is a start marker/],
   },
   {
     name: 'early stop before the price box has arrived',

@@ -1,0 +1,24 @@
+{
+  "_about": "Store sale events shown on price charts (BLUEPRINT §9). Operator-maintained: every event needs a source that was read, and 'to' stays null until an end date is published (the chart then marks only the start). Validated by core/sales.ts at load.",
+  "schema": 1,
+  "events": [
+    {
+      "store": "amazon",
+      "title": "Great Indian Festival",
+      "from": "2026-10-08",
+      "to": null,
+      "source": "https://www.outlookbusiness.com/corporate/amazon-great-indian-festival-2026-to-begin-october-8-prime-members-to-get-up-to-10-extra",
+      "checked": "2026-10-27",
+      "note": "Start as announced (article of 22 Sep 2026); no end date published there."
+    },
+    {
+      "store": "flipkart",
+      "title": "Big Billion Days",
+      "from": "2026-10-09",
+      "to": null,
+      "source": "https://www.fonearena.com/blog/492423/flipkart-big-billion-days-sale-2026-date.html",
+      "checked": "2026-10-27",
+      "note": "General sale from 9 Oct 2026; 24 h early access from 8 Oct for members (article of 16 Sep 2026); no end date published there."
+    }
+  ]
+}

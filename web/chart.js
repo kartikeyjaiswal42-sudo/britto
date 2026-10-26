@@ -19,6 +19,16 @@ export function toSpans(points, lastCheckedAt) {
   return out;
 }
 
+/**
+ * Sale events that touch [t0, t1], clipped to it: {title, from, to, ongoing}. An event with no
+ * published end (to null) is a start marker only (ongoing true), never a guessed band.
+ */
+export function saleMarks(events, t0, t1) {
+  return (events ?? [])
+    .filter((e) => e.from <= t1 && (e.to == null ? e.from >= t0 : e.to >= t0))
+    .map((e) => ({ title: e.title, from: Math.max(e.from, t0), to: e.to == null ? null : Math.min(e.to, t1), ongoing: e.to == null }));
+}
+
 export function drawChart(host, view, rangeDays) {
   host.textContent = '';
   const all = toSpans(view.points, view.stats.lastCheckedAt);
@@ -61,6 +71,18 @@ export function drawChart(host, view, rangeDays) {
     const label = el('text', { x: x(t), y: H - 8, 'text-anchor': t === t0 ? 'start' : t === t1 ? 'end' : 'middle', class: 'axis' });
     label.textContent = date(t);
     svg.append(label);
+  }
+  for (const m of saleMarks(view.saleEvents, t0, t1)) {
+    const g = el('g', { class: 'sale' });
+    const title = el('title');
+    title.textContent = m.ongoing ? `${m.title}: from ${date(m.from)} (end date not announced)` : `${m.title}: ${date(m.from)} to ${date(m.to)}`;
+    g.append(title);
+    if (m.to != null) g.append(el('rect', { x: x(m.from), y: T, width: Math.max(2, x(m.to) - x(m.from)), height: H - T - B, class: 'sale-band' }));
+    else g.append(el('line', { x1: x(m.from), x2: x(m.from), y1: T, y2: H - B, class: 'sale-start' }));
+    const label = el('text', { x: x(m.from) + 3, y: T + 11, class: 'sale-label' });
+    label.textContent = m.title;
+    g.append(label);
+    svg.append(g);
   }
   for (const s of spans) {
     if (s.price == null) svg.append(el('rect', { x: x(s.from), y: T, width: Math.max(1, x(s.to) - x(s.from)), height: H - T - B, class: 'gap' }));

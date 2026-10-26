@@ -77,6 +77,27 @@ try {
     await page.goto(base + '/search?q=cello', { waitUntil: 'networkidle' });
     check('search page finds it', await page.locator('.card .title', { hasText: 'Cello' }).count() > 0);
 
+    // Sale events on the chart, drawn by the site's own chart.js in this browser: a band only
+    // when the end date is known, a dashed start marker when it is not (never a guessed band).
+    const marks = await page.evaluate(async () => {
+      const { drawChart } = await import('/chart.js');
+      const host = document.createElement('div');
+      host.style.width = '600px';
+      document.body.append(host);
+      const day = 86_400_000;
+      const t0 = Date.parse('2026-10-01T00:00:00Z');
+      drawChart(host, {
+        points: [{ at: t0, price: 50000, mrp: null, inStock: true, source: 'server' }, { at: t0 + 10 * day, price: 45000, mrp: null, inStock: true, source: 'server' }],
+        stats: { lastCheckedAt: t0 + 20 * day, lowest: null },
+        saleEvents: [{ title: 'Ended sale', from: t0 + 2 * day, to: t0 + 5 * day }, { title: 'Open sale', from: t0 + 12 * day, to: null }],
+      }, 0);
+      const r = { bands: host.querySelectorAll('rect.sale-band').length, starts: host.querySelectorAll('line.sale-start').length,
+        labels: [...host.querySelectorAll('text.sale-label')].map((t) => t.textContent), stroke: getComputedStyle(host.querySelector('line.sale-start')).stroke };
+      host.remove();
+      return r;
+    });
+    check('sale events: a band for an ended sale, a start marker for one with no end date', marks.bands === 1 && marks.starts === 1 && marks.labels.join('|') === 'Ended sale|Open sale' && marks.stroke !== 'none', JSON.stringify(marks));
+
     check('no console errors', errors.length === 0, errors.join(' | '));
     await ctx.close();
   }

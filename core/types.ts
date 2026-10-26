@@ -163,6 +163,8 @@ export interface ProductView {
   sale: SaleCheck;
   /** Why there is no price yet, when there is none. */
   pending: string | null;
+  /** The store's sale events (core/sales.ts), for the chart. */
+  saleEvents: import('./sales.ts').SaleEvent[];
 }
 
 /** A row in search results, deal lists and "recently tracked". */
