@@ -1,6 +1,7 @@
 // Build the extension: `node scripts/build-ext.mjs [--api <origin>] [--out <dir>]`.
-// Bundles extension/src (which imports core/ and web/ directly, so the extension reads
-// pages with exactly the server's readers) into plain scripts Chrome can load.
+// Bundles extension/src (which imports core/ and web/ directly, so the extension reads pages
+// with exactly the server's interpreter) into plain scripts Chrome can load. Store recipes are
+// NOT bundled: the extension fetches them from the server (GET /api/config/reader).
 import { build } from 'esbuild';
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -23,7 +24,13 @@ await build({
   format: 'iife',
   target: 'chrome120',
   // --test opens the panel's shadow root so scripts/extension.mjs can read it; never ship that.
-  define: { BRITTO_API: JSON.stringify(api), BRITTO_SHADOW: JSON.stringify(process.argv.includes('--test') ? 'open' : 'closed') },
+  // --test also makes the service worker re-ask for reader configs every time (TTL 0), so a test can
+  // change a config on the server and see the extension use it without waiting 10 minutes.
+  define: {
+    BRITTO_API: JSON.stringify(api),
+    BRITTO_SHADOW: JSON.stringify(process.argv.includes('--test') ? 'open' : 'closed'),
+    BRITTO_READER_TTL: String(process.argv.includes('--test') ? 0 : 600_000),
+  },
   legalComments: 'none',
   logLevel: 'warning',
 });

@@ -26,19 +26,6 @@
     return decodeEntities(noCode.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
   }
   var VOID = /* @__PURE__ */ new Set(["img", "input", "br", "hr", "meta", "link", "source", "area", "base", "col", "embed", "wbr"]);
-  function elementById(html, id, from = 0) {
-    const needle = `id="${id}"`;
-    let at = html.indexOf(needle, from);
-    while (at !== -1) {
-      const open = html.lastIndexOf("<", at);
-      const prevClose = html.lastIndexOf(">", at);
-      const before = html.charCodeAt(at - 1);
-      const isAttr = open > prevClose && (before === 32 || before === 10 || before === 9 || before === 13);
-      if (isAttr) return elementFrom(html, open);
-      at = html.indexOf(needle, at + needle.length);
-    }
-    return null;
-  }
   function elementFrom(html, start) {
     const head = /^<([a-zA-Z][a-zA-Z0-9-]*)\b[^>]*?(\/?)>/.exec(html.slice(start, start + 4e3));
     if (!head || head[1] === void 0) return null;
@@ -57,35 +44,6 @@
     }
     return null;
   }
-  function openingTagById(html, id) {
-    const at = html.indexOf(`id="${id}"`);
-    if (at === -1) return null;
-    const open = html.lastIndexOf("<", at);
-    const end = html.indexOf(">", at);
-    return open === -1 || end === -1 ? null : html.slice(open, end + 1);
-  }
-  function openingTag(elementHtml) {
-    const end = elementHtml.indexOf(">");
-    return end === -1 ? elementHtml : elementHtml.slice(0, end + 1);
-  }
-  function attr(tagHtml, name) {
-    const re = new RegExp(`\\s${name.replace(/[-]/g, "\\-")}\\s*=\\s*("([^"]*)"|'([^']*)')`, "i");
-    const m = re.exec(openingTag(tagHtml));
-    if (!m) return null;
-    return decodeEntities(m[2] ?? m[3] ?? "");
-  }
-  function textOfClass(scope, ...classes) {
-    const el3 = elementWithClass(scope, ...classes);
-    return el3 == null ? null : textOf(el3);
-  }
-  function elementWithClass(scope, ...classes) {
-    const re = /<([a-zA-Z][a-zA-Z0-9-]*)\b[^>]*\sclass\s*=\s*"([^"]*)"[^>]*>/g;
-    for (let m = re.exec(scope); m; m = re.exec(scope)) {
-      const list = (m[2] ?? "").split(/\s+/);
-      if (classes.every((c) => list.includes(c))) return elementFrom(scope, m.index);
-    }
-    return null;
-  }
 
   // core/money.ts
   function parseRupees(text) {
@@ -98,137 +56,238 @@
     const paise = Number(whole) * 100 + Number(frac);
     return Number.isSafeInteger(paise) ? paise : null;
   }
-  function rupeesToPaise(value) {
-    if (typeof value === "number") {
-      if (!Number.isFinite(value) || value < 0) return null;
-      return Math.round(value * 100);
-    }
-    if (typeof value === "string") return parseRupees(value);
-    return null;
-  }
 
-  // core/extract.ts
-  function extract(store, html) {
-    if (store === "amazon") return amazon(html);
-    if (store === "myntra") return myntra(html);
-    return flipkart(html);
-  }
-  function result(partial) {
-    return { title: null, price: null, mrp: null, inStock: null, image: null, pid: null, ...partial };
-  }
-  var READERS_REPORT_PID = { amazon: true, myntra: true, flipkart: false };
-  function confirmIdentity(store, linkPid, ex) {
-    if (ex.status !== "priced" && ex.status !== "unavailable") return ex;
-    const expected = store === "flipkart" ? linkPid.split(".")[0] : linkPid;
-    if (ex.pid === expected) return ex;
-    if (ex.pid == null && !READERS_REPORT_PID[store]) return ex;
-    return { ...ex, status: "unrecognised", price: null, mrp: null, inStock: null, rule: `${ex.rule}+identity-mismatch(${ex.pid ?? "none"})` };
-  }
-  var AMAZON_ROBOT = ["/errors/validateCaptcha", "Enter the characters you see below", "To discuss automated access to Amazon data"];
-  function amazon(html) {
-    if (AMAZON_ROBOT.some((m) => html.includes(m))) return result({ status: "blocked", rule: "amazon:robot-check" });
-    const titleEl = elementById(html, "productTitle");
-    const title = titleEl ? textOf(titleEl) || null : null;
-    if (!title) return result({ status: "unrecognised", rule: "amazon:no-title" });
-    const titleTag = openingTagById(html, "title_feature_div");
-    const pid = titleTag && attr(titleTag, "data-csa-c-asin") || null;
-    const imgEl = elementById(html, "landingImage");
-    const image = imgEl ? attr(imgEl, "data-old-hires") || attr(imgEl, "src") || null : null;
-    const availEl = elementById(html, "availability");
-    const availability = availEl ? textOf(availEl) : "";
-    const unavailable = /currently unavailable|out of stock|temporarily unavailable/i.test(availability);
-    if (unavailable) return result({ status: "unavailable", title, image, pid, inStock: false, rule: "amazon:availability" });
-    const core = elementById(html, "corePriceDisplay_desktop_feature_div");
-    if (!core) return result({ status: "unrecognised", title, image, rule: "amazon:no-core-price" });
-    const pay = elementWithClass(core, "a-price", "priceToPay");
-    let price = null;
-    if (pay) {
-      const whole = textOfClass(pay, "a-price-whole");
-      const fraction = textOfClass(pay, "a-price-fraction");
-      const digits = whole?.replace(/[^\d,]/g, "");
-      const paise = fraction?.replace(/\D/g, "");
-      price = parseRupees(digits ? `${digits}${paise ? "." + paise : ""}` : null);
-      if (price == null) price = parseRupees(textOfClass(pay, "a-offscreen"));
+  // core/select.ts
+  var SelectorError = class extends Error {
+  };
+  var IDENT = /^-?[A-Za-z_][\w-]*/;
+  function parseSelector(text) {
+    const src = text.trim();
+    if (!src) throw new SelectorError("empty selector");
+    const parts = [];
+    const combinators = [];
+    let i = 0;
+    const fail = (why) => {
+      throw new SelectorError(`${why} at ${i} in "${src}"`);
+    };
+    const ident = () => {
+      const m = IDENT.exec(src.slice(i));
+      if (!m) fail("expected a name");
+      i += m[0].length;
+      return m[0];
+    };
+    while (i < src.length) {
+      const c = { tag: null, id: null, classes: [], attrs: [] };
+      if (src[i] === "*") i++;
+      else if (/[A-Za-z]/.test(src[i])) c.tag = ident().toLowerCase();
+      for (; ; ) {
+        const ch = src[i];
+        if (ch === "#") {
+          i++;
+          if (c.id) fail("two ids");
+          c.id = ident();
+        } else if (ch === ".") {
+          i++;
+          c.classes.push(ident());
+        } else if (ch === "[") {
+          i++;
+          const m = /^\s*([A-Za-z_][\w:-]*)\s*(?:([~^$*|]?=)\s*(?:"([^"]*)"|'([^']*)'|([^\s\]]+)))?\s*\]/.exec(src.slice(i));
+          if (!m) fail("bad attribute test");
+          c.attrs.push({ name: m[1].toLowerCase(), op: m[2] ?? "", value: m[3] ?? m[4] ?? m[5] ?? "" });
+          i += m[0].length;
+        } else break;
+      }
+      if (!c.tag && !c.id && !c.classes.length && !c.attrs.length && src[i - 1] !== "*") fail("expected a selector");
+      parts.push(c);
+      const ws = /^\s*/.exec(src.slice(i))[0].length;
+      i += ws;
+      if (i >= src.length) break;
+      if (src[i] === ">") {
+        combinators.push(">");
+        i++;
+        i += /^\s*/.exec(src.slice(i))[0].length;
+      } else if (ws > 0) combinators.push(" ");
+      else fail(`unsupported "${src[i]}"`);
     }
-    if (price == null) return result({ status: "unrecognised", title, image, rule: "amazon:no-price-to-pay" });
-    const basis = elementWithClass(core, "a-price", "apex-basisprice-value");
-    const mrp = basis ? parseRupees(textOfClass(basis, "a-offscreen")) : null;
-    return result({ status: "priced", title, image, pid, price, mrp, inStock: true, rule: "amazon:core-price" });
+    if (combinators.length !== parts.length - 1) fail("dangling combinator");
+    return { parts, combinators };
   }
-  function myntra(html) {
-    const marker = "window.__myx = ";
-    const at = html.indexOf(marker);
-    if (at === -1) return result({ status: "unrecognised", rule: "myntra:no-myx" });
-    const end = html.indexOf("<\/script>", at);
-    let pdp;
-    try {
-      pdp = JSON.parse(html.slice(at + marker.length, end).trim().replace(/;$/, "")).pdpData;
-    } catch {
-      return result({ status: "unrecognised", rule: "myntra:bad-json" });
+  function parseAttrs(openTag) {
+    const out = /* @__PURE__ */ new Map();
+    const body = openTag.replace(/^<[A-Za-z][\w:-]*/, "").replace(/\/?>$/, "");
+    const re = /([^\s"'=<>\/`]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+    for (let m = re.exec(body); m; m = re.exec(body)) {
+      const name = m[1].toLowerCase();
+      if (!out.has(name)) out.set(name, decodeEntities(m[2] ?? m[3] ?? m[4] ?? ""));
     }
-    if (!pdp?.name) return result({ status: "unrecognised", rule: "myntra:no-pdp" });
-    const title = pdp.name.replace(/\s+/g, " ").trim();
-    const src = pdp.media?.albums?.[0]?.images?.[0]?.secureSrc;
-    const image = src ? src.replace("($height)", "480").replace("($qualityPercentage)", "90").replace("($width)", "360") : null;
-    const pid = pdp.id != null ? String(pdp.id) : null;
-    if (pdp.flags?.outOfStock) return result({ status: "unavailable", title, image, pid, inStock: false, rule: "myntra:flags" });
-    const price = rupeesToPaise(pdp.price?.discounted);
-    const mrp = rupeesToPaise(pdp.price?.mrp);
-    if (price == null) return result({ status: "unrecognised", title, image, rule: "myntra:no-price" });
-    return result({ status: "priced", title, image, pid, price, mrp, inStock: true, rule: "myntra:pdpData" });
+    return out;
   }
-  var FLIPKART_READER_VERIFIED = false;
-  function flipkart(html) {
-    if (/Something went wrong!/.test(html) && /\bE00\d\b/.test(html)) return result({ status: "blocked", rule: "flipkart:error-page" });
-    if (!FLIPKART_READER_VERIFIED) return result({ status: "unrecognised", title: jsonLdProduct(html).title, rule: "flipkart:reader-not-verified" });
-    return { ...jsonLdProduct(html), rule: "flipkart:jsonld" };
+  var attrsOf = (el3) => el3.attrs ??= parseAttrs(el3.open);
+  function matchCompound(el3, c) {
+    if (c.tag && c.tag !== el3.tag) return false;
+    if (!c.id && !c.classes.length && !c.attrs.length) return true;
+    const a = attrsOf(el3);
+    if (c.id && a.get("id") !== c.id) return false;
+    if (c.classes.length) {
+      const list = (a.get("class") ?? "").split(/\s+/);
+      if (!c.classes.every((k) => list.includes(k))) return false;
+    }
+    for (const t of c.attrs) {
+      const v = a.get(t.name);
+      if (v === void 0) return false;
+      switch (t.op) {
+        case "":
+          break;
+        case "=":
+          if (v !== t.value) return false;
+          break;
+        case "~=":
+          if (!v.split(/\s+/).includes(t.value)) return false;
+          break;
+        case "^=":
+          if (!t.value || !v.startsWith(t.value)) return false;
+          break;
+        case "$=":
+          if (!t.value || !v.endsWith(t.value)) return false;
+          break;
+        case "*=":
+          if (!t.value || !v.includes(t.value)) return false;
+          break;
+        case "|=":
+          if (v !== t.value && !v.startsWith(`${t.value}-`)) return false;
+          break;
+      }
+    }
+    return true;
   }
-  function* jsonLdNodes(html) {
-    const re = /<script\b[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
-    for (let m = re.exec(html); m; m = re.exec(html)) {
-      let data;
-      try {
-        data = JSON.parse(m[1] ?? "");
-      } catch {
+  function matches(el3, sel, i) {
+    if (!matchCompound(el3, sel.parts[i])) return false;
+    if (i === 0) return true;
+    if (sel.combinators[i - 1] === ">") return el3.parent !== null && matches(el3.parent, sel, i - 1);
+    for (let a = el3.parent; a; a = a.parent) if (matches(a, sel, i - 1)) return true;
+    return false;
+  }
+  var VOID2 = /* @__PURE__ */ new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr", "param"]);
+  var RAW = /* @__PURE__ */ new Set(["script", "style", "noscript", "textarea", "title", "template", "xmp"]);
+  var SELF_SIBLING = /* @__PURE__ */ new Set(["li", "option", "p", "dt", "dd", "tr", "td", "th"]);
+  var closers = /* @__PURE__ */ new Map();
+  function closeTagAt(html, name, from) {
+    let re = closers.get(name);
+    if (!re) closers.set(name, re = new RegExp(`</${name}(?=[\\s/>])`, "gi"));
+    re.lastIndex = from;
+    return re.exec(html)?.index ?? -1;
+  }
+  var TAG = /<!--[\s\S]*?(?:-->|$)|<![^>]*>|<\?[^>]*>|<(\/?)([A-Za-z][\w:-]*)((?:[^>"']|"[^"]*"|'[^']*')*)>/g;
+  function scan(html, sel, from, to) {
+    TAG.lastIndex = from;
+    let top = null;
+    for (let m = TAG.exec(html); m && m.index < to; m = TAG.exec(html)) {
+      const name = m[2]?.toLowerCase();
+      if (!name) continue;
+      if (m[1] === "/") {
+        for (let e = top; e; e = e.parent) if (e.tag === name) {
+          top = e.parent;
+          break;
+        }
         continue;
       }
-      const stack = [data];
-      while (stack.length) {
-        const n = stack.pop();
-        if (Array.isArray(n)) stack.push(...n);
-        else if (n && typeof n === "object") {
-          yield n;
-          const g = n["@graph"];
-          if (Array.isArray(g)) stack.push(...g);
-        }
+      if (SELF_SIBLING.has(name) && top?.tag === name) top = top.parent;
+      const el3 = { tag: name, open: m[0], start: m.index, parent: top };
+      if (matches(el3, sel, sel.parts.length - 1)) return { start: el3.start, tag: el3.tag, open: el3.open, attrs: attrsOf(el3) };
+      const selfClosing = /\/\s*>$/.test(m[0]);
+      if (RAW.has(name)) {
+        const close = closeTagAt(html, name, TAG.lastIndex);
+        if (close === -1) return null;
+        TAG.lastIndex = close;
+        top = el3;
+      } else if (!VOID2.has(name) && !selfClosing) {
+        top = el3;
       }
+    }
+    return null;
+  }
+  function insideRawText(html, pos) {
+    if (html.lastIndexOf("<!--", pos) > html.lastIndexOf("-->", pos)) return true;
+    const opens = (src, t, at) => {
+      let open2 = src.lastIndexOf(`<${t}`, at);
+      while (open2 !== -1 && !/[\s>/]/.test(src[open2 + t.length + 1] ?? "")) open2 = src.lastIndexOf(`<${t}`, open2 - 1);
+      return open2;
+    };
+    for (const t of ["script", "style"]) {
+      const open2 = opens(html, t, pos);
+      if (open2 !== -1 && open2 > html.lastIndexOf(`</${t}`, pos)) return true;
+    }
+    const from = Math.max(0, pos - 2e4);
+    const window = html.slice(from, pos);
+    const open = opens(window, "noscript", window.length);
+    return open !== -1 && open > window.lastIndexOf("</noscript");
+  }
+  function* idPositions(html, id) {
+    for (let at = html.indexOf(id); at !== -1; at = html.indexOf(id, at + id.length)) {
+      const q = html[at - 1];
+      const after = html[at + id.length] ?? "";
+      let attrStart;
+      if (q === '"' || q === "'") {
+        if (after !== q) continue;
+        attrStart = at - 4;
+      } else if (q === "=") {
+        if (!/[\s>/]/.test(after)) continue;
+        attrStart = at - 3;
+      } else continue;
+      if (html.slice(attrStart, attrStart + 3).toLowerCase() !== "id=") continue;
+      const before = html.charCodeAt(attrStart - 1);
+      if (before !== 32 && before !== 10 && before !== 9 && before !== 13) continue;
+      const open = html.lastIndexOf("<", at);
+      if (open > html.lastIndexOf(">", at) && !insideRawText(html, open)) yield open;
     }
   }
-  var isType = (n, t) => n["@type"] === t || Array.isArray(n["@type"]) && n["@type"].includes(t);
-  function jsonLdProduct(html) {
-    for (const n of jsonLdNodes(html)) {
-      if (!isType(n, "Product")) continue;
-      const title = typeof n["name"] === "string" ? n["name"].replace(/\s+/g, " ").trim() || null : null;
-      const img = n["image"];
-      const image = typeof img === "string" ? img : Array.isArray(img) && typeof img[0] === "string" ? img[0] : img && typeof img === "object" && !Array.isArray(img) && typeof img["url"] === "string" ? img["url"] : null;
-      const offersRaw = n["offers"];
-      const offer = Array.isArray(offersRaw) ? offersRaw[0] : offersRaw;
-      if (!offer || typeof offer !== "object") return result({ status: "unrecognised", title, image, rule: "jsonld:no-offer" });
-      const availability = String(offer["availability"] ?? "");
-      if (/OutOfStock|SoldOut|Discontinued/i.test(availability)) return result({ status: "unavailable", title, image, inStock: false, rule: "jsonld" });
-      const price = rupeesToPaise(offer["price"] ?? offer["lowPrice"] ?? null);
-      if (price == null || !/InStock|LimitedAvailability|OnlineOnly/i.test(availability)) {
-        return result({ status: "unrecognised", title, image, rule: "jsonld:no-price" });
-      }
-      return result({ status: "priced", title, image, price, inStock: true, rule: "jsonld" });
+  var cache = /* @__PURE__ */ new Map();
+  function compile(selector) {
+    let c = cache.get(selector);
+    if (!c) {
+      c = parseSelector(selector);
+      if (cache.size > 500) cache.clear();
+      cache.set(selector, c);
     }
-    return result({ status: "unrecognised", rule: "jsonld:none" });
+    return c;
+  }
+  function selectFirst(html, selector) {
+    const sel = typeof selector === "string" ? compile(selector) : selector;
+    const head = sel.parts[0];
+    if (!head.id) return scan(html, sel, 0, html.length);
+    for (const start of idPositions(html, head.id)) {
+      if (sel.parts.length === 1) {
+        const hit2 = scan(html, sel, start, start + 1);
+        if (hit2) return hit2;
+        continue;
+      }
+      const outer = elementFrom(html, start);
+      const hit = scan(html, sel, start, outer ? start + outer.length : html.length);
+      if (hit) return hit;
+    }
+    return null;
+  }
+  function outerOf(html, found) {
+    if (RAW.has(found.tag)) {
+      const close = closeTagAt(html, found.tag, found.start + found.open.length);
+      const end = close === -1 ? -1 : html.indexOf(">", close);
+      return end === -1 ? null : html.slice(found.start, end + 1);
+    }
+    return elementFrom(html, found.start);
+  }
+  function innerOf(html, found) {
+    const outer = outerOf(html, found);
+    if (outer == null) return null;
+    if (VOID2.has(found.tag) || /\/\s*>$/.test(found.open)) return "";
+    const end = outer.toLowerCase().lastIndexOf(`</${found.tag}`);
+    return end === -1 ? null : outer.slice(found.open.length, end);
   }
 
   // core/stores.ts
   var STORES = {
     amazon: {
       id: "amazon",
+      num: 1,
       name: "Amazon.in",
       hosts: ["amazon.in", "www.amazon.in", "m.amazon.in"],
       shortHosts: ["amzn.in", "amzn.to"],
@@ -237,6 +296,7 @@
     },
     flipkart: {
       id: "flipkart",
+      num: 2,
       name: "Flipkart",
       hosts: ["flipkart.com", "www.flipkart.com", "dl.flipkart.com"],
       shortHosts: [],
@@ -245,6 +305,7 @@
     },
     myntra: {
       id: "myntra",
+      num: 3,
       name: "Myntra",
       hosts: ["myntra.com", "www.myntra.com"],
       shortHosts: [],
@@ -276,20 +337,20 @@
     const hit = storeForHost(host);
     if (!hit) return { ok: false, reason: "unsupported_store" };
     if (hit.short) return { ok: false, reason: "short_link", store: hit.store, url: `https://${host}${u.pathname}` };
-    if (hit.store === "amazon") return amazon2(u);
-    if (hit.store === "flipkart") return flipkart2(u);
-    return myntra2(u);
+    if (hit.store === "amazon") return amazon(u);
+    if (hit.store === "flipkart") return flipkart(u);
+    return myntra(u);
   }
   function ok(store, pid, url) {
     return { ok: true, link: { store, pid, key: `${store}:${pid}`, url } };
   }
-  function amazon2(u) {
+  function amazon(u) {
     const m = /\/(?:dp|gp\/product|gp\/aw\/d|o\/ASIN)\/([A-Za-z0-9]{10})(?=[/?]|$)/.exec(u.pathname);
     const asin = m?.[1]?.toUpperCase();
     if (!asin || !ASIN.test(asin)) return { ok: false, reason: "not_a_product" };
     return ok("amazon", asin, `https://www.amazon.in/dp/${asin}`);
   }
-  function flipkart2(u) {
+  function flipkart(u) {
     let path = u.pathname;
     if (u.hostname.toLowerCase() === "dl.flipkart.com") {
       if (!path.startsWith("/dl/")) return { ok: false, reason: "not_a_product" };
@@ -303,11 +364,183 @@
     const clean = `https://www.flipkart.com${path.replace(/\/$/, "")}${pid ? `?pid=${pid}` : ""}`;
     return ok("flipkart", pid ? `${itm}.${pid}` : itm, clean);
   }
-  function myntra2(u) {
+  function myntra(u) {
     const m = /\/(\d{5,10})\/buy\/?$/.exec(u.pathname) ?? /^\/(\d{5,10})\/?$/.exec(u.pathname);
     const id = m?.[1];
     if (!id) return { ok: false, reason: "not_a_product" };
     return ok("myntra", id, `https://www.myntra.com${u.pathname.replace(/\/$/, "")}`);
+  }
+
+  // core/recipe.ts
+  function jsonPath(root, path) {
+    let cur = root;
+    for (const seg of path.replace(/\[(\d+)\]/g, ".$1").split(".").filter(Boolean)) {
+      if (cur == null) return void 0;
+      if (Array.isArray(cur)) cur = /^\d+$/.test(seg) ? cur[Number(seg)] : cur[0]?.[seg];
+      else if (typeof cur === "object") cur = cur[seg];
+      else return void 0;
+    }
+    return cur;
+  }
+
+  // core/jsonld.ts
+  function* jsonLdNodes(html) {
+    const re = /<script\b[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+    for (let m = re.exec(html); m; m = re.exec(html)) {
+      let data;
+      try {
+        data = JSON.parse(m[1] ?? "");
+      } catch {
+        continue;
+      }
+      const stack = [data];
+      while (stack.length) {
+        const n = stack.pop();
+        if (Array.isArray(n)) stack.push(...n);
+        else if (n && typeof n === "object") {
+          yield n;
+          const g = n["@graph"];
+          if (Array.isArray(g)) stack.push(...g);
+        }
+      }
+    }
+  }
+  var isType = (n, t) => n["@type"] === t || Array.isArray(n["@type"]) && n["@type"].includes(t);
+  function jsonLdProductNode(html) {
+    for (const n of jsonLdNodes(html)) if (isType(n, "Product")) return n;
+    return null;
+  }
+  function jsonLdValue(html, path) {
+    const node = jsonLdProductNode(html);
+    if (!node) return null;
+    let v = jsonPath(node, path);
+    if (v && typeof v === "object" && !Array.isArray(v) && typeof v["url"] === "string") v = v["url"];
+    if (Array.isArray(v)) v = v[0];
+    return v == null || typeof v === "object" ? null : String(v);
+  }
+
+  // core/interpret.ts
+  var once = (ctx, key, make) => {
+    if (!ctx.memo.has(key)) ctx.memo.set(key, make());
+    return ctx.memo.get(key);
+  };
+  function sourceText(field, ctx) {
+    if (field.jsonld) return once(ctx, `ld:${field.jsonld}`, () => jsonLdValue(ctx.html, field.jsonld));
+    if (field.global) return ctx.html;
+    if (field.attribute === "URL") return ctx.url || null;
+    if (!field.selector.length) return null;
+    const found = once(ctx, `sel:${field.selector.join(" ")}`, () => selectFirst(ctx.html, field.selector.join(" ")));
+    if (!found) return null;
+    switch (field.attribute) {
+      case "innerText":
+      case "textContent": {
+        const outer = outerOf(ctx.html, found);
+        return outer == null ? null : textOf(outer);
+      }
+      case "innerHTML":
+        return innerOf(ctx.html, found);
+      default: {
+        const name = field.attribute.startsWith("attr:") ? field.attribute.slice(5).toLowerCase() : field.attribute.toLowerCase();
+        return found.attrs.get(name) ?? null;
+      }
+    }
+  }
+  function fieldValue(field, html, url = "", memo = /* @__PURE__ */ new Map()) {
+    const ctx = { html, url, memo };
+    const source = `${field.jsonld ?? ""}|${field.global ? "*" : field.selector.join(" ")}|${field.attribute}`;
+    let text = sourceText(field, ctx);
+    if (text == null) return null;
+    const raw = field.global || field.attribute === "innerHTML";
+    if (field.sub_regex) {
+      const re = field.sub_regex;
+      const m = once(ctx, `sub:${re}:${source}`, () => new RegExp(re).exec(text));
+      if (!m) return null;
+      text = m[1] ?? m[0];
+    }
+    if (field.json) {
+      const body = text.trim().replace(/;\s*$/, "");
+      const parsed = once(ctx, `json:${field.sub_regex ?? ""}:${source}`, () => {
+        try {
+          return JSON.parse(body);
+        } catch {
+          return void 0;
+        }
+      });
+      const v = jsonPath(parsed, field.json);
+      if (v == null || typeof v === "object") return null;
+      text = String(v);
+    }
+    if (field.squash) text = text.replace(/\s+/g, "");
+    if (field.regex) {
+      let hit = null;
+      for (const src of field.regex) {
+        const re = new RegExp(src, "g");
+        let n = 0;
+        for (let m = re.exec(text); m; m = re.exec(text)) {
+          if (n++ === (field.match ?? 0)) {
+            hit = m[1] ?? m[0];
+            break;
+          }
+          if (m[0] === "") re.lastIndex++;
+        }
+        if (hit != null) break;
+      }
+      if (hit == null) return null;
+      text = hit;
+    }
+    for (const [from, to] of field.replace ?? []) text = text.split(from).join(to);
+    const out = (raw && !field.json ? decodeEntities(text) : text).replace(/\s+/g, " ").trim();
+    return out || null;
+  }
+  function firstOf(fields, ctx) {
+    for (const f of fields) {
+      const v = fieldValue(f, ctx.html, ctx.url, ctx.memo);
+      if (v != null) return v;
+    }
+    return null;
+  }
+  function result(partial) {
+    return { title: null, price: null, mrp: null, inStock: null, image: null, pid: null, ...partial };
+  }
+  function isBlocked(cfg, html) {
+    return (cfg.domRecipe.blocked ?? []).some((all) => all.every((src) => new RegExp(src).test(html)));
+  }
+  function isUnavailable(cfg, ctx) {
+    const av = cfg.domRecipe.availability;
+    const hit = (t) => t != null && av.outOfStockText.some((s) => t.toLowerCase().includes(s));
+    for (const sel of av.selectors) {
+      if (hit(fieldValue({ selector: [sel], attribute: "textContent" }, ctx.html, ctx.url, ctx.memo))) return true;
+    }
+    for (const f of av.fields ?? []) if (hit(fieldValue(f, ctx.html, ctx.url, ctx.memo))) return true;
+    for (const d of cfg.domRecipe.discontinuedText ?? []) {
+      const t = fieldValue({ selector: [d.sel], attribute: "textContent" }, ctx.html, ctx.url, ctx.memo);
+      if (t != null && t.toLowerCase().includes(d.txt.toLowerCase())) return true;
+    }
+    return false;
+  }
+  function readPage(cfg, html, url = "") {
+    const rule = (why) => `${cfg.store}:${why}`;
+    const d = cfg.domRecipe;
+    if (isBlocked(cfg, html)) return result({ status: "blocked", rule: rule("blocked") });
+    const ctx = { html, url, memo: /* @__PURE__ */ new Map() };
+    if (d.classSelector && !selectFirst(html, d.classSelector)) return result({ status: "unrecognised", rule: rule("class-mismatch") });
+    const title = firstOf(d.name, ctx);
+    if (cfg.verified == null) return result({ status: "unrecognised", title, rule: rule("reader-not-verified") });
+    if (!title) return result({ status: "unrecognised", rule: rule("no-name") });
+    const image = firstOf(d.image, ctx);
+    const pid = firstOf(d.pid, ctx);
+    if (isUnavailable(cfg, ctx)) return result({ status: "unavailable", title, image, pid, inStock: false, rule: rule("unavailable") });
+    const price = parseRupees(firstOf(d.price, ctx));
+    if (price == null) return result({ status: "unrecognised", title, image, rule: rule("no-price") });
+    const mrp = parseRupees(firstOf(d.mrp, ctx));
+    return result({ status: "priced", title, image, pid, price, mrp, inStock: true, rule: rule("priced") });
+  }
+  function confirmIdentity(store, linkPid, ex, reportsPid) {
+    if (ex.status !== "priced" && ex.status !== "unavailable") return ex;
+    const expected = store === "flipkart" ? linkPid.split(".")[0] : linkPid;
+    if (ex.pid === expected) return ex;
+    if (ex.pid == null && !reportsPid) return ex;
+    return { ...ex, status: "unrecognised", price: null, mrp: null, inStock: null, rule: `${ex.rule}+identity-mismatch(${ex.pid ?? "none"})` };
   }
 
   // web/api.js
@@ -506,6 +739,7 @@ a.go { display: inline-block; background: var(--accent); color: var(--on-accent)
         body.replaceChildren(el2("p", "small", `Reading this ${store === "amazon" ? "Amazon" : store === "flipkart" ? "Flipkart" : "Myntra"} page\u2026`));
       },
       show(reply, ex, problem) {
+        if (false) host.dataset["reading"] = JSON.stringify(ex);
         body.replaceChildren();
         if (problem) {
           body.append(el2("p", "note", problem));
@@ -577,11 +811,11 @@ a.go { display: inline-block; background: var(--accent); color: var(--on-accent)
   var send = (msg) => chrome.runtime.sendMessage(msg);
   var WAITS = [600, 900, 1500, 3e3];
   var handledUrl = "";
-  async function readPage(store, pid) {
+  async function readThisPage(config, pid) {
     let last = null;
     for (const wait of WAITS) {
       await new Promise((r) => setTimeout(r, wait));
-      last = confirmIdentity(store, pid, extract(store, document.documentElement.outerHTML));
+      last = confirmIdentity(config.store, pid, readPage(config, document.documentElement.outerHTML, location.href), config.reportsPid);
       if (last.status === "priced" || last.status === "unavailable" || last.status === "blocked") return last;
     }
     return last;
@@ -592,17 +826,24 @@ a.go { display: inline-block; background: var(--accent); color: var(--on-accent)
     handledUrl = url;
     const parsed = parseProductLink(url);
     if (!parsed.ok) return;
-    const panel = renderPanel(parsed.link.store);
+    const { store, pid, key } = parsed.link;
+    const panel = renderPanel(store);
     panel.loading();
-    const ex = await readPage(parsed.link.store, parsed.link.pid);
+    const reader = await send({ type: "getReaderConfig", store, device: "desktop" });
     if (location.href !== url) return;
-    let reply;
+    if (!reader?.ok) {
+      const none = { status: "unrecognised", title: null, price: null, mrp: null, inStock: null, image: null, pid: null, rule: "no-reader" };
+      panel.show(await send({ type: "getProductAnswer", key }), none, `Britto cannot read this page right now: ${reader?.message ?? "no reader"}.`);
+      return;
+    }
+    const ex = await readThisPage(reader.config, pid);
+    if (location.href !== url) return;
     if (ex.status === "priced" || ex.status === "unavailable") {
       const observed = { status: ex.status, title: ex.title, image: ex.image, price: ex.price, mrp: ex.mrp };
-      reply = await send({ type: "observe", url, observed });
-      panel.show(reply, ex, null);
+      panel.show(await send({ type: "postObservation", url, observed, configVersion: reader.version }), ex, null);
     } else {
-      reply = await send({ type: "view", key: parsed.link.key });
+      void send({ type: "reportTelemetry", store, outcome: ex.status === "blocked" ? "blocked" : "unrecognised", configVersion: reader.version });
+      const reply = await send({ type: "getProductAnswer", key });
       panel.show(reply, ex, ex.status === "unrecognised" ? "Britto cannot read the price on this page yet." : "This page did not load properly.");
     }
   }

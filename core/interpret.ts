@@ -12,7 +12,7 @@ import { jsonLdValue } from './jsonld.ts';
 import { parseRupees } from './money.ts';
 import { jsonPath, type Field, type ReaderConfig } from './recipe.ts';
 import { innerOf, outerOf, selectFirst } from './select.ts';
-import type { Extracted } from './types.ts';
+import type { Extracted, StoreId } from './types.ts';
 
 interface Ctx { html: string; url: string; memo: Map<string, unknown> }
 
@@ -160,4 +160,17 @@ export function readerEnough(cfg: ReaderConfig, html: string): boolean {
     const at = html.indexOf(`id="${id}"`);
     return at !== -1 && elementById(html, id, at - 1) !== null;
   });
+}
+
+/**
+ * Accept a reading only if the page says it shows the product the link names. A reading
+ * that names another product, or (for stores whose readers report it, config.reportsPid)
+ * names none, becomes 'unrecognised' — never filed under the wrong product.
+ */
+export function confirmIdentity(store: StoreId, linkPid: string, ex: Extracted, reportsPid: boolean): Extracted {
+  if (ex.status !== 'priced' && ex.status !== 'unavailable') return ex;
+  const expected = store === 'flipkart' ? linkPid.split('.')[0] : linkPid;
+  if (ex.pid === expected) return ex;
+  if (ex.pid == null && !reportsPid) return ex;
+  return { ...ex, status: 'unrecognised', price: null, mrp: null, inStock: null, rule: `${ex.rule}+identity-mismatch(${ex.pid ?? 'none'})` };
 }

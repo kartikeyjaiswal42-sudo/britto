@@ -7,7 +7,7 @@
 // "you pay" element is absent we say so ('unavailable' / 'unrecognised'); we never fall back
 // to "the first ₹ on the page".
 import { bundledReader } from '../readers/index.ts';
-import { readerEnough, readPage } from './interpret.ts';
+import { confirmIdentity as confirmPageIdentity, readerEnough, readPage } from './interpret.ts';
 import type { Extracted, StoreId } from './types.ts';
 
 export { jsonLdProduct } from './jsonld.ts';
@@ -27,15 +27,7 @@ export function enough(store: StoreId, html: string): boolean {
   return readerEnough(reader(store), html);
 }
 
-/**
- * Accept a reading only if the page says it shows the product the link names. A reading
- * that names another product, or (for stores whose readers report it) names none, becomes
- * 'unrecognised' — never filed under the wrong product.
- */
+/** core/interpret.ts confirmIdentity, with the bundled config's reportsPid by default. */
 export function confirmIdentity(store: StoreId, linkPid: string, ex: Extracted, reportsPid = reader(store).reportsPid): Extracted {
-  if (ex.status !== 'priced' && ex.status !== 'unavailable') return ex;
-  const expected = store === 'flipkart' ? linkPid.split('.')[0] : linkPid;
-  if (ex.pid === expected) return ex;
-  if (ex.pid == null && !reportsPid) return ex;
-  return { ...ex, status: 'unrecognised', price: null, mrp: null, inStock: null, rule: `${ex.rule}+identity-mismatch(${ex.pid ?? 'none'})` };
+  return confirmPageIdentity(store, linkPid, ex, reportsPid);
 }

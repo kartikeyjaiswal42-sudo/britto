@@ -1,22 +1,29 @@
 // The extension in a REAL Chromium browser, against a real local Worker:
 //   PW_DIR=<playwright-core dir> node scripts/extension.mjs [--browser <chromium-based executable>]
-// Google Chrome 137+ refuses --load-extension, so this uses Brave (Chromium) by default.
+// Google Chrome 137+ refuses --load-extension, so this uses Brave (Chromium) on the Mac, and
+// Playwright's own Chromium (Chrome for Testing) where Brave is not installed (cloud sessions).
 // Store pages are the SAVED fixtures served at their real addresses; every other request
 // is aborted, so the test never contacts Amazon, Flipkart or Myntra.
 import { spawn, execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:net';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isDeepStrictEqual } from 'node:util';
+import { confirmIdentity, readPage } from '../core/interpret.ts';
+import { parseProductLink } from '../core/stores.ts';
+import { bundledReader } from '../readers/index.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const WRANGLER = join(ROOT, 'node_modules/.bin/wrangler');
 const require = createRequire(import.meta.url);
-const { chromium } = require(process.env.PW_DIR ?? 'playwright-core');
+const pw = (() => { try { return require(process.env.PW_DIR ?? 'playwright-core'); } catch { return require('playwright'); } })();
+const { chromium } = pw;
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : d; };
-const BROWSER = arg('--browser', '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser');
+const BRAVE = '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser';
+const BROWSER = arg('--browser', existsSync(BRAVE) ? BRAVE : chromium.executablePath());
 const fx = (name) => readFileSync(join(ROOT, 'test/fixtures', name), 'utf8');
 
 let pass = 0;
@@ -33,13 +40,29 @@ const extDir = join(state, 'ext');
 const profile = join(state, 'profile');
 execFileSync(WRANGLER, ['d1', 'execute', 'britto', '--local', '--persist-to', join(state, 'd1'), '--file', 'api/schema.sql'], { cwd: ROOT, stdio: 'ignore' });
 execFileSync('node', ['scripts/build-ext.mjs', '--api', API, '--out', extDir, '--test'], { cwd: ROOT, stdio: 'ignore' });
-const worker = spawn(WRANGLER, ['dev', '--local', '--persist-to', join(state, 'd1'), '--port', String(port), '--ip', '127.0.0.1', '--show-interactive-dev-session=false'], { cwd: ROOT, detached: true, stdio: 'ignore' });
+// READER_MEMO_MS 0: a config written to D1 is served at once (production keeps one 60 s).
+const worker = spawn(WRANGLER, ['dev', '--local', '--persist-to', join(state, 'd1'), '--port', String(port), '--ip', '127.0.0.1', '--show-interactive-dev-session=false', '--var', 'READER_MEMO_MS:0'], { cwd: ROOT, detached: true, stdio: 'ignore' });
 for (const until = Date.now() + 60_000; ;) {
   try { if ((await fetch(`${API}/api/health`)).ok) break; } catch { /* starting */ }
   if (Date.now() > until) throw new Error('wrangler dev did not start');
   await new Promise((r) => setTimeout(r, 500));
 }
 const api = async (path) => { const r = await fetch(API + path); return { status: r.status, body: await r.json().catch(() => null) }; };
+const d1 = (sql) => JSON.parse(execFileSync(WRANGLER, ['d1', 'execute', 'britto', '--local', '--persist-to', join(state, 'd1'), '--json', '--command', sql], { cwd: ROOT, encoding: 'utf8' }))[0].results;
+const AMAZON = bundledReader('amazon');
+
+/** Parity (BLUEPRINT §22): what the extension read in the browser vs Node on the saved page. */
+const parity = [];
+async function recordParity(page, url) {
+  const host = page.locator('britto-panel');
+  const reading = JSON.parse((await host.getAttribute('data-reading')) ?? 'null');
+  const link = parseProductLink(url).link;
+  const cfg = bundledReader(link.store).config;
+  const node = confirmIdentity(link.store, link.pid, readPage(cfg, PAGES.get(url), url), cfg.reportsPid);
+  const fields = ['status', 'price', 'mrp', 'inStock', 'pid', 'title', 'image', 'rule'];
+  const diffs = fields.filter((k) => !isDeepStrictEqual(reading?.[k], node[k])).map((k) => `${k}: browser ${JSON.stringify(reading?.[k])} vs node ${JSON.stringify(node[k])}`);
+  parity.push({ url, diffs });
+}
 
 // A product page Flipkart might serve, built by hand: Flipkart refuses our server, so we have
 // no real one yet. Used only to check the "cannot read this page" path and the save button.
@@ -81,6 +104,8 @@ try {
   sw ??= await context.waitForEvent('serviceworker', { timeout: 15_000 });
   check('the extension loaded (service worker running)', !!sw);
   const extId = sw.url().split('/')[2];
+  const contentJs = readFileSync(join(extDir, 'content.js'), 'utf8');
+  check('the content script ships the interpreter but no store recipe', contentJs.includes('identity-mismatch') && !/corePriceDisplay_desktop_feature_div|pdpData\.price|productTitle/.test(contentJs));
 
   const page = await context.newPage();
   const panel = () => page.locator('britto-panel');
@@ -100,6 +125,9 @@ try {
   check('…and draws the chart', (await panel().locator('svg.chart path.line').getAttribute('d'))?.startsWith('M') === true);
   let v = await api('/api/products/amazon%3AB09X5DK382');
   check('the reading reached Britto as an extension report', v.body?.product?.points?.length === 1 && v.body.product.points[0].source === 'extension' && v.body.product.points[0].price === 26500, JSON.stringify(v.body?.product?.points));
+  await recordParity(page, 'https://www.amazon.in/Cello-Butterflow/dp/B09X5DK382');
+  const used = d1(`SELECT source, config_version, reader_version, outcome, n FROM reader_health WHERE store = 'amazon'`);
+  check('…read with the config the server served (reader health: extension, bundled version, 0.3.0)', used.some((r) => r.source === 'extension' && r.config_version === AMAZON.version && r.reader_version === '0.3.0' && r.outcome === 'priced'), JSON.stringify(used));
   const shots = arg('--shots', null);
   if (shots) {
     await panel().locator('.box').screenshot({ path: join(shots, 'panel-amazon-light.png') });
@@ -122,6 +150,7 @@ try {
   await page.goto('https://www.amazon.in/dp/B09N3ZNHTY');
   t = await waitPanel(/Out of stock/);
   check('unavailable Amazon item reads "Out of stock"', /Out of stock/.test(t) && /Not available to buy/.test(t), t.slice(0, 200));
+  await recordParity(page, 'https://www.amazon.in/dp/B09N3ZNHTY');
 
   // 4. Not a product page: no panel at all.
   await page.goto('https://www.amazon.in/s?k=pen');
@@ -132,6 +161,7 @@ try {
   await page.goto('https://www.myntra.com/tshirts/hrx/x/1700944/buy');
   t = await waitPanel(/₹305/);
   check('Myntra page: panel shows ₹305', /₹305/.test(t) && /M\.R\.P\.\s*₹699/.test(t), t.slice(0, 200));
+  await recordParity(page, 'https://www.myntra.com/tshirts/hrx/x/1700944/buy');
   v = await api('/api/products/myntra%3A1700944');
   check('Myntra product now has its first price, from the extension', v.body?.product?.stats?.current === 30500 && v.body.product.pending === null);
 
@@ -158,7 +188,29 @@ try {
   t = await waitPanel(/did not load properly/);
   check('Flipkart error page: says the page did not load properly', /did not load properly/.test(t), t.slice(0, 200));
 
-  // 8. The popup.
+  await recordParity(page, 'https://www.flipkart.com/apple-iphone-15-black-128-gb/p/itm6ac6485515ae4');
+  for (const p of parity) check(`parity: the browser reads ${p.url.slice(12, 60)} exactly as Node does`, p.diffs.length === 0, p.diffs.join('; '));
+
+  // 8. Readers are data (rule 3): a bad config written to the server's D1 changes what the
+  // extension does on its next page, with no rebuild and no reinstall; removing it restores it.
+  const bad = { ...AMAZON.config, revision: 7, domRecipe: { ...AMAZON.config.domRecipe, price: [{ selector: ['#corePriceDisplay_desktop_feature_div', '.no-such-price'], attribute: 'textContent' }] } };
+  d1(`INSERT INTO reader_configs (store, device, created_at, json) VALUES ('amazon', 'desktop', ${Date.now()}, '${JSON.stringify(bad).replaceAll("'", "''")}')`);
+  const badVersion = (await api('/api/config/reader?store=amazon')).body?.version ?? '';
+  await page.goto('https://www.amazon.in/Cello-Butterflow/dp/B09X5DK382');
+  t = await waitPanel(/cannot read the price/);
+  check('a broken config on the server: the extension says it cannot read the page (no rebuild)', /amazon\.desktop\.r7\./.test(badVersion) && /cannot read the price/.test(t), `${badVersion} | ${t.slice(0, 160)}`);
+  let tele = [];
+  for (let i = 0; i < 20 && !tele.length; i++) {
+    tele = d1(`SELECT source, outcome, n FROM reader_health WHERE store = 'amazon' AND config_version = '${badVersion}'`);
+    if (!tele.length) await page.waitForTimeout(250);
+  }
+  check('…and its telemetry names the broken config (unrecognised, from the extension)', tele.some((r) => r.source === 'extension' && r.outcome === 'unrecognised'), JSON.stringify(tele));
+  d1(`DELETE FROM reader_configs`);
+  await page.goto('https://www.amazon.in/Cello-Butterflow/dp/B09X5DK382');
+  t = await waitPanel(/₹265/);
+  check('…removing it: the next page reads ₹265 again', /₹265/.test(t), t.slice(0, 160));
+
+  // 9. The popup.
   const popup = await context.newPage();
   await popup.goto(`chrome-extension://${extId}/popup.html`);
   const popupText = await popup.locator('body').innerText();

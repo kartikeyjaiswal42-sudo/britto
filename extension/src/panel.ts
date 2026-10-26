@@ -94,6 +94,9 @@ export function renderPanel(store: StoreId) {
     },
 
     show(reply: Reply, ex: Extracted, problem: string | null) {
+      // Test build only (open shadow root): expose the page reading for the parity check
+      // (scripts/extension.mjs compares it with Node's readPage on the same saved page).
+      if (BRITTO_SHADOW === 'open') host.dataset['reading'] = JSON.stringify(ex);
       body.replaceChildren();
       if (problem) {
         body.append(el('p', 'note', problem));
