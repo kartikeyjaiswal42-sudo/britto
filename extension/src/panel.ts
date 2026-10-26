@@ -1,6 +1,7 @@
 // The panel Britto shows on a store's product page. Lives in a CLOSED shadow root so the
 // store's CSS cannot restyle it and the store's scripts cannot read it. All store-supplied
 // text goes in through textContent.
+import { STORES } from '../../core/stores.ts';
 import type { Extracted, StoreId } from '../../core/types.ts';
 import { date, pct, rupees } from '../../web/api.js';
 import { drawChart } from '../../web/chart.js';
@@ -91,7 +92,7 @@ export function renderPanel(store: StoreId, savePage: ((store: StoreId) => void)
 
   return {
     loading() {
-      body.replaceChildren(el('p', 'small', `Reading this ${store === 'amazon' ? 'Amazon' : store === 'flipkart' ? 'Flipkart' : 'Myntra'} page…`));
+      body.replaceChildren(el('p', 'small', `Reading this ${STORES[store].name} page…`));
     },
 
     show(reply: Reply, ex: Extracted, problem: string | null) {

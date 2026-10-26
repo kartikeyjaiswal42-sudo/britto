@@ -36,6 +36,17 @@ export const STORES: Record<StoreId, Store> = {
     measured:
       '2026-10-26: no response within 25 s to an honest bot User-Agent. Prices come from the browser extension.',
   },
+  vijaysales: {
+    id: 'vijaysales',
+    num: 4,
+    name: 'Vijay Sales',
+    hosts: ['vijaysales.com', 'www.vijaysales.com'],
+    shortHosts: [],
+    home: 'https://www.vijaysales.com/',
+    serverFetch: 'yes',
+    measured:
+      '2026-10-26: two product pages fetched with an honest bot User-Agent (from a cloud computer in the USA, not yet from Cloudflare) returned the price box: ₹9,229 (M.R.P. ₹11,900, the store says out of stock) and ₹4,999 (M.R.P. ₹15,999, in stock).',
+  },
 };
 
 export const STORE_IDS = Object.keys(STORES) as StoreId[];
@@ -94,6 +105,7 @@ export function parseProductLink(input: string): LinkResult {
 
   if (hit.store === 'amazon') return amazon(u);
   if (hit.store === 'flipkart') return flipkart(u);
+  if (hit.store === 'vijaysales') return vijaysales(u);
   return myntra(u);
 }
 
@@ -131,6 +143,13 @@ function myntra(u: URL): LinkResult {
   return ok('myntra', id, `https://www.myntra.com${u.pathname.replace(/\/$/, '')}`);
 }
 
+function vijaysales(u: URL): LinkResult {
+  // /p/<id>/<name>; the name is part of the address (measured: /p/<id> alone is a 404).
+  const m = /^\/p\/(\d{4,8})\/([a-z0-9][a-z0-9-]*)\/?$/i.exec(u.pathname);
+  if (!m) return { ok: false, reason: 'not_a_product' };
+  return ok('vijaysales', m[1]!, `https://www.vijaysales.com/p/${m[1]}/${m[2]!.toLowerCase()}`);
+}
+
 /** Split "amazon:B09X5DK382" safely; null for anything that is not a known key shape. */
 export function parseKey(key: string): { store: StoreId; pid: string } | null {
   const i = key.indexOf(':');
@@ -142,6 +161,7 @@ export function parseKey(key: string): { store: StoreId; pid: string } | null {
     amazon: ASIN,
     flipkart: /^itm[a-z0-9]{6,20}(\.[A-Z0-9]{12,20})?$/,
     myntra: /^\d{5,10}$/,
+    vijaysales: /^\d{4,8}$/,
   };
   return shape[store].test(pid) ? { store, pid } : null;
 }

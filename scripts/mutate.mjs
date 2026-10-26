@@ -86,6 +86,16 @@ export const MUTANTS = [
     run: CHECK, expect: [/^flipkart-blocked-e002\.html (status|deleting the blocked marker)/],
   },
   {
+    name: 'Vijay Sales recipe reads the hidden "offer price" block instead of the VS price',
+    file: 'readers/vijaysales.desktop.json', find: '"selector": [".vsPrice", ".product__price--price"]', replace: '"selector": [".product__price--price"]',
+    run: CHECK, expect: [/^vijaysales-airfryer-instock\.html (status|price|mrp|inStock|pid)/],
+  },
+  {
+    name: 'Vijay Sales recipe ignores the store\'s own stock statement',
+    file: 'readers/vijaysales.desktop.json', find: '"outOfStockText": ["outofstock", "soldout", "discontinued"]', replace: '"outOfStockText": ["discontinued"]',
+    run: CHECK, expect: [/^vijaysales-airtag-outofstock\.html (status|price|mrp|inStock|deleting)/],
+  },
+  {
     name: 'early stop before the price box has arrived',
     file: 'core/interpret.ts', find: '  if (!es.thenUnavailableOr?.length) return true;\n', replace: '  return true;\n',
     run: CHECK, expect: [/^amazon-cello-(25pens|10pens)-instock\.html early stop/, /^amazon-cello-technotip-paise\.html early stop/],

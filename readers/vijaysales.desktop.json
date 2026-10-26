@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "store": "vijaysales",
+  "device": "desktop",
+  "revision": 1,
+  "verified": "2026-10-26",
+  "reportsPid": true,
+  "domRecipe": {
+    "name": [{ "selector": [], "attribute": "textContent", "jsonld": "name" }],
+    "pid": [{ "selector": ["#parentSku"], "attribute": "attr:value" }],
+    "itm": [],
+    "image": [{ "selector": [], "attribute": "textContent", "jsonld": "image" }],
+    "availability": {
+      "selectors": [],
+      "outOfStockText": ["outofstock", "soldout", "discontinued"],
+      "fields": [{ "selector": [], "attribute": "textContent", "jsonld": "offers.availability" }]
+    },
+    "price": [{ "selector": [".vsPrice", ".product__price--price"], "attribute": "attr:data-final-price" }],
+    "mrp": [{ "selector": [".vsPrice", ".product__price--mrp", "span"], "attribute": "attr:data-mrp" }],
+    "earlyStop": { "complete": ["omsResponse", "vscontainer-b8f5c0ab32"] }
+  }
+}

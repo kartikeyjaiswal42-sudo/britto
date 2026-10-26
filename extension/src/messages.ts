@@ -3,6 +3,7 @@
 // politeness and the network. Every message is checked by isRequest(); anything else is
 // dropped without an answer.
 import type { ReaderConfig } from '../../core/recipe.ts';
+import { STORE_IDS } from '../../core/stores.ts';
 import type { ProductView, StoreId } from '../../core/types.ts';
 
 export interface ObservedPayload {
@@ -27,7 +28,7 @@ export type Reply =
   | { ok: true; product: ProductView; recorded?: 'accept' | 'hold' | 'skip'; reason?: string }
   | { ok: false; code: string; message: string };
 
-const STORES = new Set(['amazon', 'flipkart', 'myntra']);
+const STORES = new Set<string>(STORE_IDS);
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const text = (v: unknown, max: number) => typeof v === 'string' && v.length > 0 && v.length <= max;
 const VERSION = /^[\w.-]{1,80}$/;

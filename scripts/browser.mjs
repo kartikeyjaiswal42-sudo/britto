@@ -64,11 +64,11 @@ try {
     check('"site/<amazon link>" opens the product page', page.url().includes('/p/amazon') && (await page.locator('.big-price').count()) === 1, page.url());
 
     await page.goto(base + '/stores', { waitUntil: 'networkidle' });
-    check('stores page lists the measured status', (await page.locator('table.stores tbody tr').count()) === 3);
+    check('stores page lists the measured status', (await page.locator('table.stores tbody tr').count()) === 4);
 
     await page.goto(base + '/browse', { waitUntil: 'networkidle' });
     const tiles = await page.locator('a.store-tile').evaluateAll((as) => as.map((a) => [a.dataset.store, a.getAttribute('href')]));
-    check('Super Browse lists every store with its front page', JSON.stringify(tiles) === JSON.stringify([['amazon', 'https://www.amazon.in/'], ['flipkart', 'https://www.flipkart.com/'], ['myntra', 'https://www.myntra.com/']]), JSON.stringify(tiles));
+    check('Super Browse lists every store with its front page', JSON.stringify(tiles) === JSON.stringify([['amazon', 'https://www.amazon.in/'], ['flipkart', 'https://www.flipkart.com/'], ['myntra', 'https://www.myntra.com/'], ['vijaysales', 'https://www.vijaysales.com/']]), JSON.stringify(tiles));
     const tileBox = await page.locator('a.store-tile').first().boundingBox();
     check('…tiles are large enough to tap (≥ 44 px tall)', (tileBox?.height ?? 0) >= 44, JSON.stringify(tileBox));
     check('…the header links to it ("Shop")', (await page.locator('.top nav a', { hasText: 'Shop' }).getAttribute('href')) === '/browse');

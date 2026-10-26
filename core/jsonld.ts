@@ -39,7 +39,11 @@ export function jsonLdProductNode(html: string): Record<string, unknown> | null 
 
 /** A value from the Product node by path ("name", "offers.price"), as text; null if absent. */
 export function jsonLdValue(html: string, path: string): string | null {
-  const node = jsonLdProductNode(html);
+  return jsonLdPath(jsonLdProductNode(html), path);
+}
+
+/** jsonLdValue on an already-found Product node (a reading parses the page's JSON-LD once). */
+export function jsonLdPath(node: Record<string, unknown> | null, path: string): string | null {
   if (!node) return null;
   let v = jsonPath(node, path);
   if (v && typeof v === 'object' && !Array.isArray(v) && typeof (v as Record<string, unknown>)['url'] === 'string') v = (v as Record<string, unknown>)['url'];

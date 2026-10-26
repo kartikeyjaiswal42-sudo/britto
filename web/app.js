@@ -41,7 +41,7 @@ document.getElementById('search-form').addEventListener('submit', (e) => {
   else go(`/search?q=${encodeURIComponent(q)}`);
 });
 
-const STORE_NAMES = { amazon: 'Amazon', flipkart: 'Flipkart', myntra: 'Myntra' };
+const STORE_NAMES = { amazon: 'Amazon', flipkart: 'Flipkart', myntra: 'Myntra', vijaysales: 'Vijay Sales' };
 
 function productCard(c) {
   const badge = c.saleStatus === 'real_drop' && c.realPct != null ? h('span', { class: 'badge good' }, `${pct(c.realPct)} below usual`) : null;

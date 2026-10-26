@@ -32,6 +32,7 @@ public class ScreensTest {
         assertEquals("amazon", Stores.forUrl(context, "https://amzn.in/d/abc").id);
         assertEquals("flipkart", Stores.forUrl(context, "https://dl.flipkart.com/s/xyz").id);
         assertEquals("myntra", Stores.forUrl(context, "https://WWW.MYNTRA.COM/1700944").id);
+        assertEquals("vijaysales", Stores.forUrl(context, "https://www.vijaysales.com/p/222878/air-fryer").id);
         assertNull("a look-alike host is not Amazon", Stores.forUrl(context, "https://amazon.in.evil.example/dp/B09X5DK382"));
         assertNull(Stores.forUrl(context, "https://www.amazon.com/dp/B09X5DK382"));
         assertNull("not a web page", Stores.forUrl(context, "intent://www.amazon.in/#Intent;end"));

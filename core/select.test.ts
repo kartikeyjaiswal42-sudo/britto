@@ -2,6 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { innerOf, outerOf, parseAttrs, parseSelector, selectFirst, SelectorError } from './select.ts';
 import { textOf } from './html.ts';
+import { readFileSync, readdirSync } from 'node:fs';
+import { BUNDLED_READERS } from '../readers/index.ts';
 
 const PAGE = `<!doctype html><html><head>
 <script>var tpl = '<div id="price" class="a-price priceToPay"><span>₹1</span></div>';</script>
@@ -90,4 +92,29 @@ test('attributes: every quoting style, names lower-cased, first wins', () => {
   assert.equal(a.get('alt'), "it's");
   assert.equal(a.get('data-x'), '7');
   assert.equal(a.get('hidden'), '');
+});
+
+test('the #id / .class fast path finds exactly what a full scan finds, on every saved page', () => {
+  const dir = new URL('../test/fixtures/', import.meta.url);
+  const selectors = new Set<string>(['.a-price', '.a-price.priceToPay', '#corePriceDisplay_desktop_feature_div .a-offscreen', 'div.vsPrice p', '.product__price--mrp span', '.nope', '.price-comman-wrapper > div']);
+  for (const r of BUNDLED_READERS) {
+    const d = r.config.domRecipe;
+    for (const f of [...d.name, ...d.price, ...d.mrp, ...d.image, ...d.pid]) if (f.selector.length) selectors.add(f.selector.join(' '));
+    for (const sel of d.availability.selectors) selectors.add(sel);
+  }
+  let compared = 0;
+  for (const file of readdirSync(dir).filter((f) => f.endsWith('.html'))) {
+    const html = readFileSync(new URL(file, dir), 'utf8');
+    for (const sel of selectors) {
+      assert.deepEqual(selectFirst(html, sel)?.start ?? null, selectFirst(html, sel, true)?.start ?? null, `${file}: ${sel}`);
+      compared++;
+    }
+  }
+  assert.ok(compared > 50, String(compared));
+});
+
+test('.class fast path: a class name in text, another attribute or a script is not an element', () => {
+  const html = `<script>var c = '<div class="hit">no</div>';</script><p data-x="hit">x</p><p>hit</p><div class="a hit b"><span>yes</span></div>`;
+  assert.equal(textOf(outerOf(html, selectFirst(html, '.hit span')!)!), 'yes');
+  assert.equal(selectFirst(html, '.hit')?.start, html.indexOf('<div class="a hit b">'));
 });

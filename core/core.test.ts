@@ -61,6 +61,17 @@ test('Myntra product links', () => {
   assert.ok(r.ok && r.link.key === 'myntra:1700944');
 });
 
+test('Vijay Sales product links: /p/<id>/<name>, the name is required', () => {
+  const r = parseProductLink('https://www.vijaysales.com/p/222878/morphy-richards-digital-5-litres-air-fryer?srsltid=junk#reviews');
+  assert.ok(r.ok && r.link.key === 'vijaysales:222878');
+  assert.equal(r.ok && r.link.url, 'https://www.vijaysales.com/p/222878/morphy-richards-digital-5-litres-air-fryer');
+  // Measured 2026-10-26: /p/184556 without the name answers 404, so it is not a product link.
+  assert.deepEqual(parseProductLink('https://www.vijaysales.com/p/184556'), { ok: false, reason: 'not_a_product' });
+  assert.deepEqual(parseProductLink('https://www.vijaysales.com/air-conditioners'), { ok: false, reason: 'not_a_product' });
+  assert.deepEqual(parseKey('vijaysales:222878'), { store: 'vijaysales', pid: '222878' });
+  assert.equal(parseKey('vijaysales:22x'), null);
+});
+
 test('Look-alike hosts, non-product pages and junk are refused', () => {
   assert.deepEqual(parseProductLink('https://amazon.in.evil.example/dp/B09X5DK382'), { ok: false, reason: 'unsupported_store' });
   assert.deepEqual(parseProductLink('https://www.amazon.com/dp/B09X5DK382'), { ok: false, reason: 'unsupported_store' });

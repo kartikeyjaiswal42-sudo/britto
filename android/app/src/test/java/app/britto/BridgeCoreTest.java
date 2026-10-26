@@ -42,7 +42,7 @@ public class BridgeCoreTest {
 
     private final FakeServer server = new FakeServer();
     private long now = 1_000_000L;
-    private final BridgeCore core = new BridgeCore(new HashSet<>(Arrays.asList("amazon", "flipkart", "myntra")), server, () -> now);
+    private final BridgeCore core = new BridgeCore(new HashSet<>(Arrays.asList("amazon", "flipkart", "myntra", "vijaysales")), server, () -> now);
 
     private JSONObject ask(String msg) throws Exception {
         String out = core.handle("{\"id\":7,\"msg\":" + msg + "}");

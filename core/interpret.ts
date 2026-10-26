@@ -8,7 +8,7 @@
 // whose price box is empty still carries carousel prices, and reading one of those as this
 // product's price is a lie with a number on it.
 import { decodeEntities, elementById, textOf } from './html.ts';
-import { jsonLdValue } from './jsonld.ts';
+import { jsonLdPath, jsonLdProductNode } from './jsonld.ts';
 import { parseRupees } from './money.ts';
 import { jsonPath, type Field, type ReaderConfig } from './recipe.ts';
 import { innerOf, outerOf, selectFirst } from './select.ts';
@@ -23,7 +23,7 @@ const once = <T>(ctx: Ctx, key: string, make: () => T): T => {
 
 /** The raw text a field starts from, before sub_regex / json / regex. */
 function sourceText(field: Field, ctx: Ctx): string | null {
-  if (field.jsonld) return once(ctx, `ld:${field.jsonld}`, () => jsonLdValue(ctx.html, field.jsonld!));
+  if (field.jsonld) return jsonLdPath(once(ctx, 'ld-node', () => jsonLdProductNode(ctx.html)), field.jsonld);
   if (field.global) return ctx.html;
   if (field.attribute === 'URL') return ctx.url || null;
   if (!field.selector.length) return null;

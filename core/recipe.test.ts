@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { BUNDLED_READERS, bundledReader } from '../readers/index.ts';
+import { STORE_IDS } from './stores.ts';
 import { fieldValue, readPage } from './interpret.ts';
 import { canonicalJson, configVersion, fillTemplate, jsonPath, readApiRows, validateReader, type ApiRecipe, type Field, type ReaderConfig } from './recipe.ts';
 
@@ -123,7 +124,7 @@ const good = (): ReaderConfig => JSON.parse(JSON.stringify(bundledReader('amazon
 const errorsOf = (c: unknown) => { const v = validateReader(c); return v.ok ? [] : v.errors; };
 
 test('validateReader: every bundled config passes; a good API recipe passes', () => {
-  assert.equal(BUNDLED_READERS.length, 3);
+  assert.deepEqual(BUNDLED_READERS.map((r) => r.config.store), STORE_IDS, 'a bundled desktop reader for every store');
   for (const r of BUNDLED_READERS) assert.deepEqual(errorsOf(r.config), [], r.version);
   assert.deepEqual(errorsOf({ ...good(), apiRecipes: [{ ...API, headers: { lat: 28.5, 'content-type': 'application/json' } }] }), []);
 });

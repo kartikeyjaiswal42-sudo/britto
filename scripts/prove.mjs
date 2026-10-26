@@ -10,6 +10,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { configFromServed } from '../core/recipe.ts';
 import { bundledReader } from '../readers/index.ts';
+import { STORE_IDS } from '../core/stores.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const WRANGLER = join(ROOT, 'node_modules/.bin/wrangler');
@@ -114,6 +115,21 @@ try {
   const view = await j(`/api/products/${encodeURIComponent(KEY)}`);
   check('product view by key', view.status === 200 && view.body?.product?.key === KEY);
 
+  // ---- one real read per other server-readable store (BLUEPRINT §22), through the Worker
+  for (const [store, url] of [['vijaysales', 'https://www.vijaysales.com/p/222878/morphy-richards-digital-5-litres-air-fryer-with-adjustable-time-temperature-control-8-pre-set-menus-black']]) {
+    const r = await post(url);
+    const v = r.body?.product;
+    const priced = Number.isInteger(v?.stats?.current) && v.stats.current > 0;
+    if (priced) {
+      check(`${store}: the server read a real price from the page`, v.key.startsWith(`${store}:`) && v.points.at(-1)?.source === 'server' && typeof v.title === 'string', JSON.stringify(v?.stats));
+      console.log(`       read: ${v.title?.slice(0, 50)}… ₹${v.stats.current / 100}${v.stats.currentMrp ? ` (M.R.P. ₹${v.stats.currentMrp / 100})` : ''}`);
+    } else if (v?.stats?.inStock === false) {
+      check(`${store}: the server read the page (out of stock now)`, v.points.at(-1)?.source === 'server');
+    } else {
+      skip(`${store}: the server read a real price from the page`, `${store} did not give this network a price (${v?.pending ?? r.status})`);
+    }
+  }
+
   // ---- reader configs (BLUEPRINT §6.3): served, cached by version, checkable by the client
   const AMAZON_VERSION = bundledReader('amazon').version;
   const cfg = await j('/api/config/reader?store=amazon&device=desktop&v=0.3.0');
@@ -216,11 +232,11 @@ try {
   }
   check('search with only punctuation returns nothing, not an error', (await j('/api/search?q=%22%2A%29')).body?.results?.length === 0);
   const stores = await j('/api/stores');
-  check('stores list carries the measured lines', stores.body?.stores?.length === 3 && stores.body.stores.every((s) => s.measured.length > 20));
+  check('stores list carries the measured lines', stores.body?.stores?.length === STORE_IDS.length && stores.body.stores.every((s) => s.measured.length > 20));
   check('…and each store\'s number and https front page (Super Browse opens it)', stores.body?.stores?.every((s) => Number.isInteger(s.num) && /^https:\/\/[^/]+\/$/.test(s.home) && s.hosts.includes(new URL(s.home).hostname)), JSON.stringify(stores.body?.stores?.map((s) => [s.num, s.home])));
   check('recent and deals answer', (await j('/api/recent')).status === 200 && (await j('/api/deals')).status === 200);
   const rh = await j('/api/health/readers');
-  check('reader health answers for every store', rh.status === 200 && rh.body?.stores?.length === 3 && Array.isArray(rh.body?.warnings), rh.text.slice(0, 200));
+  check('reader health answers for every store', rh.status === 200 && rh.body?.stores?.length === STORE_IDS.length && Array.isArray(rh.body?.warnings), rh.text.slice(0, 200));
 
   // ---- "britto/<link>" prefix
   const pre = await j('/https://www.amazon.in/dp/B09X5DK382?tag=x');
@@ -295,7 +311,7 @@ try {
 
     // ---- rate limit on adding new products (Myntra ids: no fetch is made for them)
     let lastStatus = 0;
-    let allowed = 2; // amazon + flipkart above (the Myntra report came from another network: its own limit)
+    let allowed = 3; // amazon + vijaysales + flipkart above (the Myntra report came from another network: its own limit)
     for (let i = 0; allowed < 30 && i < 40; i++) {
       lastStatus = (await post(`https://www.myntra.com/${1000001 + i}`)).status;
       if (lastStatus === 201) allowed++;

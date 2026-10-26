@@ -74,6 +74,7 @@
       name: "Amazon.in",
       hosts: ["amazon.in", "www.amazon.in", "m.amazon.in"],
       shortHosts: ["amzn.in", "amzn.to"],
+      home: "https://www.amazon.in/",
       serverFetch: "yes",
       measured: '2026-10-26: in-stock /dp/ pages fetched with an honest bot User-Agent (from India, not yet from Cloudflare) returned the price box: \u20B9265, M.R.P. \u20B9299, "In stock".'
     },
@@ -83,6 +84,7 @@
       name: "Flipkart",
       hosts: ["flipkart.com", "www.flipkart.com", "dl.flipkart.com"],
       shortHosts: [],
+      home: "https://www.flipkart.com/",
       serverFetch: "refused",
       measured: '2026-10-26: product pages answered "Something went wrong! E002" instead of the product. Prices come from the browser extension.'
     },
@@ -92,8 +94,19 @@
       name: "Myntra",
       hosts: ["myntra.com", "www.myntra.com"],
       shortHosts: [],
+      home: "https://www.myntra.com/",
       serverFetch: "no_answer",
       measured: "2026-10-26: no response within 25 s to an honest bot User-Agent. Prices come from the browser extension."
+    },
+    vijaysales: {
+      id: "vijaysales",
+      num: 4,
+      name: "Vijay Sales",
+      hosts: ["vijaysales.com", "www.vijaysales.com"],
+      shortHosts: [],
+      home: "https://www.vijaysales.com/",
+      serverFetch: "yes",
+      measured: "2026-10-26: two product pages fetched with an honest bot User-Agent (from a cloud computer in the USA, not yet from Cloudflare) returned the price box: \u20B99,229 (M.R.P. \u20B911,900, the store says out of stock) and \u20B94,999 (M.R.P. \u20B915,999, in stock)."
     }
   };
   var STORE_IDS = Object.keys(STORES);
@@ -122,6 +135,7 @@
     if (hit.short) return { ok: false, reason: "short_link", store: hit.store, url: `https://${host}${u.pathname}` };
     if (hit.store === "amazon") return amazon(u);
     if (hit.store === "flipkart") return flipkart(u);
+    if (hit.store === "vijaysales") return vijaysales(u);
     return myntra(u);
   }
   function ok(store, pid, url) {
@@ -152,6 +166,11 @@
     const id = m?.[1];
     if (!id) return { ok: false, reason: "not_a_product" };
     return ok("myntra", id, `https://www.myntra.com${u.pathname.replace(/\/$/, "")}`);
+  }
+  function vijaysales(u) {
+    const m = /^\/p\/(\d{4,8})\/([a-z0-9][a-z0-9-]*)\/?$/i.exec(u.pathname);
+    if (!m) return { ok: false, reason: "not_a_product" };
+    return ok("vijaysales", m[1], `https://www.vijaysales.com/p/${m[1]}/${m[2].toLowerCase()}`);
   }
 
   // core/recipe.ts
@@ -365,7 +384,7 @@
   }
 
   // extension/src/messages.ts
-  var STORES2 = /* @__PURE__ */ new Set(["amazon", "flipkart", "myntra"]);
+  var STORES2 = new Set(STORE_IDS);
   var isObj2 = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
   var text = (v, max) => typeof v === "string" && v.length > 0 && v.length <= max;
   var VERSION = /^[\w.-]{1,80}$/;

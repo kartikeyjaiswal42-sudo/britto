@@ -79,6 +79,14 @@ const attrsOf = (el: El) => (el.attrs ??= parseAttrs(el.open));
 function matchCompound(el: El, c: Compound): boolean {
   if (c.tag && c.tag !== el.tag) return false;
   if (!c.id && !c.classes.length && !c.attrs.length) return true;
+  // Cheap necessary condition before parsing attributes: a class or id must appear in the raw
+  // tag. Parsing every tag's attributes made a class-only selector cost ~4 ms on a 400 KB
+  // stretch of a real page (measured, Vijay Sales). Skipped when the tag holds an entity
+  // (&…;), where the decoded value can differ from the raw text.
+  if (!el.open.includes('&')) {
+    if (c.id && !el.open.includes(c.id)) return false;
+    for (const k of c.classes) if (!el.open.includes(k)) return false;
+  }
   const a = attrsOf(el);
   if (c.id && a.get('id') !== c.id) return false;
   if (c.classes.length) {
@@ -213,6 +221,24 @@ function* idPositions(html: string, id: string): Generator<number> {
   }
 }
 
+/**
+ * Positions (in document order) of elements whose class list holds `cls`, never inside
+ * scripts, styles or comments. Found by text search first, then checked on the parsed tag,
+ * so a class name that merely appears in text or another attribute is not taken.
+ */
+function* classPositions(html: string, cls: string): Generator<number> {
+  for (let at = html.indexOf(cls); at !== -1; at = html.indexOf(cls, at + cls.length)) {
+    const open = html.lastIndexOf('<', at);
+    if (open === -1 || open < html.lastIndexOf('>', at)) continue;
+    TAG.lastIndex = open;
+    const m = TAG.exec(html);
+    if (!m || m.index !== open || !m[2] || m[1] === '/' || open + m[0].length <= at) continue;
+    if (!(parseAttrs(m[0]).get('class') ?? '').split(/\s+/).includes(cls) || insideRawText(html, open)) continue;
+    yield open;
+    at = open + m[0].length - cls.length; // the rest of this tag holds no other element
+  }
+}
+
 const cache = new Map<string, Complex>();
 export function compile(selector: string): Complex {
   let c = cache.get(selector);
@@ -226,14 +252,17 @@ export function compile(selector: string): Complex {
 
 /**
  * The first element matching `selector` in document order, or null. When the selector's
- * first part names an #id, only the inside of that element is scanned (the fast path; the
- * answer is the same, because every match must lie inside it).
+ * first part names an #id or a .class, only the insides of the elements carrying it are
+ * scanned (the fast path). The answer is the same: every match lies inside one of them, and
+ * the first of them (in document order) holding a match holds the first match. `full` forces
+ * the plain whole-page scan (tests compare the two).
  */
-export function selectFirst(html: string, selector: string | Complex): Found | null {
+export function selectFirst(html: string, selector: string | Complex, full = false): Found | null {
   const sel = typeof selector === 'string' ? compile(selector) : selector;
   const head = sel.parts[0]!;
-  if (!head.id) return scan(html, sel, 0, html.length);
-  for (const start of idPositions(html, head.id)) {
+  if (full || (!head.id && !head.classes.length)) return scan(html, sel, 0, html.length);
+  const anchors = head.id ? idPositions(html, head.id) : classPositions(html, head.classes[0]!);
+  for (const start of anchors) {
     if (sel.parts.length === 1) {
       const hit = scan(html, sel, start, start + 1);
       if (hit) return hit;
