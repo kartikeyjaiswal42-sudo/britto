@@ -965,3 +965,14 @@ vijaysales:222878, nykaa:1003586, shopclues:153656207 all `priced` by the produc
   `'refused'`, its prices come from the extension (its manifest already matches
   reliancedigital.in) and the app, like Flipkart; the cron no longer asks it. prove checks it is
   tracked and never server-fetched (new mutant, caught exactly). README table updated.
+
+After the second deploy (`f97537f`, live ~50 s after the push): `prove --live` from the Mac
+**59 passed, 0 failed, 0 SKIP**. **The production cron read Amazon with the new code**
+(production D1, checked): `amazon:B09X5DK382` was made due by moving its `last_attempt_at` back
+13 h (schedule field only; unwatched products are re-read every 12 h, so none was due since the
+deploy), and the 13:49:42 UTC cron run read it: new `prices` row ₹246 / M.R.P. ₹275 (was ₹265 /
+₹299 on 2026-10-26), `product_offers` row (408 bytes), `reader_health` row `server ·
+amazon.desktop.r2.b6819f37c495 · priced`. `config_log` lists all seven bundled configs.
+NOT verified live: an extension or app reading with a server-served config (the owner's own
+browser still runs extension 0.2; item 1), alerts firing on the new code, CPU per read on
+Cloudflare (item 10).
