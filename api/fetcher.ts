@@ -15,7 +15,7 @@ const MAX_BYTES = 3_000_000;
 
 export type FetchOutcome =
   | { ok: true; extracted: Extracted; httpStatus: number }
-  | { ok: false; code: 'http_error' | 'timeout' | 'network' | 'too_large'; httpStatus: number | null; detail: string };
+  | { ok: false; code: 'http_error' | 'timeout' | 'network' | 'too_large' | 'reader_error'; httpStatus: number | null; detail: string };
 
 /** Fetch a product page and read it with `reader` (the config getReader chose). */
 export async function fetchProduct(reader: ReaderConfig, url: string, siteUrl: string | undefined): Promise<FetchOutcome> {
@@ -36,9 +36,21 @@ export async function fetchProduct(reader: ReaderConfig, url: string, siteUrl: s
     await res.body?.cancel();
     return { ok: false, code: 'http_error', httpStatus: res.status, detail: `HTTP ${res.status}` };
   }
-  const html = await readUntilEnough(res, reader);
+  let html: string;
+  try {
+    html = await readUntilEnough(res, reader);
+  } catch (e) {
+    return { ok: false, code: 'network', httpStatus: 200, detail: `connection broke mid-page: ${String(e)}` };
+  }
   if (html.length > MAX_BYTES) return { ok: false, code: 'too_large', httpStatus: 200, detail: `${html.length} chars` };
-  return { ok: true, extracted: readPage(reader, html, url), httpStatus: 200 };
+  // A reader that throws (a config no saved page exercised) is a failure like any other,
+  // recorded against the product. Thrown, it ended the cron run before every product after
+  // this one, and this product, never marked as attempted, came first again the next run.
+  try {
+    return { ok: true, extracted: readPage(reader, html, url), httpStatus: 200 };
+  } catch (e) {
+    return { ok: false, code: 'reader_error', httpStatus: null, detail: String(e) };
+  }
 }
 
 /**
@@ -67,7 +79,10 @@ async function readUntilEnough(res: Response, config: ReaderConfig): Promise<str
         const text = parts.join('');
         parts.length = 0;
         parts.push(text);
-        if (readerEnough(config, text)) break;
+        // A reader that throws cannot say "enough": read on, and readPage decides below.
+        let enough = false;
+        try { enough = readerEnough(config, text); } catch { /* read on */ }
+        if (enough) break;
       }
     }
   } finally {

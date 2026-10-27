@@ -276,6 +276,16 @@ export const MUTANTS = [
     run: PROVE, expect: [/an invalid newer row in D1 is skipped/, /that server read used the hot-fix/],
   },
   {
+    name: 'fetcher lets a reader that throws escape (the cron run ends there)',
+    file: 'api/fetcher.ts', find: "    return { ok: false, code: 'reader_error', httpStatus: null, detail: String(e) };", replace: '    throw e;',
+    run: ['node', ['--test', 'api/fetcher.test.ts']], expect: [/a reader that throws is a recorded failure/],
+  },
+  {
+    name: 'fetcher gives up on the page when the early-stop check throws',
+    file: 'api/fetcher.ts', find: '        try { enough = readerEnough(config, text); } catch { /* read on */ }', replace: '        enough = readerEnough(config, text);',
+    run: ['node', ['--test', 'api/fetcher.test.ts']], expect: [/cannot decide "enough" reads on/],
+  },
+  {
     name: 'extension: the browser drops the image it read (parity)',
     file: 'extension/src/reader.ts',
     find: '    last = confirmIdentity(config.store, pid, readPage(config, document.documentElement.outerHTML, location.href), config.reportsPid);\n',
@@ -344,8 +354,11 @@ for (const m of MUTANTS) {
   writeFileSync(path, original.replace(m.find, m.replace));
   let output = '';
   let exit = 0;
+  // TAP whatever the Node version's default is: Node 24 on the Mac prints its spec format even
+  // into a pipe, and then no `not ok` line exists to read the failing names from.
+  const args = m.run[0] === 'node' && m.run[1][0] === '--test' ? ['--test', '--test-reporter=tap', ...m.run[1].slice(1)] : m.run[1];
   try {
-    output = execFileSync(m.run[0], m.run[1], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: m.timeout ?? 600_000 });
+    output = execFileSync(m.run[0], args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: m.timeout ?? 600_000 });
   } catch (e) {
     exit = e.status ?? 1;
     output = `${e.stdout ?? ''}\n${e.stderr ?? ''}`;

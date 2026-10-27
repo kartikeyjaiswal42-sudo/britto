@@ -886,3 +886,67 @@ basket swap, "best" without a certain match).
   built. Without a real platform's JSON there is no pattern to arm the listener with, and
   untested code that wraps a store's own network calls is risk without benefit.
 - Nothing about pack sizes has been checked against real platform listings.
+
+## P3–P9 checked on the owner's Mac before the merge, 2026-10-27 (local session)
+
+The cloud sessions built P3–P9 from a US container that Amazon stopped answering, so every
+real-Amazon check on the final code was a SKIP. This session re-ran the gates on branch
+`p9-travel` (`f3e9e34`) from the owner's Mac in India, where Amazon answers.
+
+### Gates (Mac, Node 24/25, Google Chrome 156 and Brave)
+
+`npm run typecheck` clean · `npm test` **105/105** (108/108 after the fix below) · `check:readers` every reader valid, every
+fixture as expected · `prove` **107 passed, 0 failed, 0 SKIP** (live amazon.in reads incl.
+Cello pen set ₹246 / M.R.P. ₹275, Morphy Richards air fryer ₹4999 / ₹15999) ·
+`alerts.mjs` **68/68** (its Amazon section ran; the cloud had 61 with it skipped) ·
+`browser.mjs` **70/70** twice · `extension.mjs` **32/32** · `travel.mjs` **4/4 from India**.
+Not run here: `test:app` (no Android SDK/Gradle on this 8 GB Mac; GitHub Actions runs it),
+`alerts.mjs --browser`, `push-live.mjs`.
+
+### Found and fixed: a reader that throws stopped the whole cron run (product code)
+
+Found because the mutant "a D1 override is used without validation" reddened one check too
+many on the Mac (`an unchanged price adds no new row`: `3 -> 3 rows, status priced`, i.e.
+the cron's re-read never finished). Measured cause: `fetchProduct` called `readPage` (and,
+while streaming, `readerEnough`) outside any `try`, so a reader that throws went up through
+`refresh` and the cron loop (`api/app.ts`, no catch): the run ended at that product, and the
+product, never marked as attempted, came first again on the next run, every 5 minutes, ahead
+of every product after it. In the cloud Amazon answered 503, which is handled before any reader
+runs, so the check passed there. Since P3 a reader can come from D1 (validated, but no saved
+page has exercised a hot-fix), so this is new risk in this branch.
+
+- `api/fetcher.ts`: a throwing `readPage` → `{ ok: false, code: 'reader_error' }`, recorded
+  against the product like any failure (attempt time moves, back-off applies); a throwing
+  `readerEnough` → keep downloading; a connection that breaks mid-page → `network`.
+- `api/readers.ts`: reader health counts `reader_error` as a failure, so the hourly warning
+  names a crashing config.
+- `api/app.ts`: the cron loop catches per product (a D1 or alert-send error) and goes on.
+  **Not covered by a test** (needs a failing D1; the reader path above is).
+- `api/fetcher.test.ts` (3 tests, a saved Amazon page through a stubbed `fetch`) + 2 mutants,
+  each caught exactly. The override mutant is now caught exactly on both networks.
+
+### Mutation run on the Mac
+
+`npm run mutate`: **51 of 57 caught exactly** (55 from the cloud + the 2 above). The 6 not
+run are the `app:` mutants (Gradle/Robolectric; no Android SDK on this Mac; the cloud caught
+all 6). First run said 19/55: **`scripts/mutate.mjs` read failing names only from TAP
+`not ok` lines, but Node 24 on the Mac prints its spec format even into a pipe**, so every
+`node --test` mutant read as WRONG with no names. The runner now passes
+`--test-reporter=tap`. (The extension mutant also needs `PW_DIR` in the environment.)
+
+### Also fixed (test code only)
+
+- **`browser.mjs` "no offers section when none were read" was true only where Amazon refuses.**
+  On the Mac the local server read the real page's offers (Cashback, Bank Offer, Partner
+  Offers), so the page rightly showed them and the check failed at both sizes. The check now
+  compares the section with what the server actually returned (none → no section; N → N
+  rows). Proved able to fail: the page told to drop one offer → "read 3, shown 2" red at both
+  sizes, restored.
+- **`travel.mjs` launched only Playwright's own Chromium**, which the Mac does not have. It now
+  tries Google Chrome first, then Chromium (as `browser.mjs` already did).
+
+### Travel sites from India (honest UA, one load each; information, not counted)
+
+Same refusals as from the US container: Skyscanner HTTP 403 captcha, MakeMyTrip
+`ERR_HTTP2_PROTOCOL_ERROR`, ixigo HTTP 403, Booking.com HTTP 202 with a 1,251-character page.
+So owner item 12 (a person opening the four links) still stands.

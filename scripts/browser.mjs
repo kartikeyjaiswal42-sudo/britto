@@ -89,9 +89,15 @@ try {
     check('…and the coupon row fits the screen', couponBox != null && couponBox.x >= 0 && couponBox.x + couponBox.width <= viewport.width, JSON.stringify(couponBox));
     await page.unroute('**/api/coupons/vote');
     await page.unroute(productApi);
+    const served = page.waitForResponse(productApi);
     await page.reload({ waitUntil: 'networkidle' });
     await page.waitForSelector('.big-price');
-    check('…and no offers section when none were read', (await page.locator('#offers').count()) === 0);
+    // Where Amazon answers (the Mac) our server reads the page's real offers; where it refuses
+    // (cloud containers) there are none. Either way the page shows exactly what was read.
+    const readOffers = (await (await served).json()).product?.offers?.items ?? [];
+    const shownOffers = await page.locator('#offers li').count();
+    check('…and the offers section shows exactly what our server read (none read → no section)', readOffers.length === 0
+      ? (await page.locator('#offers').count()) === 0 : shownOffers === readOffers.length, `read ${readOffers.length}, shown ${shownOffers}`);
 
     // No sideways scrolling: try to scroll right and see whether anything moved.
     await page.evaluate(() => window.scrollTo(500, 0));

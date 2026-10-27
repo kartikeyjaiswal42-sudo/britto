@@ -476,7 +476,11 @@ export async function runSchedule(db: D1Database, env: Env): Promise<{ checked: 
   );
   const checked: { key: ProductKey; result: string }[] = [];
   // One at a time: polite to the store, and keeps CPU per run flat.
-  for (const row of due) checked.push({ key: row.key, result: await refresh(env, row, Date.now()) });
+  // One product's error (a D1 hiccup, an alert send) must not end the run for the rest.
+  for (const row of due) {
+    const result = await refresh(env, row, Date.now()).catch((e) => { console.error('refresh', row.key, e); return 'error'; });
+    checked.push({ key: row.key, result });
+  }
   await sweepRate(db, now);
   if (checked.length) console.log('schedule', JSON.stringify(checked));
   // Once an hour (the first run after the hour turns): say when a store's reader looks broken.

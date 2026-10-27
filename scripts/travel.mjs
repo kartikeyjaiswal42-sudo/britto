@@ -37,7 +37,8 @@ const ride = rideSearch({ to: rideTo, pickup: { lat: rideAt.lat + 0.05, lng: rid
 for (const s of [oneWay, roundTrip, hotel, ride]) if (!s.ok) throw new Error(s.reason);
 const url = (search, id) => search.links.find((l) => l.id === id).url;
 
-const browser = await chromium.launch({ headless: true });
+// Google Chrome on the Mac; Playwright's own Chromium where Chrome is not installed (cloud).
+const browser = await chromium.launch({ channel: 'chrome', headless: true }).catch(() => chromium.launch({ headless: true }));
 console.log(`browser: ${browser.version()} · searches for ${D1} / ${D2}`);
 const probe = await browser.newPage();
 const ua = `${await probe.evaluate(() => navigator.userAgent)} BrittoBot/0.1 (+https://britto.amitynoidalibrary.workers.dev/bot)`;

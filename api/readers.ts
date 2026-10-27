@@ -108,7 +108,7 @@ export interface HealthReport {
   configs: { version: string; origin: string; firstSeenAt: Millis }[];
 }
 
-const FAILED = new Set(['unrecognised', 'blocked']);
+const FAILED = new Set(['unrecognised', 'blocked', 'reader_error']);
 
 /** Reader health for the operator: what each store's readings did in the last 24 hours. */
 export async function healthReport(db: D1Database, stores: readonly StoreId[], now: Millis): Promise<HealthReport> {
