@@ -49,7 +49,7 @@ and end with the prompt to paste next. Use they/them for the owner.
 `npm run prove` (real Worker + throwaway D1 + one real amazon.in request) ·
 `node scripts/alerts.mjs [--browser]` · `scripts/browser.mjs <url>` · `scripts/extension.mjs` ·
 `npm run test:app` (Android: Robolectric, APK checks, reader through the real Java bridge) ·
-`scripts/push-live.mjs <url>`.
+`node scripts/travel.mjs` (travel links opened on the real sites) · `scripts/push-live.mjs <url>`.
 
 ## Cloud sessions (claude.ai/code)
 
@@ -69,5 +69,10 @@ and end with the prompt to paste next. Use they/them for the owner.
   platform 36 + build-tools 36.0.0 unpacked into `~/android-sdk` (SHA-1s from Google's
   repository index), `android/local.properties` → `sdk.dir`. Gradle, AGP and AndroidX come
   from `services.gradle.org`, `dl.google.com` and Maven Central (all reachable).
+- Travel sites from the cloud container (measured 2026-10-27, honest UA): Cleartrip and Uber
+  answer; MakeMyTrip, Goibibo, Yatra, IndiGo and Air India give no answer (502 / timeouts),
+  EaseMyTrip sends this US network to its .US site, ixigo 403, Skyscanner a captcha,
+  Booking.com 403 "robot". `scripts/travel.mjs`
+  marks those SKIP; the owner checks them from India (HISTORY "Waiting for the owner").
 - Cloud sessions push branches; merging to `main` deploys. The session's permission guard
   refused a push to `main` (2026-10-27): the owner merges (HISTORY "Waiting for the owner").

@@ -16,7 +16,8 @@ to this list and removes what is done.
    → **Merge**. GitHub Actions then updates the database, deploys the Worker and runs the live
    check by itself (about 1 minute; the Actions tab shows a green tick). Later phases are on
    their own branches, each built on the one before (`p4-android` on P3, `p6-stores` on P4,
-   `p7-grocery` on P6, `p8-deals` on P7, …); merging the newest one brings all of them. Merge in order if you want to try each.
+   `p7-grocery` on P6, `p8-deals` on P7, `p9-travel` on P8); merging the newest one brings all
+   of them. Merge in order if you want to try each.
    Or tell the next session "you may merge to main".
 1. **Reload the Britto extension** (once P3 is on `main`): open `chrome://extensions` (or
    `brave://extensions`), find Britto, press the round reload arrow. Then open any Amazon.in
@@ -695,6 +696,68 @@ real Chrome) · `extension.mjs` 30/30 · `test:app` 28/28 · Gradle unit tests 8
   and abuse limits designed first. Left for its own step.
 - Sale end dates not published in the sources read; earlier sales not entered.
 - The Android APK must be rebuilt after store changes (app.mjs checks it; it caught a stale one).
+
+## P9, 2026-10-27: travel and rides, one search → every site — branch `p9-travel` (built on P8)
+
+**Asked:** BLUEPRINT §14 / §24 P9: deep-link compare (one search → every OTA/airline/ride app),
+indicative calendars once observation volume allows, flight price alerts.
+
+### Measured first (honest User-Agent; from this cloud container, USA)
+
+- **Reachability:** Cleartrip, Uber, Ola, Rapido and Namma Yatri answer. MakeMyTrip, Goibibo,
+  Yatra, IndiGo, Air India: no answer (HTTP/2 resets, timeouts, 502 through the proxy;
+  MakeMyTrip gives curl's default User-Agent a 403). EaseMyTrip redirects this network to its
+  .US site. ixigo: 403 "too many requests". Skyscanner: captcha. Booking.com: 403 "detected as a
+  robot". Ola's booking page stayed on a loading skeleton behind reCAPTCHA. None worked around.
+- **Cleartrip, in real Chromium:** the flight link fills the whole search (one way DEL→BOM;
+  round trip DEL⇄GOI with 2 travellers in Business; Premium Economy; First; DEL→DXB
+  international) and Cleartrip then asks its own fare service for exactly those values (that
+  request got 403 here, so no fares were seen). The hotel link shows "Showing hotels in Goa",
+  the dates, "1 room, 2 guests" and real hotel prices.
+- **Skyscanner:** its own referral docs (developers.skyscanner.net, read 2026-10-27): day view
+  `origin`, `destination`, `outboundDate`/`inboundDate` (YYYY-MM-DD), `adultsv2`,
+  `cabinclass` (economy / premiumeconomy / business / first).
+- **Uber:** its docs (developer.uber.com, read 2026-10-27): `m.uber.com/looking?pickup=<JSON>&drop[0]=<JSON>`
+  with latitude/longitude. Opened in Chromium: the trip is filled in (fares need a login).
+  Uber **ignores the name** we send (an address-only drop is dropped) and **snaps the point to
+  the nearest place on its map**: Delhi airport's point in the public airport list read as
+  "50 Feet Rd … Nangloi"; Wikidata's point for it read as "Gate 7, Terminal 3". So
+  `scripts/uber-airports.mjs` tried every Indian airport (one page load per point, OurAirports
+  then Wikidata) and kept those Uber read as the airport itself: **(measuring: the count goes here when the run ends)**.
+- **Airports:** OurAirports (public domain, per its terms page): 1,214 airports with scheduled
+  service and an IATA code (106 in India, plus the world's large airports), 92 KB.
+
+### Built
+
+- `web/travel.js` (runs on the device; the tests import the same file): flight, hotel and
+  ride-to-the-airport searches → one link per site, each labelled how far it was checked
+  (`opened` on the site / `documented` by the site / not checked yet / front page only).
+  Unchecked formats (MakeMyTrip, ixigo flights; Booking.com hotels) are offered only in their
+  simplest form (one way, economy) and say "Not checked yet". Dates are India's calendar, up to a
+  year ahead (Skyscanner's documented limit); return / check-out after the first date.
+- `/travel` page (nav "Travel"): flights, hotels, ride to the airport. The ride link uses the
+  phone's location **on the device only** (Britto never receives it; the browser test watches
+  every request). Inside the Britto app (which asks for no location permission) the page says
+  to use the phone's browser for rides. "Need a ride to DEL?" after a flight search.
+- `scripts/airports.mjs` (builds `web/airports.json`), `scripts/uber-airports.mjs` (builds
+  `web/rides.json`), `scripts/travel.mjs` (opens the checked links on the real sites; SKIP when
+  a site refuses this network).
+
+### Gates (final code on the branch, this cloud session)
+
+(final numbers go here when the Uber measurement ends; so far: `npm test` 105/105, typechecks clean, `prove` 98 passed, 0 failed, 7 SKIP (Amazon), `extension.mjs` 32/32, `test:app` 28/28, `mutate travel:` 6/6, `travel.mjs` Cleartrip 3/3 before the Uber rework)
+
+### NOT verified / not done
+
+- **MakeMyTrip, ixigo, Skyscanner and Booking.com links:** they refused this network; the owner
+  checks them from India (item 12). Goibibo, EaseMyTrip, Yatra, IndiGo and Air India get their
+  front page only: no link format could be checked.
+- **Rides:** Ola, Rapido and Namma Yatri get their front pages (no documented web link format;
+  Ola's page did not load here). Uber only to the airports it was seen to recognise. A ride to
+  a typed address needs a map service to turn it into coordinates (not built).
+- **Indicative fares calendar and flight price alerts:** need fares that shoppers actually saw.
+  There are none: no reader reads a travel site yet, and the sites refuse the server. Not built.
+- **Hotels:** one room only. Nothing deployed: waits for item 0 (merge).
 
 ## P8, 2026-10-27: deals, look-alikes, offers and coupon codes — branch `p8-deals` (built on P7)
 
