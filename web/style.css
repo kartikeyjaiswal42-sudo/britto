@@ -63,6 +63,12 @@ code { background: var(--neutral-bg); padding: 1px 6px; border-radius: 4px; }
 .big-price { font-size: 32px; font-weight: 800; }
 .cards2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 20px; }
 .offers ul { margin: 0; padding-left: 18px; } .offers li { margin: 4px 0; }
+.travel-form .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin: 8px 0 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.field input, .field select { padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); font: inherit; min-width: 0; }
+.travel-links { list-style: none; padding: 0; margin: 14px 0; display: grid; gap: 10px; }
+.travel-links li { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+.travel-links .button { min-width: 12em; text-align: center; }
 .coupon { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0 10px; }
 .coupon code { font-weight: 700; padding: 4px 10px; border: 1px dashed var(--accent); border-radius: 6px; user-select: all; }
 .coupon button { padding: 6px 10px; font-weight: 500; } .coupon .votes { flex-basis: 100%; }

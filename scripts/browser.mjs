@@ -3,7 +3,9 @@
 // add it on the page). Asserts on what is RENDERED (text, computed style, scroll position),
 // not on markup.
 import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
 import { STORES, STORE_IDS } from '../core/stores.ts';
+import { airportIndex, flightSearch, hotelSearch, rideSearch, todayIST } from '../web/travel.js';
 
 const base = (process.argv[2] ?? '').replace(/\/$/, '');
 if (!base) throw new Error('usage: browser.mjs <url>');
@@ -24,7 +26,8 @@ console.log(`browser: ${browser.version()}`);
 try {
   for (const [label, viewport, scheme] of [['desktop light', { width: 1280, height: 900 }, 'light'], ['phone dark', { width: 390, height: 844 }, 'dark']]) {
     console.log(`— ${label}`);
-    const ctx = await browser.newContext({ viewport, colorScheme: scheme });
+    // A made-up location (Connaught Place, New Delhi), given only to this browser for the ride check.
+    const ctx = await browser.newContext({ viewport, colorScheme: scheme, permissions: ['geolocation'], geolocation: { latitude: 28.6315, longitude: 77.2167 } });
     const page = await ctx.newPage();
     const errors = [];
     page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
@@ -134,6 +137,45 @@ try {
       return r;
     });
     check('sale events: a band for an ended sale, a start marker for one with no end date', marks.bands === 1 && marks.starts === 1 && marks.labels.join('|') === 'Ended sale|Open sale' && marks.stroke !== 'none', JSON.stringify(marks));
+
+    // Travel (BLUEPRINT §14): links built on the device by web/travel.js, the same code as here.
+    const toBritto = [];
+    page.on('request', (r) => { if (r.url().startsWith(base)) toBritto.push(`${r.url()} ${r.postData() ?? ''}`); });
+    await page.goto(base + '/travel', { waitUntil: 'networkidle' });
+    const airportRows = JSON.parse(readFileSync(new URL('../web/airports.json', import.meta.url), 'utf8')).airports;
+    const airports = airportIndex(airportRows);
+    const ridesData = JSON.parse(readFileSync(new URL('../web/rides.json', import.meta.url), 'utf8'));
+    const when = new Date(Date.parse(`${todayIST()}T00:00:00Z`) + 30 * 86_400_000).toISOString().slice(0, 10);
+    const later = new Date(Date.parse(`${when}T00:00:00Z`) + 2 * 86_400_000).toISOString().slice(0, 10);
+    check('travel page: flights, hotels and rides; the airport list loaded', (await page.locator('form.travel-form').count()) === 3 && (await page.locator('#airport-list option').count()) === airportRows.length);
+    await page.fill('#flights [name=from]', 'DEL · New Delhi');
+    await page.fill('#flights [name=to]', 'del');
+    await page.click('#flights button[type=submit]');
+    check('…the same airport twice is refused, said plainly', /same airport/.test(await page.locator('#flight-links').innerText()));
+    await page.fill('#flights [name=to]', 'BOM · Mumbai');
+    await page.fill('#flights [name=depart]', when);
+    await page.click('#flights button[type=submit]');
+    const want = flightSearch({ from: 'DEL', to: 'BOM', depart: when, adults: 1, cabin: 'economy' }, airports);
+    const got = await page.locator('#flight-links li').evaluateAll((lis) => lis.map((li) => [li.dataset.site, li.querySelector('a').href, li.querySelector('a').textContent, li.querySelector('span').textContent]));
+    check('…flights: every site, the link web/travel.js builds, checked ones first', want.ok && JSON.stringify(got.map((g) => [g[0], g[1]])) === JSON.stringify(want.links.map((l) => [l.id, l.url])), JSON.stringify(got.slice(0, 3)));
+    check('…each link says how far it was checked', got[0][2] === 'Search on Cleartrip' && /checked on the site/.test(got[0][3]) && /documentation/.test(got[1][3])
+      && got.some((g) => g[0] === 'makemytrip' && /Not checked yet/.test(g[3])) && got.some((g) => g[0] === 'indigo' && g[2] === 'Open IndiGo' && /enter your trip there/.test(g[3])), JSON.stringify(got.map((g) => g[3])));
+    check('…and every link opens in a new tab without telling the site where you came from', (await page.locator('#flight-links a').evaluateAll((as) => as.every((a) => a.target === '_blank' && /noreferrer/.test(a.rel)))));
+    await page.fill('#hotels [name=city]', 'Goa');
+    await page.fill('#hotels [name=checkIn]', when);
+    await page.fill('#hotels [name=checkOut]', later);
+    await page.click('#hotels button[type=submit]');
+    const hotelWant = hotelSearch({ city: 'Goa', checkIn: when, checkOut: later, adults: 2 });
+    check('…hotels: Cleartrip with the city, dates and guests', hotelWant.ok && (await page.locator('#hotel-links li[data-site=cleartrip] a').getAttribute('href')) === hotelWant.links[0].url);
+    await page.fill('#rides [name=rideTo]', 'DEL · New Delhi');
+    await page.click('#rides button[type=submit]');
+    await page.waitForSelector('#ride-links li');
+    const rideWant = rideSearch({ to: 'DEL', pickup: { lat: 28.6315, lng: 77.2167 } }, airports, ridesData.uber);
+    check('…ride to the airport: the Uber link from this browser\'s location (pre-filled only if Uber reads DEL as the airport)', rideWant.ok
+      && (await page.locator('#ride-links li[data-site=uber] a').getAttribute('href')) === rideWant.links[0].url, rideWant.ok ? rideWant.links[0].url : '');
+    check('…and the location never went to Britto', toBritto.length > 0 && !toBritto.some((u) => /28\.63|77\.21/.test(u)), toBritto.filter((u) => /28\.63|77\.21/.test(u)).join(' '));
+    await page.evaluate(() => window.scrollTo(500, 0));
+    check('…no horizontal scroll on the travel page', (await page.evaluate(() => window.scrollX)) === 0);
 
     check('no console errors', errors.length === 0, errors.join(' | '));
     await ctx.close();

@@ -5,6 +5,7 @@ import {
   pct, removeAlert, rupees, savePush, searchProducts, sendTest, setAlert, toPaise, trackProduct, getGroceryPlatforms, getSimilar, voteCoupon,
 } from './api.js';
 import { drawChart } from './chart.js';
+import { airportIndex, flightSearch, hotelSearch, MAX_DAYS_AHEAD, rideSearch, todayIST } from './travel.js';
 
 const app = document.getElementById('app');
 
@@ -199,6 +200,92 @@ function couponBox(store, offer) {
 
 function votesText(v) {
   return v?.total ? `Worked for ${v.worked} of ${v.total} shoppers in the last 30 days.` : 'No shopper has said yet whether it works.';
+}
+
+// ---- Travel (BLUEPRINT §14): one search, each site opened with it filled in. Links are built
+// here, on the device; Britto shows no fares (no free, permitted source) and stores nothing.
+const LINK_NOTE = {
+  opened: 'Opens with your search filled in (checked on the site).',
+  documented: (n) => `Link format from ${n}\u2019s own documentation.`,
+  unchecked: 'Not checked yet: it may open without your search filled in.',
+  home: 'Opens the site: enter your trip there.',
+};
+
+function travelLinks(links) {
+  return h('ul', { class: 'travel-links' }, links.map((l) => h('li', { 'data-site': l.id },
+    h('a', { class: l.prefilled && l.checked ? 'button' : 'button secondary', href: l.url, target: '_blank', rel: 'noopener noreferrer' },
+      l.prefilled ? `Search on ${l.name}` : `Open ${l.name}`),
+    h('span', { class: 'small muted' }, !l.prefilled ? LINK_NOTE.home : l.checked === 'opened' ? LINK_NOTE.opened : l.checked === 'documented' ? LINK_NOTE.documented(l.name) : LINK_NOTE.unchecked))));
+}
+
+const addDaysISO = (iso, n) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+/** "DEL · New Delhi" (what the airport list puts in the box) or "del" -> "DEL". */
+const airportCode = (v) => (/^\s*([A-Za-z]{3})\b/.exec(v)?.[1] ?? '').toUpperCase();
+
+async function travelPage() {
+  app.replaceChildren(h('p', { class: 'muted' }, 'Loading…'));
+  const [data, rides] = await Promise.all([fetch('/airports.json').then((r) => r.json()), fetch('/rides.json').then((r) => r.json())]);
+  const airports = airportIndex(data.airports);
+  const today = todayIST();
+  const max = addDaysISO(today, MAX_DAYS_AHEAD);
+  const list = h('datalist', { id: 'airport-list' }, data.airports.map(([iata, name, city, country]) => h('option', { value: `${iata} · ${city || name}` }, country === 'IN' ? name : `${name}, ${country}`)));
+  const field = (label, input) => h('label', { class: 'field' }, h('span', {}, label), input);
+  const out = (id) => h('div', { class: 'travel-out', id, 'aria-live': 'polite' });
+  const show = (box, r, extra = null) => box.replaceChildren(...(r.ok ? [travelLinks(r.links), extra] : [h('p', { class: 'error' }, r.reason)]));
+
+  // Flights
+  const from = h('input', { name: 'from', list: 'airport-list', placeholder: 'DEL · New Delhi', autocomplete: 'off', required: true });
+  const to = h('input', { name: 'to', list: 'airport-list', placeholder: 'BOM · Mumbai', autocomplete: 'off', required: true });
+  const depart = h('input', { name: 'depart', type: 'date', min: today, max, value: addDaysISO(today, 7), required: true });
+  const ret = h('input', { name: 'ret', type: 'date', min: today, max });
+  const adults = h('input', { name: 'adults', type: 'number', min: 1, max: 9, value: 1 });
+  const cabin = h('select', { name: 'cabin' }, [['economy', 'Economy'], ['premium', 'Premium economy'], ['business', 'Business'], ['first', 'First']].map(([v, t]) => h('option', { value: v }, t)));
+  const flightOut = out('flight-links');
+  const flights = h('form', { class: 'travel-form', id: 'flights', onsubmit: (e) => {
+    e.preventDefault();
+    const r = flightSearch({ from: airportCode(from.value), to: airportCode(to.value), depart: depart.value, ret: ret.value || null, adults: Number(adults.value), cabin: cabin.value }, airports);
+    show(flightOut, r, r.ok ? h('p', { class: 'small' }, h('button', { type: 'button', class: 'link', onclick: () => { rideTo.value = from.value; document.getElementById('rides')?.scrollIntoView(); } }, `Need a ride to ${r.q.from}?`)) : null);
+  } },
+  h('div', { class: 'fields' }, field('From', from), field('To', to), field('Depart', depart), field('Return (optional)', ret), field('Adults', adults), field('Class', cabin)),
+  h('button', { type: 'submit' }, 'Show flight searches'), flightOut);
+
+  // Hotels
+  const city = h('input', { name: 'city', placeholder: 'Goa', autocomplete: 'off', required: true });
+  const checkIn = h('input', { name: 'checkIn', type: 'date', min: today, max, value: addDaysISO(today, 7), required: true });
+  const checkOut = h('input', { name: 'checkOut', type: 'date', min: today, max, value: addDaysISO(today, 9), required: true });
+  const guests = h('input', { name: 'guests', type: 'number', min: 1, max: 8, value: 2 });
+  const hotelOut = out('hotel-links');
+  const hotels = h('form', { class: 'travel-form', id: 'hotels', onsubmit: (e) => {
+    e.preventDefault();
+    show(hotelOut, hotelSearch({ city: city.value, checkIn: checkIn.value, checkOut: checkOut.value, adults: Number(guests.value) }));
+  } },
+  h('div', { class: 'fields' }, field('City', city), field('Check-in', checkIn), field('Check-out', checkOut), field('Guests (one room)', guests)),
+  h('button', { type: 'submit' }, 'Show hotel searches'), hotelOut);
+
+  // Rides to the airport: the shopper's location goes into the Uber link only, never to Britto.
+  const rideTo = h('input', { name: 'rideTo', list: 'airport-list', placeholder: 'DEL · New Delhi', autocomplete: 'off', required: true });
+  const rideOut = out('ride-links');
+  const ridesForm = h('form', { class: 'travel-form', id: 'rides', onsubmit: (e) => {
+    e.preventDefault();
+    const code = airportCode(rideTo.value);
+    if (!airports.has(code)) return show(rideOut, rideSearch({ to: code }, airports, rides.uber));
+    if (!navigator.geolocation) return rideOut.replaceChildren(h('p', { class: 'error' }, 'This browser cannot share your location.'));
+    rideOut.replaceChildren(h('p', { class: 'muted small' }, 'Asking for your location…'));
+    navigator.geolocation.getCurrentPosition(
+      (pos) => show(rideOut, rideSearch({ to: code, pickup: { lat: pos.coords.latitude, lng: pos.coords.longitude } }, airports, rides.uber)),
+      () => rideOut.replaceChildren(h('p', { class: 'error' }, 'Location not shared, so no ride link can start from where you are.')),
+      { timeout: 15_000, maximumAge: 300_000 });
+  } },
+  h('div', { class: 'fields' }, field('Airport', rideTo)),
+  h('p', { class: 'small muted' }, 'Your location goes only into the ride link, on this device. Britto never receives it.'),
+  h('button', { type: 'submit' }, 'Use my location'), rideOut);
+
+  app.replaceChildren(h('h1', {}, 'Travel'),
+    h('p', { class: 'muted' }, 'Enter your trip once and open the same search on each site. Britto shows no fares here: no travel site lets us read them for free, so compare on their pages. Every link says whether we checked it.'),
+    list,
+    h('section', {}, h('h2', {}, 'Flights'), flights),
+    h('section', {}, h('h2', {}, 'Hotels'), hotels),
+    h('section', {}, h('h2', {}, 'Ride to the airport'), ridesForm));
 }
 
 function stat(label, value, note) {
@@ -533,6 +620,7 @@ function route() {
   if (pathname === '/stores') return done(storesPage());
   if (pathname === '/browse') return done(browsePage());
   if (pathname === '/grocery') return done(groceryPage());
+  if (pathname === '/travel') return done(travelPage());
   if (pathname === '/alerts') return done(alertsPage());
   return done(home());
 }

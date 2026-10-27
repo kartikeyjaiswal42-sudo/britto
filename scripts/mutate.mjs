@@ -17,6 +17,7 @@ const UNIT = ['node', ['--test', 'core/recipe.test.ts', 'core/extract.test.ts', 
 const CHECK = ['node', ['scripts/check-readers.mjs']];
 const UNIT2 = ['node', ['--test', 'core/sales.test.ts']];
 const GROCERY = ['node', ['--test', 'core/grocery.test.ts']];
+const TRAVEL = ['node', ['--test', 'core/travel.test.ts']];
 // The slow ones (a real Worker; prove also makes its real amazon.in requests): run them by name.
 const PROVE = ['node', ['scripts/prove.mjs']];
 const EXTENSION = ['node', ['scripts/extension.mjs']];
@@ -173,6 +174,36 @@ export const MUTANTS = [
     name: 'grocery best is the cheapest per 100 g even when not the same item',
     file: 'core/grocery.ts', find: "  const best = rows.find((r) => r.inStock && r.match === 'same')?.platform ?? null;", replace: "  const best = rows.find((r) => r.inStock)?.platform ?? null;",
     run: GROCERY, expect: [/one item: same address only/, /no winner when nothing is certainly/],
+  },
+  {
+    name: 'travel: "today" is the server\'s date, not India\'s',
+    file: 'web/travel.js', find: 'new Date(now + 5.5 * 3_600_000)', replace: 'new Date(now)',
+    run: TRAVEL, expect: [/"today" is India's date/],
+  },
+  {
+    name: 'travel: a return date before the departure is accepted',
+    file: 'web/travel.js', find: "(input.ret ? dateError('Return', input.ret, today, input.depart) : null)", replace: "(input.ret ? dateError('Return', input.ret, today) : null)",
+    run: TRAVEL, expect: [/flights: what is refused/],
+  },
+  {
+    name: 'travel: an unchecked link format is guessed for round trips too',
+    file: 'web/travel.js', find: "['makemytrip', null, (q) => (q.ret || q.cabin !== 'economy' ? null :", replace: "['makemytrip', null, (q) => (false ? null :",
+    run: TRAVEL, expect: [/round trip, cabin and international/],
+  },
+  {
+    name: 'travel: Uber pre-filled for an airport it was not seen to recognise',
+    file: 'web/travel.js', find: 'Object.hasOwn(uberAirports, drop.iata) ? RIDES', replace: 'true ? RIDES',
+    run: TRAVEL, expect: [/rides: from the shopper's point to an airport Uber recognises/],
+  },
+  {
+    name: 'travel: anything near an airport counts as the airport for Uber',
+    file: 'scripts/uber-airports.mjs', find: "    && !/\\b(unnamed|road|rd|marg|area|colony|fire|station|cargo|parking|hangar|gate|police|hotel|lounge|restaurant|cafe|office|quarters)\\b/i.test(name);", replace: ';',
+    run: TRAVEL, expect: [/Uber airport check: the place must BE the airport/],
+  },
+  {
+    name: 'travel: Cleartrip dates sent as YYYY-MM-DD',
+    file: 'web/travel.js', find: "    depart_date: dmy(q.depart), ...(q.ret ? { return_date: dmy(q.ret) } : {})", replace: "    depart_date: q.depart, ...(q.ret ? { return_date: q.ret } : {})",
+    run: TRAVEL, expect: [/flights: one search, each site with it filled in/, /round trip, cabin and international/],
   },
   {
     name: 'early stop before the price box has arrived',
