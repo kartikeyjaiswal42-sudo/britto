@@ -8,17 +8,16 @@ the old name and addresses as they were at the time.
 Things only the owner can do, in plain English with the exact steps. Each later session adds
 to this list and removes what is done.
 
-0. **Put P3 live (merge it into `main`)** — this cloud session was not allowed to push to
-   `main` (the merge deploys to production, and the session's permission guard stops a
-   production deploy without you). Every gate is green on branch `p3-reader-configs`
-   (HISTORY "P3"). To do it: on github.com open the `britto` repository → **Pull requests**
-   → **New pull request** → base `main`, compare `p3-reader-configs` → **Create pull request**
-   → **Merge**. GitHub Actions then updates the database, deploys the Worker and runs the live
-   check by itself (about 1 minute; the Actions tab shows a green tick). Later phases are on
-   their own branches, each built on the one before (`p4-android` on P3, `p6-stores` on P4,
-   `p7-grocery` on P6, `p8-deals` on P7, `p9-travel` on P8); merging the newest one brings all
-   of them. Merge in order if you want to try each.
-   Or tell the next session "you may merge to main".
+0. **Put P3–P9 live: merge pull request #1** (1 minute). The pull request is ready:
+   https://github.com/kartikeyjaiswal42-sudo/britto/pull/1 (branch `p9-travel` into `main`;
+   it holds every phase from P3 to P9, and its description says what is verified and what is
+   not). Open it, wait for the checks to show green ticks, press **Merge pull request** →
+   **Confirm merge**. GitHub Actions then updates the database (five new tables only, nothing
+   existing changes), deploys the Worker and runs the live check by itself (a few minutes;
+   the Actions tab shows a green tick). If the `CLOUDFLARE_API_TOKEN` secret is not set, it
+   only tests and deploys nothing. This cloud session may not push to `main` itself (its
+   permission guard stops a production deploy without you); you can also tell the next session
+   "you may merge to main".
 1. **Reload the Britto extension** (once P3 is on `main`): open `chrome://extensions` (or
    `brave://extensions`), find Britto, press the round reload arrow. Then open any Amazon.in
    product: the panel should appear as before. The version under the popup's "Open Britto"
