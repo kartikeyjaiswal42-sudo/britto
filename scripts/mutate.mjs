@@ -276,6 +276,11 @@ export const MUTANTS = [
     run: PROVE, expect: [/an invalid newer row in D1 is skipped/, /that server read used the hot-fix/],
   },
   {
+    name: 'prove: Reliance Digital (refuses Cloudflare) is server-fetched again',
+    file: 'core/stores.ts', find: "    serverFetch: 'refused',\n    measured:\n      '2026-10-27: refuses our server on Cloudflare", replace: "    serverFetch: 'yes',\n    measured:\n      '2026-10-27: refuses our server on Cloudflare",
+    run: PROVE, expect: [/reliancedigital: tracked, never fetched by our server/],
+  },
+  {
     name: 'fetcher lets a reader that throws escape (the cron run ends there)',
     file: 'api/fetcher.ts', find: "    return { ok: false, code: 'reader_error', httpStatus: null, detail: String(e) };", replace: '    throw e;',
     run: ['node', ['--test', 'api/fetcher.test.ts']], expect: [/a reader that throws is a recorded failure/],

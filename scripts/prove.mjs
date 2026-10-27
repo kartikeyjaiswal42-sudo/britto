@@ -135,6 +135,12 @@ try {
   ]) {
     const r = await post(url);
     const v = r.body?.product;
+    if (store === 'reliancedigital') {
+      // Refuses Cloudflare's network (HTTP 403 live, 2026-10-27) while answering the same bot
+      // elsewhere: tracked like Flipkart, its prices from shoppers' pages, never server-fetched.
+      check('reliancedigital: tracked, never fetched by our server (it refuses Cloudflare)', r.status < 300 && v?.points?.length === 0 && /does not let our server read/.test(v?.pending ?? ''), JSON.stringify({ status: r.status, pending: v?.pending }));
+      continue;
+    }
     const priced = Number.isInteger(v?.stats?.current) && v.stats.current > 0;
     if (priced) {
       check(`${store}: the server read a real price from the page`, v.key.startsWith(`${store}:`) && v.points.at(-1)?.source === 'server' && typeof v.title === 'string', JSON.stringify(v?.stats));
@@ -153,9 +159,12 @@ try {
   const served = configFromServed(cfg.body);
   check('reader config for Amazon is served and passes the client\'s own check', cfg.status === 200 && served.ok && served.version === cfg.body.version, `${cfg.status} ${JSON.stringify(served.ok ? served.version : served.errors)}`);
   if (!live) check('…it is the bundled reader (no override yet)', cfg.body?.version === AMAZON_VERSION, `${cfg.body?.version} vs ${AMAZON_VERSION}`);
-  check('…ETag is the version, cacheable for 10 minutes', cfg.headers.get('etag') === `"${cfg.body?.version}"` && /public, max-age=600/.test(cfg.headers.get('cache-control') ?? ''), `${cfg.headers.get('etag')} | ${cfg.headers.get('cache-control')}`);
+  // Cloudflare marks the ETag weak when it compresses the reply (measured live 2026-10-27:
+  // brotli → W/"…", uncompressed and 304 → "…"); the server accepts either form back.
+  const strong = (etag) => (etag ?? '').replace(/^W\//, '');
+  check('…ETag is the version, cacheable for 10 minutes', strong(cfg.headers.get('etag')) === `"${cfg.body?.version}"` && /public, max-age=600/.test(cfg.headers.get('cache-control') ?? ''), `${cfg.headers.get('etag')} | ${cfg.headers.get('cache-control')}`);
   const again304 = await fetch(`${base}/api/config/reader?store=amazon`, { headers: { 'if-none-match': cfg.headers.get('etag') ?? '' } });
-  check('…asking again with If-None-Match gets 304 and no body', again304.status === 304 && (await again304.text()) === '' && again304.headers.get('etag') === cfg.headers.get('etag'), String(again304.status));
+  check('…asking again with If-None-Match gets 304 and no body', again304.status === 304 && (await again304.text()) === '' && strong(again304.headers.get('etag')) === strong(cfg.headers.get('etag')), `${again304.status} ${again304.headers.get('etag')}`);
   const stale = await fetch(`${base}/api/config/reader?store=amazon`, { headers: { 'if-none-match': '"amazon.desktop.r0.000000000000"' } });
   check('…an old version gets the full config', stale.status === 200 && (await stale.json()).version === cfg.body?.version, String(stale.status));
   const byNumber = await j('/api/config/reader?store=1');

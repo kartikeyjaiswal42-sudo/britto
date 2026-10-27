@@ -8,31 +8,21 @@
 > only as history. Start prompt for any session (local or cloud):
 > `Read PLAN.md "Start here", HISTORY.md and BLUEPRINT.md. Build only the next phase, keep every gate green.`
 >
-> **P3 is DONE on branch `p3-reader-configs`, NOT yet merged/deployed** (2026-10-27,
-> HISTORY.md "P3"; the cloud session may not push to `main`: the owner merges). Readers are
-> JSON configs served by the Worker, one interpreter in every client, config CI, reader
-> health, D1 hot-fixes. Later phases branch from it.
->
-> **P4 is DONE on branch `p4-android` (built on P3), NOT merged** (HISTORY.md "P4"): Android
-> app (Gradle, AndroidX WebKit), Super Browse, share target, Save page, one reader shared with
-> the extension. Not run on a phone yet.
->
-> **P6 is DONE on branch `p6-stores` (built on P4), NOT merged** (HISTORY.md "P6"): Vijay
-> Sales, Reliance Digital, Nykaa and ShopClues read by the server, fixture-verified; sale
-> calendar on charts; affiliate feeds checked. Generic Shopify recipes not built.
->
-> **P7 is PARTLY DONE on branch `p7-grocery` (built on P6)**: grocery compare logic + API +
-> `/grocery` page; no platform can be read until the owner saves phone pages (HISTORY "P7").
->
-> **P8 is DONE except Lens on branch `p8-deals` (built on P7), NOT merged** (HISTORY "P8"):
-> deals vs the 90-day usual price with filters and sparklines, look-alikes, offers read from
-> the store page (Amazon, ShopClues codes) stored only from our own reads, coupon votes.
-> Product Lens and AI look-alikes wait for Workers AI (owner item 11).
-> **P9 is DONE (deep links) on branch `p9-travel` (built on P8), NOT merged** (HISTORY "P9"):
-> `/travel`: one flight or hotel search opens every site with it filled in, each link saying
-> how far it was checked; rides to airports Uber was seen to recognise. Indicative fares and
-> flight alerts wait for fares people actually saw (none yet).
-> **Next: P10** (Spend Lens), branched from `p9-travel`. P5 waits for the owner's Claude Design
+> **P3–P9 are LIVE on `main`** (merged and deployed 2026-10-27 13:30 UTC after every gate was
+> re-run on the owner's Mac, where Amazon answers; HISTORY "P3–P9 checked on the owner's Mac").
+> - **P3**: readers are JSON configs served by the Worker, one interpreter in every client,
+>   config CI, reader health, D1 hot-fixes.
+> - **P4**: Android app (Gradle, AndroidX WebKit), Super Browse, share target, Save page. Not
+>   run on a phone yet.
+> - **P6**: Vijay Sales, Nykaa and ShopClues read by the server (live from Cloudflare);
+>   Reliance Digital refuses Cloudflare, so it is read from shoppers' pages; sale calendar.
+> - **P7 (partly)**: grocery compare logic + API + `/grocery`; no platform readable until the
+>   owner saves phone pages.
+> - **P8 (except Lens)**: deals vs the 90-day usual price, look-alikes, offers, coupon votes.
+>   Lens and AI look-alikes wait for Workers AI (owner item 11).
+> - **P9 (deep links)**: `/travel` flights, hotels, rides to airports. Fares and flight alerts
+>   wait for fares people actually saw.
+> **Next: P10** (Spend Lens), branched from `main`. P5 waits for the owner's Claude Design
 > export. Owner-only steps: top of HISTORY.md, "Waiting for the owner".
 
 ## Unattended runs (the owner is away and cannot answer)

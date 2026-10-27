@@ -75,4 +75,8 @@ and end with the prompt to paste next. Use they/them for the owner.
   Booking.com 403 "robot". `scripts/travel.mjs`
   marks those SKIP; the owner checks them from India (HISTORY "Waiting for the owner").
 - Cloud sessions push branches; merging to `main` deploys. The session's permission guard
-  refused a push to `main` (2026-10-27): the owner merges (HISTORY "Waiting for the owner").
+  refused a push to `main` (2026-10-27): the owner merges, or a local session on the Mac does
+  after re-running the real-Amazon gates there (P3–P9 were merged that way, 2026-10-27).
+- A store that answers a cloud computer may still refuse Cloudflare (Reliance Digital: 403 from
+  the Worker, 200 elsewhere). `serverFetch: 'yes'` needs a read through the deployed Worker.
+- Cloudflare turns the config ETag weak (`W/"…"`) when it compresses; compare without `W/`.

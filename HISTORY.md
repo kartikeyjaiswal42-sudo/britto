@@ -8,17 +8,7 @@ the old name and addresses as they were at the time.
 Things only the owner can do, in plain English with the exact steps. Each later session adds
 to this list and removes what is done.
 
-0. **Put P3–P9 live: merge pull request #1** (1 minute). The pull request is ready:
-   https://github.com/kartikeyjaiswal42-sudo/britto/pull/1 (branch `p9-travel` into `main`;
-   it holds every phase from P3 to P9, and its description says what is verified and what is
-   not). Open it, wait for the checks to show green ticks, press **Merge pull request** →
-   **Confirm merge**. GitHub Actions then updates the database (five new tables only, nothing
-   existing changes), deploys the Worker and runs the live check by itself (a few minutes;
-   the Actions tab shows a green tick). If the `CLOUDFLARE_API_TOKEN` secret is not set, it
-   only tests and deploys nothing. This cloud session may not push to `main` itself (its
-   permission guard stops a production deploy without you); you can also tell the next session
-   "you may merge to main".
-1. **Reload the Britto extension** (once P3 is on `main`): open `chrome://extensions` (or
+1. **Reload the Britto extension** (P3 is on `main` since 2026-10-27): open `chrome://extensions` (or
    `brave://extensions`), find Britto, press the round reload arrow. Then open any Amazon.in
    product: the panel should appear as before. The version under the popup's "Open Britto"
    link should say v0.3.0. (Your old copy keeps working until you do this.)
@@ -28,7 +18,7 @@ to this list and removes what is done.
    the extension, press "Save this page for Britto" in the panel, and put the downloaded
    `britto-page-flipkart-….html` file into the `britto/test/fixtures/` folder (or attach it
    to the next session). That lets a session check and switch on the Flipkart reader.
-4. **Try the Android app on your phone** (P4, about 10 minutes, after items 0 and 5):
+4. **Try the Android app on your phone** (P4, about 10 minutes, with item 5):
    download the APK (the file sent with this session's report, or GitHub → Actions → the
    newest run of branch `p4-android` → Artifacts → `britto-apk`), open it on the phone, allow
    "install unknown apps" for the app you opened it from, install. Then: open Britto → Shop →
@@ -71,7 +61,7 @@ to this list and removes what is done.
    ACCOUNT, so on AMITY it is shared with the paying client's projects, if they use Workers AI.
    If that is fine, tell the next session "Workers AI is allowed on AMITY"; it will add it and
    measure the cost per search before switching anything on. If not, nothing changes.
-12. **Check four travel links from India** (P9, 3 minutes, after item 0): open
+12. **Check four travel links from India** (P9, 3 minutes): open
    https://britto.amitynoidalibrary.workers.dev/travel on your phone or laptop. Under Flights
    type From `DEL`, To `BOM`, any date next month, press "Show flight searches", then tap
    **MakeMyTrip**, **ixigo** and **Skyscanner** one by one. Under Hotels type `Goa`, press
@@ -950,3 +940,28 @@ all 6). First run said 19/55: **`scripts/mutate.mjs` read failing names only fro
 Same refusals as from the US container: Skyscanner HTTP 403 captcha, MakeMyTrip
 `ERR_HTTP2_PROTOCOL_ERROR`, ixigo HTTP 403, Booking.com HTTP 202 with a 1,251-character page.
 So owner item 12 (a person opening the four links) still stands.
+
+### Merged and deployed (2026-10-27 13:30 UTC)
+
+The owner's plan ("Unattended runs": merge when every gate is green) covered the merge the
+cloud session could not make: `main` fast-forwarded `2dfce45 → e7ff161` (34 commits, pull
+request #1). GitHub Actions put the new code live ~75 s after the push (the reader-config
+endpoint answered `amazon.desktop.r2.b6819f37c495`). **Production D1** (`wrangler d1 execute
+--remote`, AMITY login) has the five new tables: config_log, coupon_votes, product_offers,
+reader_configs, reader_health. **Production rows** written by the live check's real reads:
+vijaysales:222878, nykaa:1003586, shopclues:153656207 all `priced` by the production Worker
+(13:31 UTC) — the first P6 reads from Cloudflare.
+
+`prove --live` from the Mac: **56 passed, 2 failed, 1 SKIP**. All three measured:
+
+- **Cloudflare weakens the config ETag when it compresses** (curl: no compression → `"amazon.…"`;
+  `accept-encoding: br` → `W/"amazon.…"`; the 304 carries the strong one). The server already
+  strips `W/` from If-None-Match and both clients send back what they were given, so caching
+  works; the two checks compared the strings exactly. They now compare without `W/`
+  (the "endpoint ignores If-None-Match" mutant is still caught exactly).
+- **Reliance Digital refuses Cloudflare's network**: HTTP 403 to the production Worker twice
+  (GitHub's live check 13:31:38, the Mac's ~13:33), while the same honest User-Agent from the
+  Mac got the full page (HTTP 200, 650,781 bytes). Not worked around: `serverFetch` →
+  `'refused'`, its prices come from the extension (its manifest already matches
+  reliancedigital.in) and the app, like Flipkart; the cron no longer asks it. prove checks it is
+  tracked and never server-fetched (new mutant, caught exactly). README table updated.

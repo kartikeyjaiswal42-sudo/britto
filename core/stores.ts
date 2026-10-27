@@ -54,9 +54,9 @@ export const STORES: Record<StoreId, Store> = {
     hosts: ['reliancedigital.in', 'www.reliancedigital.in'],
     shortHosts: [],
     home: 'https://www.reliancedigital.in/',
-    serverFetch: 'yes',
+    serverFetch: 'refused',
     measured:
-      '2026-10-26: 14 product pages fetched with an honest bot User-Agent (from a cloud computer in the USA, not yet from Cloudflare) all returned the price box, e.g. ₹999 (M.R.P. ₹2,999). Its search-engine data says "in stock" even for items it will not sell; Britto reads the page\'s own "sellable" flag instead.',
+      '2026-10-27: refuses our server on Cloudflare (HTTP 403, twice, live), though the same honest bot User-Agent got full product pages from a cloud computer in the USA (14 pages, 2026-10-26) and from India. Prices come from shoppers\' own pages (the extension and the app). Its search-engine data says "in stock" even for items it will not sell; Britto reads the page\'s own "sellable" flag instead.',
   },
   nykaa: {
     id: 'nykaa',
