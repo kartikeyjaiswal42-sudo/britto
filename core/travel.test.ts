@@ -106,5 +106,5 @@ test('airport CSV parser: quoted commas, doubled quotes, CRLF', () => {
 test('Uber airport check: the place must BE the airport, not something near it', () => {
   // Names Uber gave on 2026-10-27 (scripts/uber-airports.mjs).
   for (const n of ['Agra Airport', 'Kempegowda International Airport Bengaluru', 'Indira Gandhi International Airport', 'Lengpui Airport', 'Gate 7, Terminal 3']) assert.ok(isAirportPlace(n), n);
-  for (const n of ['Unnamed Road', 'Raja Bhoj Airport Area', 'Bhavnagar Airport Fire Station', '50 Feet Rd Nihal Vihar', 'Airport Road', 'Airport Cargo Gate']) assert.ok(!isAirportPlace(n), n);
+  for (const n of ['Unnamed Road', 'Raja Bhoj Airport Area', 'Bhavnagar Airport Fire Station', '50 Feet Rd Nihal Vihar', 'Airport Road', 'Airport Cargo Gate', 'old airport khajuraho', '1316, Airport']) assert.ok(!isAirportPlace(n), n);
 });

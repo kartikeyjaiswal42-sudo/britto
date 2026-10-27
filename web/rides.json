@@ -1,0 +1,424 @@
+{
+ "measured": "2026-10-27",
+ "how": "scripts/uber-airports.mjs: Uber ride link with the point as the drop; Uber's own name for it, kept when isAirportPlace(name). Points: OurAirports (public domain), then Wikidata (CC0).",
+ "uber": {
+  "AGR": {
+   "lat": 27.158,
+   "lng": 77.961,
+   "name": "Agra Airport",
+   "from": "ourairports"
+  },
+  "AJL": {
+   "lat": 23.8406,
+   "lng": 92.6197,
+   "name": "Lengpui Airport",
+   "from": "ourairports"
+  },
+  "ATQ": {
+   "lat": 31.7078,
+   "lng": 74.7992,
+   "name": "Sri Guru Ram Dass Jee International Airport, Amritsar",
+   "from": "wikidata"
+  },
+  "AYJ": {
+   "lat": 26.7477,
+   "lng": 82.1637,
+   "name": "Maharshi Valmiki International Airport",
+   "from": "ourairports"
+  },
+  "BBI": {
+   "lat": 20.251,
+   "lng": 85.8147,
+   "name": "Biju Patnaik International Airport",
+   "from": "ourairports"
+  },
+  "BDQ": {
+   "lat": 22.3362,
+   "lng": 73.2263,
+   "name": "Vadodara International Airport",
+   "from": "ourairports"
+  },
+  "BLR": {
+   "lat": 13.1979,
+   "lng": 77.7063,
+   "name": "Kempegowda International Airport Bengaluru",
+   "from": "ourairports"
+  },
+  "BOM": {
+   "lat": 19.0887,
+   "lng": 72.8679,
+   "name": "Chhatrapati Shivaji Maharaj International Airport Mumbai",
+   "from": "ourairports"
+  },
+  "CCJ": {
+   "lat": 11.136,
+   "lng": 75.9552,
+   "name": "Calicut International Airport",
+   "from": "ourairports"
+  },
+  "CCU": {
+   "lat": 22.654,
+   "lng": 88.4477,
+   "name": "Netaji Subhash Chandra Bose International Airport",
+   "from": "ourairports"
+  },
+  "CJB": {
+   "lat": 11.03,
+   "lng": 77.0434,
+   "name": "Coimbatore International Airport",
+   "from": "ourairports"
+  },
+  "DEL": {
+   "lat": 28.5574,
+   "lng": 77.0833,
+   "name": "Gate 7, Terminal 3",
+   "from": "wikidata"
+  },
+  "DHM": {
+   "lat": 32.1649,
+   "lng": 76.263,
+   "name": "Kangra Airport",
+   "from": "ourairports"
+  },
+  "DMU": {
+   "lat": 25.8839,
+   "lng": 93.7711,
+   "name": "Dimapur Airport",
+   "from": "ourairports"
+  },
+  "GAU": {
+   "lat": 26.1067,
+   "lng": 91.5852,
+   "name": "Lokpriya Gopinath Bordoloi International Airport",
+   "from": "ourairports"
+  },
+  "GOI": {
+   "lat": 15.3801,
+   "lng": 73.8333,
+   "name": "Goa Dabolim International Airport",
+   "from": "ourairports"
+  },
+  "GOP": {
+   "lat": 26.7397,
+   "lng": 83.4497,
+   "name": "Gorakhpur Airport",
+   "from": "ourairports"
+  },
+  "GOX": {
+   "lat": 15.7443,
+   "lng": 73.8606,
+   "name": "Manohar International Airport (GOX) - Goa",
+   "from": "ourairports"
+  },
+  "HBX": {
+   "lat": 15.3611,
+   "lng": 75.0821,
+   "name": "Hubballi Airport",
+   "from": "ourairports"
+  },
+  "HGI": {
+   "lat": 26.9668,
+   "lng": 93.6388,
+   "name": "Donyi Polo Airport, Itanagar",
+   "from": "ourairports"
+  },
+  "HSR": {
+   "lat": 22.3788,
+   "lng": 71.0394,
+   "name": "Rajkot International Airport",
+   "from": "ourairports"
+  },
+  "HSS": {
+   "lat": 29.1792,
+   "lng": 75.7553,
+   "name": "Integrated Aviation Hub, Hisar Airport",
+   "from": "wikidata"
+  },
+  "HYD": {
+   "lat": 17.2313,
+   "lng": 78.4299,
+   "name": "Rajiv Gandhi International Airport",
+   "from": "ourairports"
+  },
+  "IDR": {
+   "lat": 22.7214,
+   "lng": 75.8005,
+   "name": "Devi Ahilyabai Holkar International Airport, Indore",
+   "from": "ourairports"
+  },
+  "IMF": {
+   "lat": 24.76,
+   "lng": 93.8967,
+   "name": "Bir Tikendrajit Airport",
+   "from": "ourairports"
+  },
+  "IXA": {
+   "lat": 23.887,
+   "lng": 91.2404,
+   "name": "Maharaja Bir Bikram Airport, Agartala",
+   "from": "ourairports"
+  },
+  "IXB": {
+   "lat": 26.6812,
+   "lng": 88.3286,
+   "name": "Bagdogra Airport",
+   "from": "ourairports"
+  },
+  "IXC": {
+   "lat": 30.6735,
+   "lng": 76.7885,
+   "name": "Shaheed Bhagat Singh International Airport, Chandigarh",
+   "from": "ourairports"
+  },
+  "IXJ": {
+   "lat": 32.6888,
+   "lng": 74.8382,
+   "name": "Jammu Airport",
+   "from": "ourairports"
+  },
+  "IXR": {
+   "lat": 23.3143,
+   "lng": 85.3217,
+   "name": "Birsa Munda Airport, Ranchi",
+   "from": "ourairports"
+  },
+  "IXS": {
+   "lat": 24.9129,
+   "lng": 92.9787,
+   "name": "Silchar Airport",
+   "from": "ourairports"
+  },
+  "IXU": {
+   "lat": 19.8629,
+   "lng": 75.3963,
+   "name": "Chhatrapati Sambhajinagar Airport",
+   "from": "ourairports"
+  },
+  "IXY": {
+   "lat": 23.1127,
+   "lng": 70.1003,
+   "name": "Kandla Airport",
+   "from": "ourairports"
+  },
+  "IXZ": {
+   "lat": 11.6402,
+   "lng": 92.729,
+   "name": "Veer Savarkar International Airport",
+   "from": "ourairports"
+  },
+  "JDH": {
+   "lat": 26.2511,
+   "lng": 73.0489,
+   "name": "Jodhpur Airport",
+   "from": "ourairports"
+  },
+  "JLR": {
+   "lat": 23.1778,
+   "lng": 80.052,
+   "name": "Jabalpur Airport",
+   "from": "ourairports"
+  },
+  "KNU": {
+   "lat": 26.3995,
+   "lng": 80.4269,
+   "name": "Kanpur Airport Chakeri",
+   "from": "wikidata"
+  },
+  "KQH": {
+   "lat": 26.591,
+   "lng": 74.813,
+   "name": "Kishangarh Airport",
+   "from": "ourairports"
+  },
+  "KUU": {
+   "lat": 31.8767,
+   "lng": 77.1544,
+   "name": "Bhuntar Airport, Kullu Manali",
+   "from": "ourairports"
+  },
+  "LKO": {
+   "lat": 26.7619,
+   "lng": 80.8833,
+   "name": "Chaudhary Charan Singh International Airport",
+   "from": "wikidata"
+  },
+  "MAA": {
+   "lat": 12.9822,
+   "lng": 80.1636,
+   "name": "Chennai International Airport",
+   "from": "wikidata"
+  },
+  "MYQ": {
+   "lat": 12.2298,
+   "lng": 76.6537,
+   "name": "Mysore Airport",
+   "from": "ourairports"
+  },
+  "NMI": {
+   "lat": 18.9846,
+   "lng": 73.0653,
+   "name": "Navi Mumbai International Airport",
+   "from": "ourairports"
+  },
+  "PAT": {
+   "lat": 25.5936,
+   "lng": 85.0919,
+   "name": "Jay Prakash Narayan International Airport",
+   "from": "wikidata"
+  },
+  "PBD": {
+   "lat": 21.6495,
+   "lng": 69.6564,
+   "name": "Porbandar Airport",
+   "from": "ourairports"
+  },
+  "PGH": {
+   "lat": 29.0334,
+   "lng": 79.4737,
+   "name": "Pantnagar Airport",
+   "from": "ourairports"
+  },
+  "PNY": {
+   "lat": 11.968,
+   "lng": 79.812,
+   "name": "Puducherry Airport",
+   "from": "ourairports"
+  },
+  "RDP": {
+   "lat": 23.6225,
+   "lng": 87.243,
+   "name": "Kazi Nazrul Islam Airport",
+   "from": "ourairports"
+  },
+  "RJA": {
+   "lat": 17.1103,
+   "lng": 81.8183,
+   "name": "Rajahmundry Airport",
+   "from": "wikidata"
+  },
+  "RPR": {
+   "lat": 21.1804,
+   "lng": 81.7388,
+   "name": "Swami Vivekananda Airport, Raipur",
+   "from": "ourairports"
+  },
+  "SAG": {
+   "lat": 19.6886,
+   "lng": 74.3789,
+   "name": "Shirdi International Airport",
+   "from": "wikidata"
+  },
+  "SDW": {
+   "lat": 16,
+   "lng": 73.5333,
+   "name": "Sindhudurg Airport",
+   "from": "wikidata"
+  },
+  "SHL": {
+   "lat": 25.7036,
+   "lng": 91.9787,
+   "name": "Shillong Airport",
+   "from": "ourairports"
+  },
+  "STV": {
+   "lat": 21.1155,
+   "lng": 72.7433,
+   "name": "Surat International Airport",
+   "from": "ourairports"
+  },
+  "TIR": {
+   "lat": 13.632,
+   "lng": 79.5399,
+   "name": "Tirupati International Airport",
+   "from": "ourairports"
+  },
+  "TRV": {
+   "lat": 8.4819,
+   "lng": 76.92,
+   "name": "Thiruvananthapuram International Airport",
+   "from": "ourairports"
+  },
+  "TRZ": {
+   "lat": 10.7629,
+   "lng": 78.7177,
+   "name": "Tiruchirappalli International Airport",
+   "from": "ourairports"
+  },
+  "UDR": {
+   "lat": 24.6177,
+   "lng": 73.8961,
+   "name": "Maharana Pratap Airport Udaipur",
+   "from": "ourairports"
+  },
+  "UKE": {
+   "lat": 20.0978,
+   "lng": 83.1833,
+   "name": "Utkela Airport, Bhawanipatna",
+   "from": "ourairports"
+  },
+  "VGA": {
+   "lat": 16.53,
+   "lng": 80.8049,
+   "name": "Vijayawada International Airport",
+   "from": "ourairports"
+  },
+  "VNS": {
+   "lat": 25.4522,
+   "lng": 82.8625,
+   "name": "Lal Bahadur Shastri International Airport, Varanasi",
+   "from": "ourairports"
+  },
+  "VTZ": {
+   "lat": 17.9715,
+   "lng": 83.5036,
+   "name": "Alluri Sitarama Raju International Airport",
+   "from": "ourairports"
+  }
+ },
+ "notAnAirportToUber": {
+  "AGX": "ourairports: Unnamed Road | Agatti, Lakshadweep ; wikidata: Unnamed Road | Agatti, Lakshadweep",
+  "AHA": "ourairports: Unnamed Road | Darima, Chhattisgarh",
+  "AMD": "ourairports: 97/ Gangadhar Society | Hansol, Ahmedabad, Gujarat",
+  "AVR": "ourairports: Airport Road | Adgaon Kh, Adgaon, Adgaon Kh., Maharashtra ; wikidata: Airport Road | Adgaon Kh, Adgaon, Adgaon Kh., Maharashtra",
+  "BEK": "ourairports: Unnamed Road | Airport Area, Bareilly, Uttar Pradesh ; wikidata: Unnamed Road | Airport Area, Nagaria Kalan, Bareilly, Uttar Pradesh",
+  "BHJ": "ourairports: Unnamed Road | IAF Campus, Bhuj, Gujarat",
+  "BHO": "ourairports: Unnamed Road | Raja Bhoj Airport Area, Bairagarh, Bhopal, Madhya Pradesh",
+  "BHU": "ourairports: Bhavnagar Airport Fire Station | Fire Station, Airport Rd, Subhashnagar, Bhavnagar, Ruva Part, Gujarat",
+  "CDP": "ourairports: Service Roads | Rayalapanthulapalle, Andhra Pradesh ; wikidata: Service Roads | Rayalapanthulapalle, Andhra Pradesh",
+  "CNN": "ourairports: കണ്ണൂർ അന്താരാഷ്ട്ര വിമാനത്താവളം | Mattannur, Keralam ; wikidata: കണ്ണൂർ അന്താരാഷ്ട്ര വിമാനത്താവളം | Mattannur, Keralam",
+  "COK": "ourairports: Koolikkara Road | Koolikkara Rd, Keralam ; wikidata: Koolikkara Road | Koolikkara Rd, Keralam",
+  "DBR": "ourairports: M jha | Sh M, near airport NH 27, Nandtol, Ranipur, Darbhanga, Bihar ; wikidata: Unnamed Road | Basdeopur, Bihar",
+  "DED": "ourairports: Rishikesh Road | Rishikesh Rd, Sangatiya Walakhur, Uttarakhand ; wikidata: Airport Road | Airport Rd, Sangatiya Walakhur, Uttarakhand",
+  "DIB": "ourairports: Unnamed Road | Titadimoru Gaon, Assam ; wikidata: Unnamed Road | Titadimoru Gaon, Assam",
+  "DXN": "ourairports: Unnamed Road | Uttar Pradesh ; wikidata: Unnamed Road | Uttar Pradesh",
+  "GAY": "ourairports: Shankar Road | Shankar Rd, Chaurahar, Gaya, Charowa, Bihar",
+  "GDB": "ourairports: Unnamed Road | Maharashtra ; wikidata: Unnamed Road | Birsi, Maharashtra",
+  "GWL": "ourairports: 120/329, Satabdi Puram | Maharajpura, Gwalior, Madhya Pradesh",
+  "HJR": "ourairports: old airport khajuraho | old, Khajuraho Airport Terminal Rd, Khajuraho Airport Area, Khajuraho, Madhya Pradesh",
+  "HWR": "ourairports: Unnamed Road | Halwara, Punjab",
+  "ISK": "ourairports: Unnamed Road | HAL, Ojhar, Maharashtra",
+  "IXD": "ourairports: Allahabad ATC | Bamrauli Airport Area, Bamrauli, Prayagraj, Uttar Pradesh",
+  "IXE": "ourairports: Ambal House | 3/24, Bajpe, Karnataka ; wikidata: Airport Road | Airport Rd, Kolambe Proper, Karnataka",
+  "IXG": "ourairports: Unnamed Road | Balekundri Kurdha, Karnataka",
+  "IXI": "ourairports: Unnamed Road | Ujjalpur, Assam",
+  "IXK": "ourairports: Keshod Airport Internal Road | Keshod Airport Internal Rd, Gujarat",
+  "IXL": "ourairports: Unnamed Road | Leh",
+  "IXM": "ourairports: Unnamed Road | Perungudi, Tamil Nadu ; wikidata: Unnamed Road | Valayankulam, Tamil Nadu",
+  "IXP": "ourairports: Unnamed Road | Himachal Pradesh",
+  "JAI": "ourairports: Sheopur garh 70/295 k samane | Ganga Vihar Colony, Sanganer, Jaipur, Rajasthan",
+  "JGA": "ourairports: Unnamed Road | Govardhanpur, Jamnagar, Gujarat",
+  "JRH": "ourairports: Unnamed Road | Raraiyah, Jorhat, Assam ; wikidata: Unnamed Road | Raraiyah, Jorhat, Assam",
+  "JSA": "ourairports: Unnamed Road | Kota Airport Area, Dhauwa, Jaisalmer, Rajasthan ; wikidata: Unnamed Road | Kota Airport Area, Dhauwa, Jiyai, Rajasthan",
+  "KJB": "ourairports: Unnamed Road | Andhra Pradesh ; wikidata: Kurnool Airport Road | Kurnool Airport Rd, Andhra Pradesh",
+  "KLH": "ourairports: Unnamed Road | Maharashtra",
+  "LTU": "ourairports: Air Port Road | Air Port Rd, Harangul Bk., Maharashtra",
+  "MZS": "ourairports: Airstrip Road | Airstrip Rd, Niamatpur Ikrosia, Uttar Pradesh",
+  "NAG": "ourairports: Unnamed Road | Sonegaon, Nagpur, Maharashtra",
+  "NDC": "ourairports: Kendriya Vidyalaya | 4, Airport Rd, South Central Railway Colony, Nanded, Maharashtra ; wikidata: 17, Ambekar Nagar | Nanded, Maharashtra",
+  "PAB": "ourairports: Unnamed Road | Chhattisgarh",
+  "PNQ": "ourairports: Air Traffic Control | Pune International Airport Area, Lohegaon, Pune, Maharashtra",
+  "REW": "ourairports: 1316, Airport | Chorhata, Rewa, Agdal, Madhya Pradesh",
+  "SXR": "ourairports: Unnamed Road",
+  "TEZ": "ourairports: Unnamed Road | Tezpur Airpur Area, Tezpur, Assam ; wikidata: Unnamed Road | Air Force Station Tezpur, Tezpur Airpur Area, Tezpur, Assam"
+ }
+}

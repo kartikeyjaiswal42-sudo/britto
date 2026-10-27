@@ -708,7 +708,8 @@ indicative calendars once observation volume allows, flight price alerts.
   Yatra, IndiGo, Air India: no answer (HTTP/2 resets, timeouts, 502 through the proxy;
   MakeMyTrip gives curl's default User-Agent a 403). EaseMyTrip redirects this network to its
   .US site. ixigo: 403 "too many requests". Skyscanner: captcha. Booking.com: 403 "detected as a
-  robot". Ola's booking page stayed on a loading skeleton behind reCAPTCHA. None worked around.
+  robot" (once a short 202 holding page). Ola's booking page stayed on a loading skeleton behind
+  reCAPTCHA. None worked around.
 - **Cleartrip, in real Chromium:** the flight link fills the whole search (one way DEL→BOM;
   round trip DEL⇄GOI with 2 travellers in Business; Premium Economy; First; DEL→DXB
   international) and Cleartrip then asks its own fare service for exactly those values (that
@@ -723,7 +724,11 @@ indicative calendars once observation volume allows, flight price alerts.
   the nearest place on its map**: Delhi airport's point in the public airport list read as
   "50 Feet Rd … Nangloi"; Wikidata's point for it read as "Gate 7, Terminal 3". So
   `scripts/uber-airports.mjs` tried every Indian airport (one page load per point, OurAirports
-  then Wikidata) and kept those Uber read as the airport itself: **(measuring: the count goes here when the run ends)**.
+  then Wikidata) and kept those Uber read as the airport itself: **62 of 106** (52 at the OurAirports point, 10 at Wikidata's; Delhi
+  as "Gate 7, Terminal 3"). Kochi, Pune, Ahmedabad, Jaipur, Srinagar, Nagpur and 38 others
+  snapped to a road, a house, "Air Traffic Control" or an "old airport": they get Uber's front
+  page. The first rule let "old airport khajuraho" and "1316, Airport" (a house number) through;
+  reading every kept name caught them, the rule was tightened and those two re-measured.
 - **Airports:** OurAirports (public domain, per its terms page): 1,214 airports with scheduled
   service and an IATA code (106 in India, plus the world's large airports), 92 KB.
 
@@ -745,7 +750,7 @@ indicative calendars once observation volume allows, flight price alerts.
 
 ### Gates (final code on the branch, this cloud session)
 
-(final numbers go here when the Uber measurement ends; so far: `npm test` 105/105, typechecks clean, `prove` 98 passed, 0 failed, 7 SKIP (Amazon), `extension.mjs` 32/32, `test:app` 28/28, `mutate travel:` 6/6, `travel.mjs` Cleartrip 3/3 before the Uber rework)
+GATES_PENDING
 
 ### NOT verified / not done
 

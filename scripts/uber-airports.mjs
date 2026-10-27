@@ -19,12 +19,13 @@ const WIKIDATA = 'https://query.wikidata.org/sparql';
 
 /**
  * Uber's name for the place IS an airport or one of its terminals, not something near it
- * ("Unnamed Road, Raja Bhoj Airport Area" and "Bhavnagar Airport Fire Station" were both seen,
- * 2026-10-27). "Gate 7, Terminal 3" is a terminal entrance: kept.
+ * ("Unnamed Road, Raja Bhoj Airport Area", "Bhavnagar Airport Fire Station", "old airport
+ * khajuraho" and "1316, Airport" (a house number) were all seen, 2026-10-27). "Gate 7,
+ * Terminal 3" is a terminal entrance: kept.
  */
 export function isAirportPlace(name) {
-  return /\b(airport|terminal|aerodrome)\b/i.test(name)
-    && !/\b(unnamed|road|rd|marg|area|colony|fire|station|cargo|parking|hangar|police|hotel|lounge|restaurant|cafe|office|quarters)\b/i.test(name);
+  return /\b(airport|terminal|aerodrome)\b/i.test(name) && !/^\s*\d/.test(name)
+    && !/\b(unnamed|road|rd|marg|area|colony|fire|station|cargo|parking|hangar|police|hotel|lounge|restaurant|cafe|office|quarters|old)\b/i.test(name);
 }
 
 const place = (lat, lng) => encodeURIComponent(JSON.stringify({ latitude: lat, longitude: lng }));
@@ -47,7 +48,9 @@ async function wikidataPoints() {
 async function main() {
   const require = createRequire(import.meta.url);
   const { chromium } = (() => { try { return require(process.env.PW_DIR ?? 'playwright-core'); } catch { return require('playwright'); } })();
-  const rows = JSON.parse(readFileSync(join(ROOT, 'web/airports.json'), 'utf8')).airports.filter((a) => a[3] === 'IN');
+  // --only A,B: measure just these airports again and update web/rides.json in place.
+  const only = process.argv.includes('--only') ? new Set(process.argv[process.argv.indexOf('--only') + 1].split(',')) : null;
+  const rows = JSON.parse(readFileSync(join(ROOT, 'web/airports.json'), 'utf8')).airports.filter((a) => a[3] === 'IN' && (!only || only.has(a[0])));
   const wikidata = await wikidataPoints();
   console.log(`Wikidata: ${wikidata.size} Indian airports with coordinates`);
   const browser = await chromium.launch({ headless: true });
@@ -70,8 +73,10 @@ async function main() {
     }
   }
 
-  const uber = {};
-  const notAnAirportToUber = {};
+  const before = only ? JSON.parse(readFileSync(join(ROOT, 'web/rides.json'), 'utf8')) : null;
+  const uber = before ? before.uber : {};
+  const notAnAirportToUber = before ? before.notAnAirportToUber : {};
+  for (const iata of only ?? []) { delete uber[iata]; delete notAnAirportToUber[iata]; }
   try {
     for (const [iata, name, , , lat, lng] of rows) {
       const tries = [['ourairports', lat, lng]];
@@ -90,12 +95,13 @@ async function main() {
   } finally {
     await browser.close();
   }
+  const sorted = (o) => Object.fromEntries(Object.entries(o).sort(([a], [b]) => a.localeCompare(b)));
   const body = {
-    measured: new Date().toISOString().slice(0, 10),
+    measured: before?.measured ?? new Date().toISOString().slice(0, 10),
     how: 'scripts/uber-airports.mjs: Uber ride link with the point as the drop; Uber\'s own name for it, kept when isAirportPlace(name). Points: OurAirports (public domain), then Wikidata (CC0).',
-    uber,
-    notAnAirportToUber,
+    uber: sorted(uber),
+    notAnAirportToUber: sorted(notAnAirportToUber),
   };
   writeFileSync(join(ROOT, 'web/rides.json'), JSON.stringify(body, null, 1) + '\n');
-  console.log(`\n${Object.keys(uber).length} of ${rows.length} Indian airports read as an airport by Uber -> web/rides.json`);
+  console.log(`\n${Object.keys(uber).length} of ${Object.keys(uber).length + Object.keys(notAnAirportToUber).length} Indian airports read as an airport by Uber -> web/rides.json`);
 }

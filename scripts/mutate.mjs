@@ -197,7 +197,12 @@ export const MUTANTS = [
   },
   {
     name: 'travel: anything near an airport counts as the airport for Uber',
-    file: 'scripts/uber-airports.mjs', find: "    && !/\\b(unnamed|road|rd|marg|area|colony|fire|station|cargo|parking|hangar|police|hotel|lounge|restaurant|cafe|office|quarters)\\b/i.test(name);", replace: ';',
+    file: 'scripts/uber-airports.mjs', find: "    && !/\\b(unnamed|road|rd|marg|area|colony|fire|station|cargo|parking|hangar|police|hotel|lounge|restaurant|cafe|office|quarters|old)\\b/i.test(name);", replace: ';',
+    run: TRAVEL, expect: [/Uber airport check: the place must BE the airport/],
+  },
+  {
+    name: 'travel: a house number in a place called "Airport" counts as the airport',
+    file: 'scripts/uber-airports.mjs', find: " && !/^\\s*\\d/.test(name)", replace: '',
     run: TRAVEL, expect: [/Uber airport check: the place must BE the airport/],
   },
   {
