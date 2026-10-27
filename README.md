@@ -85,6 +85,17 @@ change, never a new extension release**.
   shoppers in the last 30 days". Britto never invents codes and never stores offer text sent
   by a browser.
 
+## Travel (P9)
+
+`/travel`: enter a flight (or a hotel stay) once and open the same search on each site. Britto
+shows no fares there, because no travel site lets it read them for free. Every link says
+how far it was checked: **checked on the site** (Cleartrip flights and hotels: the site
+showed the search filled in), **from the site's own documentation** (Skyscanner), **not
+checked yet** (MakeMyTrip, ixigo, Booking.com: they refuse Britto's test network), or just the
+site's front page (IndiGo, Air India, Goibibo, …). **Ride to the airport** puts your location
+into an Uber link on your phone (Britto never receives it), for airports Uber was seen to
+recognise; Ola, Rapido and Namma Yatri open their own sites.
+
 ## Rules
 
 1. **The server never disguises itself.** It sends `BrittoBot/0.1 (+<site>/bot)`, fetches only

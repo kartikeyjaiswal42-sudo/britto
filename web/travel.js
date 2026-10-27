@@ -133,16 +133,17 @@ const isCoord = (lat, lng) => Number.isFinite(lat) && Number.isFinite(lng) && Ma
 /**
  * A ride from a point (the shopper's own location) to an airport. Uber snaps a point to the
  * nearest place on its map and ignores the name, so it gets the trip filled in only for an
- * airport whose point it was seen to read as that airport (`uberAirports`: the `uber` map of
- * web/rides.json, from scripts/uber-airports.mjs); otherwise its front page.
+ * airport it was seen to read as that airport, at the point it was seen at (`uberAirports`: the
+ * `uber` map of web/rides.json, from scripts/uber-airports.mjs); otherwise its front page.
  */
 export function rideSearch(input, airports, uberAirports = {}) {
-  const drop = airports.get(String(input.to ?? '').toUpperCase());
-  if (!drop) return { ok: false, reason: 'Airport: pick one from the list' };
+  const airport = airports.get(String(input.to ?? '').toUpperCase());
+  if (!airport) return { ok: false, reason: 'Airport: pick one from the list' };
   const p = input.pickup ?? {};
   if (!isCoord(p.lat, p.lng)) return { ok: false, reason: 'Pickup: allow your location first' };
   const round = (x) => Math.round(x * 1e5) / 1e5;
-  const q = { pickup: { lat: round(p.lat), lng: round(p.lng), name: 'My location' }, drop: { lat: drop.lat, lng: drop.lng, name: drop.name } };
-  const table = Object.hasOwn(uberAirports, drop.iata) ? RIDES : RIDES.map(([id, checked, build]) => (id === 'uber' ? [id, null, null] : [id, checked, build]));
+  const seen = Object.hasOwn(uberAirports, airport.iata) ? uberAirports[airport.iata] : null;
+  const q = { pickup: { lat: round(p.lat), lng: round(p.lng), name: 'My location' }, drop: seen ? { lat: seen.lat, lng: seen.lng, name: seen.name } : { lat: airport.lat, lng: airport.lng, name: airport.name } };
+  const table = seen ? RIDES : RIDES.map(([id, checked, build]) => (id === 'uber' ? [id, null, null] : [id, checked, build]));
   return { ok: true, q, links: links(table, q) };
 }

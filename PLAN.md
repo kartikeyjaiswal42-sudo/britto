@@ -28,8 +28,12 @@
 > deals vs the 90-day usual price with filters and sparklines, look-alikes, offers read from
 > the store page (Amazon, ShopClues codes) stored only from our own reads, coupon votes.
 > Product Lens and AI look-alikes wait for Workers AI (owner item 11).
-> **Next: P9** (travel + rides deep links), branched from `p8-deals`. P5 waits for the owner's
-> Claude Design export. Owner-only steps: top of HISTORY.md, "Waiting for the owner".
+> **P9 is DONE (deep links) on branch `p9-travel` (built on P8), NOT merged** (HISTORY "P9"):
+> `/travel`: one flight or hotel search opens every site with it filled in, each link saying
+> how far it was checked; rides to airports Uber was seen to recognise. Indicative fares and
+> flight alerts wait for fares people actually saw (none yet).
+> **Next: P10** (Spend Lens), branched from `p9-travel`. P5 waits for the owner's Claude Design
+> export. Owner-only steps: top of HISTORY.md, "Waiting for the owner".
 
 ## Unattended runs (the owner is away and cannot answer)
 

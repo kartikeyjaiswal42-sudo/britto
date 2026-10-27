@@ -192,12 +192,12 @@ export const MUTANTS = [
   },
   {
     name: 'travel: Uber pre-filled for an airport it was not seen to recognise',
-    file: 'web/travel.js', find: 'Object.hasOwn(uberAirports, drop.iata) ? RIDES', replace: 'true ? RIDES',
+    file: 'web/travel.js', find: 'const table = seen ? RIDES', replace: 'const table = true ? RIDES',
     run: TRAVEL, expect: [/rides: from the shopper's point to an airport Uber recognises/],
   },
   {
     name: 'travel: anything near an airport counts as the airport for Uber',
-    file: 'scripts/uber-airports.mjs', find: "    && !/\\b(unnamed|road|rd|marg|area|colony|fire|station|cargo|parking|hangar|gate|police|hotel|lounge|restaurant|cafe|office|quarters)\\b/i.test(name);", replace: ';',
+    file: 'scripts/uber-airports.mjs', find: "    && !/\\b(unnamed|road|rd|marg|area|colony|fire|station|cargo|parking|hangar|police|hotel|lounge|restaurant|cafe|office|quarters)\\b/i.test(name);", replace: ';',
     run: TRAVEL, expect: [/Uber airport check: the place must BE the airport/],
   },
   {

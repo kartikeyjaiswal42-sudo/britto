@@ -32,7 +32,7 @@ const hotel = hotelSearch({ city: 'Goa', checkIn: D1, checkOut: day(33), adults:
 // Rides: an airport Uber was seen to recognise (web/rides.json), Delhi's if it is one.
 const uberAirports = JSON.parse(readFileSync(join(ROOT, 'web/rides.json'), 'utf8')).uber;
 const rideTo = 'DEL' in uberAirports ? 'DEL' : Object.keys(uberAirports)[0];
-const rideAt = airports.get(rideTo);
+const rideAt = uberAirports[rideTo];
 const ride = rideSearch({ to: rideTo, pickup: { lat: rideAt.lat + 0.05, lng: rideAt.lng } }, airports, uberAirports);
 for (const s of [oneWay, roundTrip, hotel, ride]) if (!s.ok) throw new Error(s.reason);
 const url = (search, id) => search.links.find((l) => l.id === id).url;
@@ -76,7 +76,7 @@ try {
   else check(`Cleartrip hotels: Goa, ${ctHotel(D1)} – ${ctHotel(day(33))}, 2 guests, with hotels listed`, ['Showing hotels in Goa', ctHotel(D1), ctHotel(day(33)), '1 room, 2 guests'].every((s) => r.text.includes(s)), r.text.slice(0, 300));
 
   r = await open(url(ride, 'uber'));
-  const uberName = uberAirports[rideTo].split(' | ')[0];
+  const uberName = uberAirports[rideTo].name;
   if (refused(r)) skip('Uber ride link fills pickup and drop', why(r));
   else check(`Uber: a ride to ${rideTo} ("${uberName}") from a point 5 km north`, /Choose a ride|Plan your Uber/i.test(r.text) && r.text.includes(uberName), r.text.slice(0, 300));
 

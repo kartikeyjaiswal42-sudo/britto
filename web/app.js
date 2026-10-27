@@ -269,6 +269,8 @@ async function travelPage() {
     e.preventDefault();
     const code = airportCode(rideTo.value);
     if (!airports.has(code)) return show(rideOut, rideSearch({ to: code }, airports, rides.uber));
+    // The Britto app asks for the internet only, so its pages cannot have your location.
+    if (inApp) return rideOut.replaceChildren(h('p', { class: 'notice' }, `The Britto app does not ask for your location, so ride links work in your phone\u2019s browser: open ${location.host}/travel there.`));
     if (!navigator.geolocation) return rideOut.replaceChildren(h('p', { class: 'error' }, 'This browser cannot share your location.'));
     rideOut.replaceChildren(h('p', { class: 'muted small' }, 'Asking for your location…'));
     navigator.geolocation.getCurrentPosition(

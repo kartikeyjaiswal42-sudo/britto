@@ -18,7 +18,7 @@ Types: `core/types.ts` (the source of truth; this file explains it). Money is in
 | `GET /api/popular` | | `{ results: ProductCard[] }` most viewed | |
 | `POST /api/observations` | `{ "url": "<product page>", "observed": { status: "priced"\|"unavailable", title, image, price, mrp } }` (paise) | `{ recorded: "accept"\|"hold"\|"skip", reason, product: ProductView }` | `400 bad_json` `400 bad_url` `422 bad_observation` `422 unsupported_store` `422 not_a_product` `429 rate_limited` |
 
-Pages: `/`, `/p/<key>`, `/search?q=`, `/deals`, `/stores` serve the app; `/bot` explains
+Pages: `/`, `/p/<key>`, `/search?q=`, `/deals`, `/stores`, `/browse`, `/grocery`, `/travel` serve the app; `/bot` explains
 the crawler. **Prefix form:** `/<any supported product link>` (with or without `https://`)
 redirects `302` to `/p/<key>?add=1`, and the page adds the product if nobody has yet.
 
@@ -168,6 +168,25 @@ Nothing is stored.
   never brings a code in); one vote per network per code (a second replaces the first);
   older than 30 days are deleted.
 
+## Travel (P9)
+
+No API: the page `/travel` builds every link on the device with `web/travel.js` (the same
+module the tests import) from two static files:
+
+- `/airports.json`: `{ source, licence, fetched, fields, airports: [iata, name, city, country, lat, lng][] }`
+  from OurAirports (public domain), built by `scripts/airports.mjs`: every Indian airport with
+  scheduled service and an IATA code, plus the world's large airports.
+- `/rides.json`: `{ measured, how, uber: { IATA: "Uber's name for it" }, notAnAirportToUber }`
+  from `scripts/uber-airports.mjs`. Uber gets a pre-filled ride link only to an airport in `uber`.
+
+A link is `{ id, name, url, prefilled, checked }`; `checked` is `'opened'` (opened on the real
+site from our test network and the site showed the search), `'documented'` (the site's own
+developer docs; not opened), or `null` (not checked: may open without the search). A site
+with no link format is its front page (`prefilled: false`). Searches: dates in India's
+calendar, from today to a year ahead; return/check-out after the first date; at most 30
+nights; 1–9 adults (flights), 1–8 (hotels, one room). Nothing is sent to Britto, and a ride
+link's pickup (the shopper's location) stays on the device.
+
 ## The Android app (P4)
 
 Same API, same trust rules. Its readings and telemetry carry `client: "app"` and
@@ -178,5 +197,5 @@ unchanged).
 
 ## Planned (later sessions, not live)
 
-- Compare across stores (P9 deep links), Product Lens and AI look-alikes (need Workers AI on
-  the account), trying the page's codes in a cart (needs real carts), Spend Lens (P10).
+- Product Lens and AI look-alikes (need Workers AI on the account), indicative fares and
+  flight price alerts (need fares people saw; there are none yet), trying the page's codes in a cart (needs real carts), Spend Lens (P10).

@@ -176,6 +176,13 @@ try {
     check('…and the location never went to Britto', toBritto.length > 0 && !toBritto.some((u) => /28\.63|77\.21/.test(u)), toBritto.filter((u) => /28\.63|77\.21/.test(u)).join(' '));
     await page.evaluate(() => window.scrollTo(500, 0));
     check('…no horizontal scroll on the travel page', (await page.evaluate(() => window.scrollX)) === 0);
+    const appCtx = await browser.newContext({ viewport, colorScheme: scheme, userAgent: `${await page.evaluate(() => navigator.userAgent)} BrittoApp/0.1.0` });
+    const appPage = await appCtx.newPage();
+    await appPage.goto(base + '/travel', { waitUntil: 'networkidle' });
+    await appPage.fill('#rides [name=rideTo]', 'DEL · New Delhi');
+    await appPage.click('#rides button[type=submit]');
+    check('…inside the Britto app (no location permission): says to use the phone\'s browser for rides', /does not ask for your location/.test(await appPage.locator('#ride-links').innerText()) && (await appPage.locator('#ride-links a').count()) === 0);
+    await appCtx.close();
 
     check('no console errors', errors.length === 0, errors.join(' | '));
     await ctx.close();

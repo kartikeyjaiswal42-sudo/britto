@@ -19,4 +19,4 @@ export function flightSearch(
   airports: Map<string, Airport>, now?: number,
 ): Search<FlightQuery>;
 export function hotelSearch(input: { city?: string; checkIn?: string; checkOut?: string; adults?: number }, now?: number): Search<HotelQuery>;
-export function rideSearch(input: { to?: string; pickup?: { lat?: number; lng?: number } }, airports: Map<string, Airport>, uberAirports?: Record<string, string>): Search<RideQuery>;
+export function rideSearch(input: { to?: string; pickup?: { lat?: number; lng?: number } }, airports: Map<string, Airport>, uberAirports?: Record<string, { lat: number; lng: number; name: string; from: string }>): Search<RideQuery>;

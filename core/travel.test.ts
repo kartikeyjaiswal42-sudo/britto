@@ -90,12 +90,12 @@ test('rides: from the shopper\'s point to an airport Uber recognises, by Uber\'s
   assert.ok(!rideSearch({ to: 'DEL', pickup: { lat: 128, lng: 77 } }, airports).ok);
   const notSeen = rideSearch({ to: 'del', pickup: { lat: 28.6315, lng: 77.2167 } }, airports, {});
   assert.ok(notSeen.ok && !by(notSeen.links, 'uber').prefilled && by(notSeen.links, 'uber').url === 'https://m.uber.com/', 'an airport Uber was not seen to recognise: its front page');
-  const s = rideSearch({ to: 'del', pickup: { lat: 28.631512345, lng: 77.216712345 } }, airports, { DEL: 'Indira Gandhi International Airport, New Delhi' });
+  const s = rideSearch({ to: 'del', pickup: { lat: 28.631512345, lng: 77.216712345 } }, airports, { DEL: { lat: 28.5574, lng: 77.0833, name: 'Gate 7, Terminal 3', from: 'wikidata' } });
   assert.ok(s.ok);
   const u = new URL(by(s.links, 'uber').url);
   assert.equal(u.origin + u.pathname, 'https://m.uber.com/looking');
   assert.deepEqual(JSON.parse(u.searchParams.get('pickup')!), { latitude: 28.63151, longitude: 77.21671, addressLine1: 'My location' }, 'rounded to ~1 m');
-  assert.deepEqual(JSON.parse(u.searchParams.get('drop[0]')!), { latitude: 28.5556, longitude: 77.0952, addressLine1: 'Indira Gandhi International Airport' });
+  assert.deepEqual(JSON.parse(u.searchParams.get('drop[0]')!), { latitude: 28.5574, longitude: 77.0833, addressLine1: 'Gate 7, Terminal 3' }, 'the point Uber was seen to read as the airport');
   assert.deepEqual(s.links.filter((l) => !l.prefilled).map((l) => l.id), ['ola', 'rapido', 'nammayatri']);
 });
 
@@ -105,6 +105,6 @@ test('airport CSV parser: quoted commas, doubled quotes, CRLF', () => {
 
 test('Uber airport check: the place must BE the airport, not something near it', () => {
   // Names Uber gave on 2026-10-27 (scripts/uber-airports.mjs).
-  for (const n of ['Agra Airport', 'Kempegowda International Airport Bengaluru', 'Indira Gandhi International Airport', 'Lengpui Airport', 'Terminal 2']) assert.ok(isAirportPlace(n), n);
+  for (const n of ['Agra Airport', 'Kempegowda International Airport Bengaluru', 'Indira Gandhi International Airport', 'Lengpui Airport', 'Gate 7, Terminal 3']) assert.ok(isAirportPlace(n), n);
   for (const n of ['Unnamed Road', 'Raja Bhoj Airport Area', 'Bhavnagar Airport Fire Station', '50 Feet Rd Nihal Vihar', 'Airport Road', 'Airport Cargo Gate']) assert.ok(!isAirportPlace(n), n);
 });

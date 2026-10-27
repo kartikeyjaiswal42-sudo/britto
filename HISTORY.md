@@ -71,6 +71,14 @@ to this list and removes what is done.
    ACCOUNT, so on AMITY it is shared with the paying client's projects, if they use Workers AI.
    If that is fine, tell the next session "Workers AI is allowed on AMITY"; it will add it and
    measure the cost per search before switching anything on. If not, nothing changes.
+12. **Check four travel links from India** (P9, 3 minutes, after item 0): open
+   https://britto.amitynoidalibrary.workers.dev/travel on your phone or laptop. Under Flights
+   type From `DEL`, To `BOM`, any date next month, press "Show flight searches", then tap
+   **MakeMyTrip**, **ixigo** and **Skyscanner** one by one. Under Hotels type `Goa`, press
+   "Show hotel searches", tap **Booking.com**. For each, tell the next session "filled in" (your
+   trip was already there) or "empty" (you had to type it). Britto's test computer is in the
+   USA and these four sites refused it, so only you can check them; the next session then
+   marks each link as checked or removes it.
 
 ## S1, 2026-10-26: foundations
 
