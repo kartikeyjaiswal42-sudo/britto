@@ -159,6 +159,9 @@ node scripts/alerts.mjs   # alerts end to end: fake Telegram + a push service th
 PW_DIR=<playwright-core dir> node scripts/alerts.mjs --browser   # + real Chrome, real FCM push
 PW_DIR=<playwright-core dir> node scripts/browser.mjs http://127.0.0.1:8787   # site, real Chrome
 PW_DIR=<playwright-core dir> node scripts/extension.mjs                        # extension, real Brave
+PW_DIR=<playwright-core dir> node scripts/travel.mjs         # travel links opened on the real sites
+node scripts/airports.mjs                                    # rebuild web/airports.json (OurAirports)
+PW_DIR=<playwright-core dir> node scripts/uber-airports.mjs  # re-measure which airports Uber recognises
 ```
 
 In a cloud session Playwright and Chrome for Testing are preinstalled; `extension.mjs` uses

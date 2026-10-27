@@ -677,7 +677,7 @@ are under `Allow: /`). No store fetched has a rule against Claude or BrittoBot.
 
 ### Gates (final code, this cloud session)
 
-`npm test` 86/86 · typechecks clean · `check:readers` **21/21 fixtures** · `mutate` **30/30**
+`npm test` 86/86 · typechecks clean · `check:readers` **19/19 fixtures** (written "21/21" at the time: a miscount, corrected in P9) · `mutate` **30/30**
 caught exactly (incl. prove, extension and app mutants) · `prove` **77 passed, 0 failed, 6 SKIP**
 (Amazon refuses this network) with real Worker reads: Vijay Sales ₹4,999, Reliance Digital
 ₹1,739, Nykaa ₹749, ShopClues ₹419 · `browser.mjs` local **38/38** (incl. sale marks drawn in
@@ -750,7 +750,23 @@ indicative calendars once observation volume allows, flight price alerts.
 
 ### Gates (final code on the branch, this cloud session)
 
-GATES_PENDING
+`npm test` **105/105** (9 travel) · typechecks clean · `check:readers` 19/19 · `prove` **98
+passed, 0 failed, 7 SKIP** (all 7 need Amazon; incl. "/travel serves the app") ·
+`travel.mjs` **4/4 on the real sites** (Cleartrip one way, round trip in Business, hotels in
+Goa with prices listed; Uber to DEL "Gate 7, Terminal 3"), plus 4 refusals printed as
+information (Skyscanner captcha, MakeMyTrip 502, ixigo 403, Booking.com) · `browser.mjs` local
+**70/70** (travel at 1280 light and 390 dark: every link exactly as `web/travel.js` builds it,
+labels, new tab without referrer, hotels, the Uber link from the browser's location, **no
+request to Britto carries the location**, the in-app note, no sideways scroll) ·
+`extension.mjs` 32/32 · `test:app` 28/28 · `npm run mutate` **55/55 caught exactly** (7 new:
+India's date, return before departure, an unchecked format guessed for round trips, Uber
+pre-filled for an unrecognised airport, anything near an airport counted as one, a house number
+counted as one, Cleartrip dates in the wrong form). Proved by hand in the browser: sending the
+location to Britto's server on purpose turned "the location never went to Britto" red (both
+screen sizes), restored. GitHub Actions: green on every P9 push except run 40, which failed for
+a real reason: the travel test imported `scripts/uber-airports.mjs`, which loaded Playwright
+as soon as it was imported, and GitHub's test machine has no Playwright; the next commit
+loads it only when the script runs (runs 41 and 42 green).
 
 ### NOT verified / not done
 
@@ -807,7 +823,7 @@ coupons and bank offers (§15).
 
 ### Gates (final code on the branch, this cloud session)
 
-`npm test` 96/96 · typechecks clean · `check:readers` 21/21 (offers compared exactly; a priced
+`npm test` 96/96 · typechecks clean · `check:readers` 19/19 ("21/21" at first: a miscount, corrected in P9) (offers compared exactly; a priced
 page whose recipe reads offers must list them) · `prove` **97 passed, 0 failed, 7 SKIP** (all 7
 need Amazon, which refuses this network: 503) · `browser.mjs` local **50/50** (offers as plain
 text, an injected `<img onerror>` shown as text and never run; coupon Copy/vote; 1280 light and
