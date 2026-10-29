@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { confirmIdentity, readPage } from '../core/interpret.ts';
 import { STORES, STORE_IDS, parseProductLink } from '../core/stores.ts';
+import { SERVICES } from '../core/services.ts';
 import { bundledReader } from '../readers/index.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -56,7 +57,9 @@ if (existsSync(APK) && sdk) {
   check('APK: the page reader is inside, talks to production, ships no store recipe', reader.includes('https://britto.amitynoidalibrary.workers.dev') && reader.includes('identity-mismatch') && !/corePriceDisplay_desktop_feature_div|pdpData\.price|productTitle/.test(reader));
   check('APK: its shadow root is closed (the test build\'s is open)', reader.includes('"closed"') && !reader.includes('mode: "open"'));
   const stores = JSON.parse(execFileSync('unzip', ['-p', APK, 'assets/stores.json'], { encoding: 'utf8' }));
-  check('APK: store hosts are core/stores.ts\'s', isDeepStrictEqual(stores.map((s) => s.id), STORE_IDS) && stores.every((s) => isDeepStrictEqual(s.hosts, STORES[s.id].hosts)));
+  const shops = stores.filter((s) => !s.service);
+  check('APK: store hosts are core/stores.ts\'s', isDeepStrictEqual(shops.map((s) => s.id), STORE_IDS) && shops.every((s) => isDeepStrictEqual(s.hosts, STORES[s.id].hosts)));
+  check('APK: one service per sector opens in the app (core/services.ts), marked as a service', isDeepStrictEqual(stores.filter((s) => s.service).map((s) => [s.id, s.hosts]), SERVICES.map((s) => [s.id, s.hosts])));
 } else {
   console.log(`SKIP  APK checks — NOT verified: no ${existsSync(APK) ? 'Android SDK' : 'APK'} (cd android && ./gradlew assembleRelease)`);
 }

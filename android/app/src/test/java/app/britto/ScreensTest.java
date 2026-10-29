@@ -3,6 +3,7 @@ package app.britto;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -40,6 +41,14 @@ public class ScreensTest {
         Set<String> origins = Stores.origins(context);
         assertTrue(origins.contains("https://www.amazon.in"));
         assertTrue(origins.stream().allMatch((o) -> o.startsWith("https://")));
+        // One service per sector opens in the app (so the shopper can log in on its own page),
+        // but gets no reader and no bridge.
+        assertEquals("uber", Stores.forUrl(context, "https://m.uber.com/go/home").id);
+        assertTrue(Stores.forUrl(context, "https://www.cleartrip.com/flights/results?from=DEL").service);
+        assertTrue(Stores.forUrl(context, "https://www.booking.com/searchresults.html?ss=Goa").service);
+        assertFalse(Stores.forUrl(context, "https://www.amazon.in/dp/B09X5DK382").service);
+        assertFalse("no reader on a service", origins.contains("https://m.uber.com") || origins.contains("https://www.cleartrip.com"));
+        assertFalse(Stores.ids(context).contains("uber"));
     }
 
     @Test

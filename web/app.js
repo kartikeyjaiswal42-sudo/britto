@@ -380,15 +380,30 @@ const inApp = /\bBrittoApp\//.test(navigator.userAgent);
  * where Britto reads the page you are looking at. In a normal browser the tiles just open the
  * store (the extension reads it there).
  */
+const SECTORS = [['ride', 'Rides'], ['flight', 'Flights'], ['hotel', 'Hotels']];
+
 async function browsePage() {
-  const { stores } = await getStores();
+  const { stores, services = [] } = await getStores();
+  // One service per sector (core/services.ts): in the app it opens inside Britto, so the shopper
+  // logs in once on the service's own page; that login stays in the app on their phone.
+  const sectionFor = ([sector, title]) => {
+    const list = services.filter((s) => s.sector === sector);
+    return list.length ? [h('h2', {}, title), h('div', { class: 'store-grid' }, list.map((s) => h('a', { class: 'store-tile', href: s.home, rel: 'noopener', 'data-service': s.id },
+      h('span', { class: 'store-name' }, s.name),
+      h('span', { class: 'small muted' }, inApp ? `Log in with your number on ${s.name}\u2019s own page; it stays on this phone.` : `Opens ${s.name}.`))))] : [];
+  };
   app.replaceChildren(h('h1', {}, 'Super Browse'),
     h('p', { class: 'muted' }, inApp
       ? 'Open a store and shop as usual. On every product page Britto shows its price history and reads the price from the page you are looking at.'
       : 'Open a store and shop as usual. With the Britto extension (or the Britto Android app) you see the price history on every product page.'),
+    h('h2', {}, 'Shopping'),
     h('div', { class: 'store-grid' }, stores.map((s) => h('a', { class: 'store-tile', href: s.home, rel: 'noopener', 'data-store': s.id },
       h('span', { class: 'store-name' }, s.name),
-      h('span', { class: 'small muted' }, s.serverFetch === 'yes' ? 'Prices also checked by our server' : 'Prices from shoppers\u2019 own pages')))));
+      h('span', { class: 'small muted' }, s.serverFetch === 'yes' ? 'Prices also checked by our server' : 'Prices from shoppers\u2019 own pages')))),
+    ...SECTORS.flatMap(sectionFor),
+    h('p', { class: 'small muted' }, inApp
+      ? 'Britto never sees your number, the code or your login: they stay in this app\u2019s browser on your phone.'
+      : 'In the Britto Android app these open inside the app, where you log in once with your number.'));
 }
 
 /**

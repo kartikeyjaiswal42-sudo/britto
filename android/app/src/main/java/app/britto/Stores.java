@@ -23,12 +23,15 @@ final class Stores {
         final String id;
         final String name;
         final String home;
+        /** A ride/flight/hotel service (core/services.ts): opens in the app, no reader, no bridge. */
+        final boolean service;
         final List<String> hosts = new ArrayList<>();
 
-        Store(String id, String name, String home) {
+        Store(String id, String name, String home, boolean service) {
             this.id = id;
             this.name = name;
             this.home = home;
+            this.service = service;
         }
     }
 
@@ -43,7 +46,7 @@ final class Stores {
             JSONArray stores = new JSONArray(Assets.text(context, "stores.json"));
             for (int i = 0; i < stores.length(); i++) {
                 JSONObject s = stores.getJSONObject(i);
-                Store store = new Store(s.getString("id"), s.getString("name"), s.getString("home"));
+                Store store = new Store(s.getString("id"), s.getString("name"), s.getString("home"), s.optBoolean("service", false));
                 for (String key : new String[] {"hosts", "shortHosts"}) {
                     JSONArray hosts = s.getJSONArray(key);
                     for (int j = 0; j < hosts.length(); j++) store.hosts.add(hosts.getString(j));
@@ -72,13 +75,13 @@ final class Stores {
     /** "https://<host>" for every store host: the only pages that get the reader and the bridge. */
     static java.util.Set<String> origins(Context context) {
         java.util.Set<String> out = new java.util.LinkedHashSet<>();
-        for (Store s : all(context)) for (String h : s.hosts) out.add("https://" + h);
+        for (Store s : all(context)) if (!s.service) for (String h : s.hosts) out.add("https://" + h);
         return out;
     }
 
     static java.util.Set<String> ids(Context context) {
         java.util.Set<String> out = new java.util.HashSet<>();
-        for (Store s : all(context)) out.add(s.id);
+        for (Store s : all(context)) if (!s.service) out.add(s.id);
         return out;
     }
 

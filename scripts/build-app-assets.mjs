@@ -11,6 +11,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { STORES, STORE_IDS } from '../core/stores.ts';
+import { SERVICES } from '../core/services.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : d; };
@@ -31,8 +32,12 @@ await build({
   legalComments: 'none',
   logLevel: 'warning',
 });
-writeFileSync(join(out, 'stores.json'), JSON.stringify(STORE_IDS.map((id) => {
-  const s = STORES[id];
-  return { id, name: s.name, hosts: s.hosts, shortHosts: s.shortHosts, home: s.home };
-}), null, 1));
+// Services (core/services.ts) open in the in-app browser too, but get no reader and no bridge.
+writeFileSync(join(out, 'stores.json'), JSON.stringify([
+  ...STORE_IDS.map((id) => {
+    const s = STORES[id];
+    return { id, name: s.name, hosts: s.hosts, shortHosts: s.shortHosts, home: s.home };
+  }),
+  ...SERVICES.map((s) => ({ id: s.id, name: s.name, hosts: s.hosts, shortHosts: [], home: s.home, service: true })),
+], null, 1));
 console.log(`app assets for ${site} -> ${out}`);

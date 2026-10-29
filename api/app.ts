@@ -1,6 +1,7 @@
 import { ALERTS, parseRule, readingMovesAlerts } from '../core/alerts.ts';
 import { pickDue } from '../core/schedule.ts';
 import { STORES, STORE_IDS, parseKey, parseProductLink, storeFromParam } from '../core/stores.ts';
+import { SERVICES } from '../core/services.ts';
 import { cleanObserved, judgeObservation } from '../core/trust.ts';
 import { GROCERY_PLATFORMS, cleanQuotes, compareBasket, compareItem, type GroceryPlatformId } from '../core/grocery.ts';
 import { COUPON_CODE } from '../core/interpret.ts';
@@ -374,7 +375,7 @@ async function api(request: Request, env: Env, ctx: Ctx, url: URL): Promise<Resp
   const method = request.method;
 
   if (path === '/api/health') return json({ ok: true, time: Date.now() });
-  if (path === '/api/stores' && method === 'GET') return json({ stores: STORE_IDS.map((id) => STORES[id]) });
+  if (path === '/api/stores' && method === 'GET') return json({ stores: STORE_IDS.map((id) => STORES[id]), services: SERVICES });
   if (path === '/api/products' && method === 'POST') return track(request, env);
   if (path === '/api/observations' && method === 'POST') return observe(request, env, ctx);
   if (path === '/api/config' && method === 'GET') return config(env);

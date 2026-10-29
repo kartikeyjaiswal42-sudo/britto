@@ -103,7 +103,8 @@ public class StoreActivity extends ComponentActivity {
                 currentUrl = url;
                 // Older WebViews: inject on load, only on the stores Britto knows (the reader
                 // starts once per page, so a second injection does nothing).
-                if (!documentStart && url.startsWith("https://") && Stores.forUrl(StoreActivity.this, url) != null) {
+                Stores.Store at = Stores.forUrl(StoreActivity.this, url);
+                if (!documentStart && url.startsWith("https://") && at != null && !at.service) {
                     view.evaluateJavascript(readerJs, null);
                 }
             }

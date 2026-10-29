@@ -5,6 +5,7 @@
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { STORES, STORE_IDS } from '../core/stores.ts';
+import { SECTOR_NAMES, SERVICES } from '../core/services.ts';
 import { airportIndex, flightSearch, hotelSearch, rideSearch, todayIST } from '../web/travel.js';
 
 const base = (process.argv[2] ?? '').replace(/\/$/, '');
@@ -114,8 +115,10 @@ try {
     check('stores page lists the measured status', (await page.locator('table.stores tbody tr').count()) === STORE_IDS.length);
 
     await page.goto(base + '/browse', { waitUntil: 'networkidle' });
-    const tiles = await page.locator('a.store-tile').evaluateAll((as) => as.map((a) => [a.dataset.store, a.getAttribute('href')]));
+    const tiles = await page.locator('a.store-tile[data-store]').evaluateAll((as) => as.map((a) => [a.dataset.store, a.getAttribute('href')]));
     check('Super Browse lists every store with its front page', JSON.stringify(tiles) === JSON.stringify(STORE_IDS.map((id) => [id, STORES[id].home])), JSON.stringify(tiles));
+    const services = await page.locator('a.store-tile[data-service]').evaluateAll((as) => as.map((a) => [a.dataset.service, a.getAttribute('href'), a.closest('.store-grid')?.previousElementSibling?.textContent]));
+    check('…and one service per sector under its own heading (Rides, Flights, Hotels), opening its own site', JSON.stringify(services) === JSON.stringify(SERVICES.map((s) => [s.id, s.home, SECTOR_NAMES[s.sector]])), JSON.stringify(services));
     const tileBox = await page.locator('a.store-tile').first().boundingBox();
     check('…tiles are large enough to tap (≥ 44 px tall)', (tileBox?.height ?? 0) >= 44, JSON.stringify(tileBox));
     check('…the header links to it ("Shop")', (await page.locator('.top nav a', { hasText: 'Shop' }).getAttribute('href')) === '/browse');
