@@ -46,6 +46,11 @@ if (existsSync(APK) && sdk) {
   const manifest = execFileSync(join(tools, 'aapt2'), ['dump', 'xmltree', '--file', 'AndroidManifest.xml', APK], { encoding: 'utf8' });
   const store = manifest.slice(manifest.indexOf('"app.britto.StoreActivity"'), manifest.indexOf('"app.britto.StoreActivity"') + 400);
   check('APK: Super Browse cannot be opened by other apps (StoreActivity not exported)', /exported\(0x01010010\)=false/.test(store));
+  // CONFIG_UI_MODE = 0x200. Handling it ourselves left the system bars in the old theme after a
+  // light/dark switch (seen on an emulator: white status icons on a light strip); both screens
+  // save and restore their page, so Android may simply recreate them.
+  const changes = [...manifest.matchAll(/configChanges\(0x0101001f\)=0x([0-9a-f]+)/g)].map((m) => parseInt(m[1], 16));
+  check('APK: a light/dark switch recreates the screens (no activity handles uiMode itself)', changes.length === 2 && changes.every((c) => (c & 0x200) === 0), changes.map((c) => c.toString(16)).join(', '));
   check('APK: "Share -> Britto" accepts shared text', /android\.intent\.action\.SEND/.test(manifest) && /mimeType\(0x01010026\)="text\/plain"/.test(manifest));
   const reader = execFileSync('unzip', ['-p', APK, 'assets/britto-reader.js'], { encoding: 'utf8', maxBuffer: 1 << 24 });
   check('APK: the page reader is inside, talks to production, ships no store recipe', reader.includes('https://britto.amitynoidalibrary.workers.dev') && reader.includes('identity-mismatch') && !/corePriceDisplay_desktop_feature_div|pdpData\.price|productTitle/.test(reader));
@@ -92,8 +97,9 @@ createInterface({ input: java.stdout }).on('line', (line) => {
 // Store pages are the SAVED fixtures at their real addresses; nothing reaches a real store.
 const FLIPKART_SYNTH = '<!doctype html><html><head><title>Phone</title><meta name="viewport" content="width=device-width, initial-scale=1"><script type="application/ld+json">{"@type":"Product","name":"Test Phone","offers":{"price":"9999","availability":"https://schema.org/InStock"}}</script></head><body><h1>Test Phone</h1></body></html>';
 const PAGES = new Map([
-  ['https://www.amazon.in/Cello-Butterflow/dp/B09X5DK382', fx('amazon-cello-25pens-instock.html')],
-  ['https://www.amazon.in/dp/B09N3ZNHTY', fx('amazon-boat-variant-unavailable.html')],
+  // Amazon pages as a phone gets them (saved with the app's own "Save page" on Android).
+  ['https://www.amazon.in/Cello-Butterflow/dp/B09X5DK382', fx('amazon-mobile-cello-25pens-noship.html')],
+  ['https://www.amazon.in/dp/B0CHX1W1XY', fx('amazon-mobile-iphone15-unavailable.html')],
   ['https://www.amazon.in/s?k=pen', '<!doctype html><html><body><h1>Search results</h1></body></html>'],
   ['https://www.myntra.com/tshirts/hrx/x/1700944/buy', fx('myntra-instock.html')],
   ['https://www.myntra.com/tshirts/hrx/x/999999/buy', fx('myntra-instock.html')],
@@ -146,7 +152,8 @@ try {
   const recordParity = async (url) => {
     const reading = JSON.parse((await panel().getAttribute('data-reading')) ?? 'null');
     const link = parseProductLink(url).link;
-    const cfg = bundledReader(link.store).config;
+    // The reader the app is served: the store's phone recipe, else the desktop one (deviceFallback).
+    const cfg = (bundledReader(link.store, 'mobile') ?? bundledReader(link.store)).config;
     const node = confirmIdentity(link.store, link.pid, readPage(cfg, PAGES.get(url), url), cfg.reportsPid);
     const diffs = ['status', 'price', 'mrp', 'inStock', 'pid', 'title', 'image', 'rule', 'offers'].filter((k) => !isDeepStrictEqual(reading?.[k], node[k]));
     parity.push({ url, diffs: diffs.map((k) => `${k}: app ${JSON.stringify(reading?.[k])} vs node ${JSON.stringify(node[k])}`) });
@@ -161,9 +168,9 @@ try {
   await recordParity('https://www.amazon.in/Cello-Butterflow/dp/B09X5DK382');
   let v = await api('/api/products/amazon%3AB09X5DK382');
   check('the reading reached Britto through the app\'s Java bridge', v.body?.product?.points?.length === 1 && v.body.product.points[0].price === 26500, JSON.stringify(v.body?.product?.points));
-  const amazonVersion = bundledReader('amazon').version;
+  const amazonVersion = bundledReader('amazon', 'mobile').version;
   let rows = d1(`SELECT source, config_version, reader_version, outcome, n FROM reader_health WHERE store = 'amazon'`);
-  check(`…counted as the app (source app, reader app-${VERSION}, the served desktop config)`, rows.some((r) => r.source === 'app' && r.reader_version === `app-${VERSION}` && r.config_version === amazonVersion && r.outcome === 'priced' && r.n === 1), JSON.stringify(rows));
+  check(`…counted as the app (source app, reader app-${VERSION}, the served phone config)`, rows.some((r) => r.source === 'app' && r.reader_version === `app-${VERSION}` && r.config_version === amazonVersion && r.outcome === 'priced' && r.n === 1), JSON.stringify(rows));
 
   // Injected twice (a store that reloads its scripts, or the older-WebView path): one panel, one report.
   await page.evaluate((js) => (0, eval)(js), READER_JS);
@@ -171,10 +178,10 @@ try {
   rows = d1(`SELECT n FROM reader_health WHERE store = 'amazon' AND source = 'app'`);
   check('a second injection on the same page adds no panel and no report', (await panel().count()) === 1 && rows.reduce((a, r) => a + r.n, 0) === 1, JSON.stringify(rows));
 
-  await page.goto('https://www.amazon.in/dp/B09N3ZNHTY');
+  await page.goto('https://www.amazon.in/dp/B0CHX1W1XY');
   t = await waitPanel(/Out of stock/);
   check('unavailable Amazon item reads "Out of stock"', /Out of stock/.test(t), t.slice(0, 200));
-  await recordParity('https://www.amazon.in/dp/B09N3ZNHTY');
+  await recordParity('https://www.amazon.in/dp/B0CHX1W1XY');
 
   await page.goto('https://www.amazon.in/s?k=pen');
   await page.waitForTimeout(2000);
