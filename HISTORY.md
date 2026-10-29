@@ -31,6 +31,14 @@ to this list and removes what is done.
    `britto-apk`), install, open Britto → Shop → a store → any product, and tell the next
    session what the Britto panel said. Uninstall an older Britto first (different signing keys
    until item 6 is done).
+4b. **Log in to Uber inside Britto and save one fare screen** (5 minutes; this is what lets
+   Britto read and compare ride fares, as you decided on 2026-10-29). In the Britto app: Shop →
+   Rides → Uber → **Login** (top right) → type your number → enter the code Uber sends. Your
+   login stays in the app on your phone; Britto never sees the number or the code. Then in
+   Britto open **Travel**, fill "Ride to the airport" and tap **Uber**: Uber opens inside Britto
+   with the trip filled in and shows the fares. Press **Save page** at the top, and send the
+   `britto-page-uber-mobile-….html` file from your phone's Downloads to the next session. (It
+   holds your pickup point and Uber's prices, nothing about your account.)
 5. ~~Save three phone pages~~ (done 2026-10-29 in the emulator: 4 Amazon, 3 Flipkart, 2 Myntra
    pages, each saved with the app's own Save page).
 6. **A signing key for the app** (5 minutes, once): on your Mac run
@@ -1064,3 +1072,50 @@ mutants (Amazon per-count M.R.P., Flipkart page-wide stock text, uiMode back) ca
 - A real phone (emulator only); FCM; a phone with a different delivery location.
 - Flipkart M.R.P.; Amazon variant pages (buy-form ASIN vs canonical); out-of-stock Flipkart and
   Myntra phone pages (none seen).
+
+## Connect one app per sector, step A, 2026-10-29 (local session) — branch `connect-apps`
+
+**Asked:** "make sure that I am able to connect at least one app per sector like travel, Uber,
+compare ride, flight, Amazon etc.; in the app I can do the login with my number, just what
+happens in the BuyHatke app."
+
+### Measured first (the Britto app on the Android 14 emulator, owner's network in India)
+
+Uber's web app `m.uber.com/go/home`: map, Login, pickup, drop-off. Ola `book.olacabs.com`:
+loads (title) but its page had no text when read; not used. Rapido: a marketing page with an
+app download. Cleartrip flight results (DEL→BOM, 27 Nov): real fares (₹7,485 at 15:4x, ₹6,945 at
+17:13; its "Lowest price starting from ₹6,398" is ₹6,945 minus a ₹547 coupon). MakeMyTrip:
+answers the in-app browser with a bare "200-OK" page (not used, not worked around).
+Booking.com Goa results: real prices (₹2,800 …). Shopping: Amazon, Flipkart, Myntra (above).
+
+### Built
+
+`core/services.ts` (one service per sector: Uber, Cleartrip, Booking.com, each with what was
+measured) + unit test; `/api/stores` also returns `services`; Super Browse shows Shopping,
+Rides, Flights, Hotels, and in the app each service tile says "Log in with your number on
+<name>'s own page; it stays on this phone". App: services ride in `assets/stores.json` marked
+`service` — they open in the in-app browser (and Save page works there), but get no reader and
+no bridge (`origins()` and the old-WebView injection skip them). `scripts/android-cdp.mjs`:
+drives the app's WebViews on an emulator over DevTools (targets / eval / nav / save — save writes
+the same bytes as the app's Save page), kept in the repo after the session scratchpad was wiped.
+
+### Verified (emulator, debug build against a local Worker)
+
+Super Browse headings `["Shopping","Rides","Flights","Hotels"]`; tapping Uber opens
+`StoreActivity` on `m.uber.com/go/home`; Uber's own **Login** opens `auth.uber.com` **inside the
+app**: "What's your phone number or email? … verification code by text or WhatsApp" (stopped
+there; the number is the owner's). A Cleartrip results link followed from the Britto page opens
+in the app too (so the Travel page's Uber/Cleartrip/Booking links use the shopper's in-app
+logins). Gates: npm test 109/109 · prove 110/0 · app.mjs 30/30 · Gradle 8/8 (routing asserts
+for services) · browser.mjs 72/0 (with the product the suite expects already tracked; on an
+empty database its first "recently tracked" check fails by design) · the new browser check
+reddens at both sizes with the Hotels section removed, restored.
+
+### NOT done (step B)
+
+- **Reading the fare shown** (owner's decision): Uber's fares appear only after login, so no
+  Uber page exists to verify a reader against — owner item 4b. Cleartrip and Booking.com result
+  pages were seen with fares but their readers are not written yet (the saved copies were lost
+  with the session scratchpad; re-save with `scripts/android-cdp.mjs … save`).
+- No "connected" badge: telling a login from its cookies would need each service's session
+  cookie name, which needs a logged-in session to learn.
