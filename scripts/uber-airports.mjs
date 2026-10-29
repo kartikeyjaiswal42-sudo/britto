@@ -53,7 +53,7 @@ async function main() {
   const rows = JSON.parse(readFileSync(join(ROOT, 'web/airports.json'), 'utf8')).airports.filter((a) => a[3] === 'IN' && (!only || only.has(a[0])));
   const wikidata = await wikidataPoints();
   console.log(`Wikidata: ${wikidata.size} Indian airports with coordinates`);
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ channel: 'chrome', headless: true }).catch(() => chromium.launch({ headless: true }));
   const probe = await browser.newPage();
   const ua = `${await probe.evaluate(() => navigator.userAgent)} BrittoBot/0.1 (+https://britto.amitynoidalibrary.workers.dev/bot)`;
   await probe.close();

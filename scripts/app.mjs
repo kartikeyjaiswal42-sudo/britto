@@ -106,7 +106,7 @@ const ORIGINS = STORE_IDS.flatMap((id) => STORES[id].hosts.map((h) => `https://$
 let browser;
 let aborted = 0;
 try {
-  browser = await chromium.launch({ headless: true });
+  browser = await chromium.launch({ channel: 'chrome', headless: true }).catch(() => chromium.launch({ headless: true }));
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   await context.route('**/*', (route) => {
     const page = PAGES.get(route.request().url());

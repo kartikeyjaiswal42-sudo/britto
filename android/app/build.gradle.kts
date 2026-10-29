@@ -101,14 +101,20 @@ androidComponents {
 // to Robolectric offline: its own downloader does not get through every network (the cloud
 // session's proxy, measured 2026-10-26).
 val robolectricRuntime: Configuration by configurations.creating
+// Robolectric's native-runtime loader turns this directory into a URL and back without decoding
+// it, so a space in the checkout path ("New project") failed the first test of every run
+// (measured: NoSuchFileException …/New%20project/…). A space-free directory avoids it.
+val robolectricJarDir: File = layout.buildDirectory.dir("robolectric-jars").get().asFile.let {
+    if (' ' in it.absolutePath) File(System.getProperty("java.io.tmpdir"), "britto-robolectric-jars") else it
+}
 val robolectricJars = tasks.register<Sync>("robolectricJars") {
     from(robolectricRuntime)
-    into(layout.buildDirectory.dir("robolectric-jars"))
+    into(robolectricJarDir)
 }
 tasks.withType<Test>().configureEach {
     dependsOn(robolectricJars)
     systemProperty("robolectric.offline", "true")
-    systemProperty("robolectric.dependency.dir", layout.buildDirectory.dir("robolectric-jars").get().asFile.absolutePath)
+    systemProperty("robolectric.dependency.dir", robolectricJarDir.absolutePath)
     // Robolectric reaches into FileDescriptor internals, which Java 17+ closes by default
     // (measured: "module java.base does not export jdk.internal.access").
     jvmArgs("--add-opens=java.base/java.io=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")

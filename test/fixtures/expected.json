@@ -285,5 +285,57 @@
     "inStock": false,
     "pid": "153072595",
     "title": "Mee Mee Nourishing Baby Oil 200ml"
+  },
+  "amazon-mobile-cello-25pens-noship.html": {
+    "fetched": "2026-10-29: saved with the Britto app's own \"Save page\" button (debug build) in an Android 14 emulator, Android System WebView 151, on the owner's Mac's network in India (Amazon chose delivery to Noida 201313). Price cross-checked against the page's own #apex-pricetopay-accessibility-label.",
+    "store": "amazon",
+    "device": "mobile",
+    "url": "https://www.amazon.in/dp/B09X5DK382",
+    "status": "priced",
+    "price": 26500,
+    "mrp": 29900,
+    "inStock": true,
+    "pid": "B09X5DK382",
+    "title": "Cello Butterflow Simply Ball Pen Set | Pack of 25",
+    "note": "The page also says the item cannot be shipped to the selected delivery location (Noida 201313); like the desktop reader, the price is still read. A per-count price (₹10.60) sits in the same box and must not be read as the M.R.P."
+  },
+  "amazon-mobile-technotip-paise.html": {
+    "fetched": "2026-10-29: saved with the Britto app's own \"Save page\" button (debug build) in an Android 14 emulator, Android System WebView 151, on the owner's Mac's network in India (Amazon chose delivery to Noida 201313). Price cross-checked against the page's own #apex-pricetopay-accessibility-label.",
+    "store": "amazon",
+    "device": "mobile",
+    "url": "https://www.amazon.in/dp/B00IEA1G4M",
+    "status": "priced",
+    "price": 176327,
+    "mrp": null,
+    "inStock": true,
+    "pid": "B00IEA1G4M",
+    "title": "1 X 10 Cello Technotip Pen",
+    "note": "Paise inside the price; no M.R.P. on the page; delivers to Noida."
+  },
+  "amazon-mobile-iphone15-unavailable.html": {
+    "fetched": "2026-10-29: saved with the Britto app's own \"Save page\" button (debug build) in an Android 14 emulator, Android System WebView 151, on the owner's Mac's network in India (Amazon chose delivery to Noida 201313). Price cross-checked against the page's own #apex-pricetopay-accessibility-label.",
+    "store": "amazon",
+    "device": "mobile",
+    "url": "https://www.amazon.in/dp/B0CHX1W1XY",
+    "status": "unavailable",
+    "price": null,
+    "mrp": null,
+    "inStock": false,
+    "pid": "B0CHX1W1XY",
+    "title": "Apple iPhone 15 (128 GB) - Black",
+    "note": "No buy form, so the ASIN comes from the page's canonical link."
+  },
+  "amazon-mobile-butterflow10-nomrp.html": {
+    "fetched": "2026-10-29: saved with the Britto app's own \"Save page\" button (debug build) in an Android 14 emulator, Android System WebView 151, on the owner's Mac's network in India (Amazon chose delivery to Noida 201313). Price cross-checked against the page's own #apex-pricetopay-accessibility-label.",
+    "store": "amazon",
+    "device": "mobile",
+    "url": "https://www.amazon.in/dp/B006SJNLZ8",
+    "status": "priced",
+    "price": 10000,
+    "mrp": null,
+    "inStock": true,
+    "pid": "B006SJNLZ8",
+    "title": "Cello Butterflow Ballpoint Pen Blue Pack of 10",
+    "note": "No M.R.P. on the page; the canonical link carries ?s=bazaar."
   }
 }

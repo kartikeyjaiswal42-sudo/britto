@@ -5,6 +5,7 @@
 import { configVersion, validateReader, type Device, type ReaderConfig } from '../core/recipe.ts';
 import type { StoreId } from '../core/types.ts';
 import amazon from './amazon.desktop.json' with { type: 'json' };
+import amazonMobile from './amazon.mobile.json' with { type: 'json' };
 import flipkart from './flipkart.desktop.json' with { type: 'json' };
 import myntra from './myntra.desktop.json' with { type: 'json' };
 import nykaa from './nykaa.desktop.json' with { type: 'json' };
@@ -20,7 +21,7 @@ function load(json: unknown): Reader {
   return { config: v.config, version: configVersion(v.config) };
 }
 
-const ALL: Reader[] = [amazon, flipkart, myntra, vijaysales, reliancedigital, nykaa, shopclues].map(load);
+const ALL: Reader[] = [amazon, amazonMobile, flipkart, myntra, vijaysales, reliancedigital, nykaa, shopclues].map(load);
 
 /** The bundled config for a store and device, or null when there is none for that device. */
 export function bundledReader(store: StoreId, device: Device = 'desktop'): Reader | null {

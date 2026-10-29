@@ -124,7 +124,7 @@ const good = (): ReaderConfig => JSON.parse(JSON.stringify(bundledReader('amazon
 const errorsOf = (c: unknown) => { const v = validateReader(c); return v.ok ? [] : v.errors; };
 
 test('validateReader: every bundled config passes; a good API recipe passes', () => {
-  assert.deepEqual(BUNDLED_READERS.map((r) => r.config.store), STORE_IDS, 'a bundled desktop reader for every store');
+  assert.deepEqual(BUNDLED_READERS.filter((r) => r.config.device === 'desktop').map((r) => r.config.store), STORE_IDS, 'a bundled desktop reader for every store');
   for (const r of BUNDLED_READERS) assert.deepEqual(errorsOf(r.config), [], r.version);
   assert.deepEqual(errorsOf({ ...good(), apiRecipes: [{ ...API, headers: { lat: 28.5, 'content-type': 'application/json' } }] }), []);
 });

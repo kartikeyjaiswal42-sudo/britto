@@ -276,6 +276,11 @@ export const MUTANTS = [
     run: PROVE, expect: [/an invalid newer row in D1 is skipped/, /that server read used the hot-fix/],
   },
   {
+    name: 'Amazon phone recipe reads the per-count price as the M.R.P.',
+    file: 'readers/amazon.mobile.json', find: '"selector": ["#corePriceDisplay_mobile_feature_div", ".a-price.apex-basisprice-value", ".a-offscreen"]', replace: '"selector": ["#corePriceDisplay_mobile_feature_div", ".a-text-price", ".a-offscreen"]',
+    run: CHECK, expect: [/^amazon-mobile-(cello-25pens-noship|technotip-paise|butterflow10-nomrp)\.html mrp/],
+  },
+  {
     name: 'prove: Reliance Digital (refuses Cloudflare) is server-fetched again',
     file: 'core/stores.ts', find: "    serverFetch: 'refused',\n    measured:\n      '2026-10-27: refuses our server on Cloudflare", replace: "    serverFetch: 'yes',\n    measured:\n      '2026-10-27: refuses our server on Cloudflare",
     run: PROVE, expect: [/reliancedigital: tracked, never fetched by our server/],
