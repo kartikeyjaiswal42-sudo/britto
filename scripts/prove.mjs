@@ -169,10 +169,12 @@ try {
   check('…an old version gets the full config', stale.status === 200 && (await stale.json()).version === cfg.body?.version, String(stale.status));
   const byNumber = await j('/api/config/reader?store=1');
   check('a store may be named by its number (amazon = 1)', byNumber.status === 200 && byNumber.body?.version === cfg.body?.version && byNumber.body?.storeNumber === 1);
-  const mobile = await j('/api/config/reader?store=myntra&device=mobile');
+  const mobile = await j('/api/config/reader?store=nykaa&device=mobile');
   check('no mobile recipe yet: the desktop one is served, flagged deviceFallback', mobile.status === 200 && mobile.body?.device === 'desktop' && mobile.body?.features?.deviceFallback === true && configFromServed(mobile.body).ok, JSON.stringify(mobile.body?.features));
   const amazonMobile = await j('/api/config/reader?store=amazon&device=mobile');
   check('Amazon\'s phone reader is served to the app as its own recipe (no desktop fallback)', amazonMobile.status === 200 && amazonMobile.body?.device === 'mobile' && !amazonMobile.body?.features?.deviceFallback && configFromServed(amazonMobile.body).ok, `${amazonMobile.status} ${amazonMobile.body?.version}`);
+  const fkMobile = await j('/api/config/reader?store=flipkart&device=mobile');
+  check('Flipkart\'s phone reader is served verified (the app reads Flipkart; checked on 2 real phone pages)', fkMobile.status === 200 && fkMobile.body?.device === 'mobile' && typeof fkMobile.body?.verified === 'string' && configFromServed(fkMobile.body).ok, `${fkMobile.status} ${fkMobile.body?.version} ${fkMobile.body?.verified}`);
   check('Flipkart\'s reader is served unverified (clients read nothing from it)', (await j('/api/config/reader?store=2')).body?.verified === null);
   check('unknown store is 404 no_reader', (await j('/api/config/reader?store=ebay')).body?.error?.code === 'no_reader' && (await j('/api/config/reader?store=999')).status === 404);
   check('a bad device is 400', (await j('/api/config/reader?store=amazon&device=tablet')).body?.error?.code === 'bad_device');

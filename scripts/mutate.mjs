@@ -281,6 +281,11 @@ export const MUTANTS = [
     run: CHECK, expect: [/^amazon-mobile-(cello-25pens-noship|technotip-paise|butterflow10-nomrp)\.html mrp/],
   },
   {
+    name: 'Flipkart phone recipe takes stock from page-wide "out of stock" text (another colour\'s swatch)',
+    file: 'readers/flipkart.mobile.json', find: '"selectors": [],\n      "outOfStockText": ["outofstock", "soldout", "discontinued"],', replace: '"selectors": ["body"],\n      "outOfStockText": ["outofstock", "soldout", "discontinued", "out of stock"],',
+    run: CHECK, expect: [/^flipkart-mobile-cello-pinpoint-variant\.html (status|price|inStock|deleting)/],
+  },
+  {
     name: 'prove: Reliance Digital (refuses Cloudflare) is server-fetched again',
     file: 'core/stores.ts', find: "    serverFetch: 'refused',\n    measured:\n      '2026-10-27: refuses our server on Cloudflare", replace: "    serverFetch: 'yes',\n    measured:\n      '2026-10-27: refuses our server on Cloudflare",
     run: PROVE, expect: [/reliancedigital: tracked, never fetched by our server/],

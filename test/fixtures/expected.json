@@ -337,5 +337,65 @@
     "pid": "B006SJNLZ8",
     "title": "Cello Butterflow Ballpoint Pen Blue Pack of 10",
     "note": "No M.R.P. on the page; the canonical link carries ?s=bazaar."
+  },
+  "flipkart-mobile-cello-gripper30.html": {
+    "fetched": "2026-10-29: saved with the Britto app's own \"Save page\" button (debug build) in an Android 14 emulator, Android System WebView 151, on the owner's Mac's network in India. Opened from Flipkart's own search results for \"cello ball pen\".",
+    "store": "flipkart",
+    "device": "mobile",
+    "url": "https://www.flipkart.com/cello-gripper-30-ball-pen/p/itm3e08c54dc1313?pid=PENF2JRHZ5XBG9FH",
+    "status": "priced",
+    "price": 22500,
+    "mrp": null,
+    "inStock": true,
+    "pid": "itm3e08c54dc1313",
+    "title": "Cello Cello Gripper 30 Ball Pen",
+    "note": "Seen on the page: 32% off, M.R.P. 330 struck through, ₹225, then \"Buy at ₹213\" (after offers). The JSON-LD price is the listed ₹225; the M.R.P. is not read (only obfuscated class names hold it). The JSON-LD name repeats the brand (\"Cello Cello …\", as the page's own <title> does); the visible heading says \"Cello Gripper 30 Ball Pen (Pack of 30, …)\"."
+  },
+  "flipkart-mobile-cello-pinpoint-variant.html": {
+    "fetched": "2026-10-29: saved with the Britto app's own \"Save page\" button (debug build) in an Android 14 emulator, Android System WebView 151, on the owner's Mac's network in India. Opened from Flipkart's own search results for \"cello ball pen\".",
+    "store": "flipkart",
+    "device": "mobile",
+    "url": "https://www.flipkart.com/cello-pinpoint-ball-pen/p/itmce87a5c875fdd?pid=PENF6M4KZ6V6RNFR",
+    "status": "priced",
+    "price": 9900,
+    "mrp": null,
+    "inStock": true,
+    "pid": "itmce87a5c875fdd",
+    "title": "Cello Pinpoint Ball Pen",
+    "note": "The page says \"Out of stock\" on the OTHER colour's swatch (screenshot checked); the selected pack is ₹99 with a Buy button, as the JSON-LD says. Never read stock from page-wide text here."
+  },
+  "flipkart-mobile-blocked-e002.html": {
+    "fetched": "2026-10-29: saved with the Britto app's own \"Save page\" button (debug build) in an Android 14 emulator, Android System WebView 151, on the owner's Mac's network in India. Opened from Flipkart's own search results for \"cello ball pen\".",
+    "store": "flipkart",
+    "device": "mobile",
+    "url": "https://www.flipkart.com/apple-iphone-15-black-128-gb/p/itm6ac6485515ae4?pid=MOBGTAGPTB3VS24W",
+    "status": "blocked",
+    "note": "Flipkart answered \"Something went wrong! E002\" even to the real in-app browser for this (2026-10-26) link."
+  },
+  "myntra-mobile-levis-tshirt.html": {
+    "fetched": "2026-10-29: saved with the Britto app's own \"Save page\" button (debug build) in an Android 14 emulator, Android System WebView 151, on the owner's Mac's network in India. Opened from Myntra's own search results (short /<id> links); Myntra's \"Login or Signup +91 Mobile Number\" sheet was open over the page.",
+    "store": "myntra",
+    "device": "mobile",
+    "url": "https://www.myntra.com/12027436",
+    "status": "priced",
+    "price": 39500,
+    "mrp": 64900,
+    "inStock": true,
+    "pid": "12027436",
+    "title": "Levis Men Soft Pure Cotton Round Neck Half Sleeve Tshirt",
+    "note": "Seen on the page: ₹649 struck, ₹395, 39% Off. The phone page has no window.__myx = {pdpData}; the product is in JSON-LD and the M.R.P. in the page's add-to-cart event data (\"price-mrp\", one value, for styleId 12027436)."
+  },
+  "myntra-mobile-muscleblaze-tshirt.html": {
+    "fetched": "2026-10-29: saved with the Britto app's own \"Save page\" button (debug build) in an Android 14 emulator, Android System WebView 151, on the owner's Mac's network in India. Opened from Myntra's own search results (short /<id> links); Myntra's \"Login or Signup +91 Mobile Number\" sheet was open over the page.",
+    "store": "myntra",
+    "device": "mobile",
+    "url": "https://www.myntra.com/30925569",
+    "status": "priced",
+    "price": 69900,
+    "mrp": 99900,
+    "inStock": true,
+    "pid": "30925569",
+    "title": "MuscleBlaze Men Active Gym",
+    "note": "Myntra's own search results listed it as ₹999 struck, ₹699, 30% OFF."
   }
 }

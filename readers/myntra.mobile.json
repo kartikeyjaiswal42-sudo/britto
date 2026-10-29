@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "store": "myntra",
+  "device": "mobile",
+  "revision": 1,
+  "verified": "2026-10-29",
+  "reportsPid": true,
+  "domRecipe": {
+    "name": [{ "selector": [], "attribute": "textContent", "jsonld": "name" }],
+    "pid": [{ "selector": [], "attribute": "textContent", "jsonld": "sku" }],
+    "itm": [],
+    "image": [{ "selector": [], "attribute": "textContent", "jsonld": "image" }],
+    "availability": {
+      "selectors": [],
+      "outOfStockText": ["outofstock", "soldout", "discontinued"],
+      "fields": [{ "selector": [], "attribute": "textContent", "jsonld": "offers.availability" }]
+    },
+    "price": [{ "selector": [], "attribute": "textContent", "jsonld": "offers.price" }],
+    "mrp": [{ "selector": [], "attribute": "innerHTML", "global": true, "regex": ["\"price-mrp\":\"(\\d+)\""] }]
+  }
+}
