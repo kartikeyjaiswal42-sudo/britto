@@ -8,6 +8,14 @@ the old name and addresses as they were at the time.
 Things only the owner can do, in plain English with the exact steps. Each later session adds
 to this list and removes what is done.
 
+0. **Production deploys are stuck since 2026-10-29** (5 minutes). The push of `e09e1f4`
+   (and later) did not reach the live site, and a deploy from the Mac fails with Cloudflare
+   API error 10013 at "assets-upload-session". Please open GitHub → the britto repository →
+   **Actions** → the newest run on `main`, and tell the next session which step is red and
+   its last lines (or "no run started"). If the run is green but the site is old, run
+   `npx wrangler login` once in a terminal in `britto/` (it opens the browser; approve), so a
+   session can deploy from the Mac again. Until then the live site runs P3–P9 without the phone
+   readers.
 1. **Reload the Britto extension** (P3 is on `main` since 2026-10-27): open `chrome://extensions` (or
    `brave://extensions`), find Britto, press the round reload arrow. Then open any Amazon.in
    product: the panel should appear as before. The version under the popup's "Open Britto"
@@ -18,19 +26,15 @@ to this list and removes what is done.
    the extension, press "Save this page for Britto" in the panel, and put the downloaded
    `britto-page-flipkart-….html` file into the `britto/test/fixtures/` folder (or attach it
    to the next session). That lets a session check and switch on the Flipkart reader.
-4. **Try the Android app on your phone** (P4, about 10 minutes, with item 5):
-   download the APK (the file sent with this session's report, or GitHub → Actions → the
-   newest run of branch `p4-android` → Artifacts → `britto-apk`), open it on the phone, allow
-   "install unknown apps" for the app you opened it from, install. Then: open Britto → Shop →
-   Amazon.in → any product. Tell the next session what you saw (panel or not, price or
-   "cannot read"), plus anything that looked wrong (text under the status bar, Back button).
-   APKs from different builds are signed with different keys until item 6 is done, so
-   uninstall the old one before installing a newer one.
-5. **Save three phone pages for the mobile readers** (with item 4): in the app, open one
-   product each on Amazon.in, Flipkart and Myntra, press **Save page** at the top on each,
-   and send the three `britto-page-…-mobile-….html` files from your phone's Downloads to the
-   next session (or put them in `britto/test/fixtures/`). That is what makes the app able to
-   read prices on phones.
+4. **Try the Android app on your phone** (10 minutes): it now works on an Android 14
+   emulator (2026-10-29: Amazon, Flipkart and Myntra prices read from the page once the
+   phone readers are live, Back, Share → Britto, Save page, dark mode). A real phone is still
+   the final check: download the APK (GitHub → Actions → newest run → Artifacts →
+   `britto-apk`), install, open Britto → Shop → a store → any product, and tell the next
+   session what the Britto panel said. Uninstall an older Britto first (different signing keys
+   until item 6 is done).
+5. ~~Save three phone pages~~ (done 2026-10-29 in the emulator: 4 Amazon, 3 Flipkart, 2 Myntra
+   pages, each saved with the app's own Save page).
 6. **A signing key for the app** (5 minutes, once): on your Mac run
    `keytool -genkeypair -keystore britto-release.keystore -alias britto -keyalg RSA -keysize 3072 -validity 10000`
    (pick a strong password; keep the file and password safe, never in the repo). Then on
@@ -890,7 +894,7 @@ fixture as expected · `prove` **107 passed, 0 failed, 0 SKIP** (live amazon.in 
 Cello pen set ₹246 / M.R.P. ₹275, Morphy Richards air fryer ₹4999 / ₹15999) ·
 `alerts.mjs` **68/68** (its Amazon section ran; the cloud had 61 with it skipped) ·
 `browser.mjs` **70/70** twice · `extension.mjs` **32/32** · `travel.mjs` **4/4 from India**.
-Not run here: `test:app` (no Android SDK/Gradle on this 8 GB Mac; GitHub Actions runs it),
+Not run here: `test:app` (**wrong reason given at the time: this Mac HAS an Android SDK at ~/Library/Android/sdk; corrected 2026-10-29, when it ran 29/29**),
 `alerts.mjs --browser`, `push-live.mjs`.
 
 ### Found and fixed: a reader that throws stopped the whole cron run (product code)
@@ -976,3 +980,85 @@ amazon.desktop.r2.b6819f37c495 · priced`. `config_log` lists all seven bundled 
 NOT verified live: an extension or app reading with a server-served config (the owner's own
 browser still runs extension 0.2; item 1), alerts firing on the new code, CPU per read on
 Cloudflare (item 10).
+
+## Android on Android, 2026-10-29 (local session): the app tested, phone readers for 3 stores
+
+**Asked:** "whatever is made till now, test the Android app first; then P10 and P11 … make sure
+I can connect at least one app per sector (travel, Uber/ride compare, flight, Amazon …); in the
+app I log in with my number, as in BuyHatke."
+
+### Owner's decisions (asked 2026-10-29)
+
+- **Rides: "read the fare shown"** — after the shopper logs in on Uber's/Ola's own page inside
+  the app (their number, their OTP; Britto never sees either), Compare opens each ride page
+  with the trip filled and reads the fare that page shows, then lists them side by side. This
+  changes BLUEPRINT §14's "no automated fare reading" line for rides. Never their private APIs.
+- **No Britto account** (no phone-OTP login to Britto itself): logins happen on each company's
+  own page inside the app; Britto keeps working without an account.
+
+### Measured / found
+
+1. **This Mac has an Android SDK** (`~/Library/Android/sdk`: platforms 33–36, build-tools
+   34–36, platform-tools, emulator, an Android 14 arm64 Play image, AVD `wb_test` from
+   WifiBeing) and JDK 21. The 2026-10-27 record said otherwise; corrected above.
+2. **Gradle's wrapper could not download Gradle**: Java reaches services.gradle.org, github.com,
+   dl.google.com and Maven Central but times out on release-assets.githubusercontent.com
+   (curl reaches it). Fix: curl the zip, check it against the pinned SHA-256 (equal), put it in
+   `~/.gradle/wrapper/dists/gradle-9.8.1-bin/a2l6ltp3k1vth6lwipzm5p2jp/`. `./gradlew` works.
+3. **Robolectric breaks on a space in the checkout path** ("New project"): its native-runtime
+   loader looked for `…/New%20project/…` (NoSuchFileException), failing the first test of a run.
+   `build.gradle.kts` now uses a space-free directory when needed. 8/8.
+4. **The app on Android 14 (emulator, WebView 151), production site:** home renders under the
+   status bar correctly (411 px wide, no sideways scroll); Shop → Super Browse (7 stores, tiles
+   107 px); Amazon tile opens the store browser; on Amazon's real mobile page the panel shows
+   the server's history (₹246, chart, verdict, buttons) but **"Britto cannot read the price on
+   this page yet"**, as P4 predicted (phone layout, desktop recipe). **Save page** wrote a
+   1.9 MB file to Downloads. Back: product → store home → Britto. Share → Britto with a
+   tracking-laden Amazon link opens it in Super Browse with the panel.
+5. **Dark mode bug (fixed):** switching light→dark with the app open left white status-bar
+   icons on a light strip, because the activities handled `uiMode` themselves and the theme/
+   insets were never re-applied (cold start in dark was correct). `configChanges` no longer
+   has `uiMode`; both screens already save/restore their page. Measured after: dark bars, the
+   page stays on /browse. app.mjs checks the APK; red with `uiMode` put back.
+6. **Phone pages differ from desktop pages**, so three phone readers were written from pages
+   saved with the app's own Save page (prices cross-checked against something other than the
+   reader: Amazon's accessibility label, the screenshot, Myntra's own listing):
+   - `amazon.mobile` — `#title`, the mobile priceToPay box, M.R.P. from apex-basisprice-value;
+     **trap: the box's first struck price is the per-count price (₹10.60)**, a mutant proves the
+     fixtures catch it. ASIN from the buy form, else the canonical link (no fixture tells the
+     two apart; both give the same ASIN on every saved page). 3 of 5 Amazon pages said "cannot
+     be shipped to your selected delivery location" (Noida 201313) while showing a price; read
+     as priced, like the desktop reader. **Price depends on location**: the phone saw ₹265 for
+     the pen set where the server (Cloudflare, no location) saw ₹246.
+   - `flipkart.mobile` — **the first verified Flipkart reader** (the server gets E002; the desktop
+     reader is still off). JSON-LD price = the listed price on the screen (₹225; "Buy at ₹213"
+     is after offers). **Trap: "Out of stock" on the page belonged to the other colour's
+     swatch**; mutant caught. M.R.P. not read (only obfuscated class names hold it). A
+     2026-10-26 iPhone link gave E002 even in the app: read as blocked.
+   - `myntra.mobile` — the phone page has no `window.__myx = {pdpData}`; JSON-LD + the page's
+     one `"price-mrp"` value.
+7. **End to end on Android against a local Worker** (debug APK built with
+   `-Pbritto.site=http://127.0.0.1:8799` + `adb reverse`; a debug-only network config allows
+   plain HTTP to 10.0.2.2/127.0.0.1/localhost; release stays HTTPS-only): the app read Amazon
+   ₹265/₹299 and ₹99/₹199, Flipkart ₹225, Myntra ₹395/₹649; the local D1 shows each as a client
+   reading with `reader_health` source `app`, reader `app-0.1.0`, the phone config, `priced`.
+8. **Deploy blocked.** `e09e1f4` reached GitHub `main` but not the live site (old code after 15
+   min). From the Mac: schema OK (25 statements, 0 rows changed), Worker upload fails twice with
+   Cloudflare API **10013** at assets-upload-session (truepen hit 10013 before on this account).
+   GitHub Actions cannot be seen from here (the keychain's GitHub https login is expired).
+   Owner item 0.
+
+### Gates (Mac)
+
+`npm test` 108/108 · typechecks clean · `check:readers` every reader valid, all 28 fixtures
+(9 new phone pages) as expected · `prove` 109/0 · Gradle unit tests 8/8 · `test:app` / app.mjs
+29/29 · all 6 `app:` mutants caught exactly (first run on any machine besides the cloud) · new
+mutants (Amazon per-count M.R.P., Flipkart page-wide stock text, uiMode back) caught exactly.
+
+### NOT verified
+
+- **Nothing of today is live** (owner item 0); production still serves the desktop recipe to
+  phones, so the app says "cannot read" there until a deploy succeeds.
+- A real phone (emulator only); FCM; a phone with a different delivery location.
+- Flipkart M.R.P.; Amazon variant pages (buy-form ASIN vs canonical); out-of-stock Flipkart and
+  Myntra phone pages (none seen).
