@@ -8,14 +8,12 @@ the old name and addresses as they were at the time.
 Things only the owner can do, in plain English with the exact steps. Each later session adds
 to this list and removes what is done.
 
-0. **Production deploys are stuck since 2026-10-29** (5 minutes). The push of `e09e1f4`
-   (and later) did not reach the live site, and a deploy from the Mac fails with Cloudflare
-   API error 10013 at "assets-upload-session". Please open GitHub → the britto repository →
-   **Actions** → the newest run on `main`, and tell the next session which step is red and
-   its last lines (or "no run started"). If the run is green but the site is old, run
-   `npx wrangler login` once in a terminal in `britto/` (it opens the browser; approve), so a
-   session can deploy from the Mac again. Until then the live site runs P3–P9 without the phone
-   readers.
+0. **Deploying from the Mac** (optional, 2 minutes): GitHub deploys work again (the push of
+   `e315396` went live at 10:17 UTC on 2026-10-29; the earlier `e09e1f4` push never did, cause
+   unseen). A deploy from the Mac still fails with Cloudflare API error 10013. If you want
+   sessions to be able to deploy from the Mac too, run `npx wrangler login` once in a terminal
+   in `britto/` and approve in the browser. If a push ever fails to go live, GitHub → Actions →
+   the newest run on `main` shows which step is red.
 1. **Reload the Britto extension** (P3 is on `main` since 2026-10-27): open `chrome://extensions` (or
    `brave://extensions`), find Britto, press the round reload arrow. Then open any Amazon.in
    product: the panel should appear as before. The version under the popup's "Open Britto"
@@ -1057,8 +1055,12 @@ mutants (Amazon per-count M.R.P., Flipkart page-wide stock text, uiMode back) ca
 
 ### NOT verified
 
-- **Nothing of today is live** (owner item 0); production still serves the desktop recipe to
-  phones, so the app says "cannot read" there until a deploy succeeds.
+- (Resolved 10:17 UTC: the push of `e315396` deployed through GitHub; `prove --live` 61/0,
+  incl. "Amazon's phone reader is served" and "Flipkart's phone reader is served verified".
+  **Verified live in the production D1:** the production-pointing debug app on the emulator read
+  Amazon B00IEA1G4M at ₹1,763.27; `reader_health` 10:00 UTC: source app, `amazon.mobile.r1`,
+  priced. The 09:00 rows (4 × unrecognised, desktop fallback) are the same emulator's taps
+  before the deploy: real readings of real pages, not test data.)
 - A real phone (emulator only); FCM; a phone with a different delivery location.
 - Flipkart M.R.P.; Amazon variant pages (buy-form ASIN vs canonical); out-of-stock Flipkart and
   Myntra phone pages (none seen).
