@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E7E2D7}*{box-sizing:border-box}*::-webkit-scrollbar{display:none}a{color:#1E5B45}a:hover{color:#17150F}input{font:inherit}</style>
+</helmet>
+<div style="display:flex;justify-content:center;padding:24px;font-family:'Geist',sans-serif;color:#17150F">
+<div style="width:360px;height:780px;border-radius:44px;background:#0E0D0A;padding:9px;box-shadow:0 30px 60px -20px rgba(23,21,15,.45)">
+<div style="position:relative;width:100%;height:100%;border-radius:36px;overflow:hidden;background:#F3EFE6;display:flex;flex-direction:column">
+<div style="height:34px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font:500 13px 'Geist';position:relative">
+<span>9:41</span>
+<div style="position:absolute;left:50%;top:10px;width:12px;height:12px;margin-left:-6px;border-radius:999px;background:#0E0D0A"></div>
+<div style="display:flex;gap:6px;align-items:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M2 20h20L22 4z"></path></svg><svg width="18" height="12" viewBox="0 0 26 14" fill="none" stroke="currentColor"><rect x="1" y="1" width="21" height="12" rx="3"></rect><rect x="3" y="3" width="14" height="8" rx="1" fill="currentColor"></rect><path d="M24 5v4"></path></svg></div>
+</div>
+<div style="flex:1;overflow-y:auto;position:relative">
+
+<sc-if value="{{ is.onboarding }}" hint-placeholder-val="{{ false }}">
+<div style="height:100%;display:flex;flex-direction:column;padding:12px 24px 24px">
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font:italic 400 26px 'Instrument Serif'">Britto</span><span onClick="{{ toLogin }}" style="font-size:13px;color:#6B665B;cursor:pointer;padding:10px 0">Skip</span></div>
+<div style="flex:1;display:flex;align-items:center;justify-content:center">
+<sc-if value="{{ onb0 }}" hint-placeholder-val="{{ true }}">
+<div style="width:100%;display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;justify-content:space-between;padding:14px 16px;border-radius:14px;background:#17150F;color:#F3EFE6"><span style="font-size:14px">Flipkart</span><span style="font:500 15px 'Geist Mono'">₹61,999</span></div>
+<div style="display:flex;justify-content:space-between;padding:14px 16px;border-radius:14px;background:#FBF9F4;border:1px solid #DDD6C8"><span style="font-size:14px">Amazon</span><span style="font:500 15px 'Geist Mono'">₹63,499</span></div>
+<div style="display:flex;justify-content:space-between;padding:14px 16px;border-radius:14px;background:#FBF9F4;border:1px solid #DDD6C8"><span style="font-size:14px">Croma</span><span style="font:500 15px 'Geist Mono'">₹64,990</span></div>
+<div style="display:flex;justify-content:space-between;padding:14px 16px;border-radius:14px;background:#FBF9F4;border:1px solid #DDD6C8;opacity:.6"><span style="font-size:14px">Tata CLiQ</span><span style="font:500 15px 'Geist Mono'">₹65,200</span></div>
+</div>
+</sc-if>
+<sc-if value="{{ onb1 }}" hint-placeholder-val="{{ false }}">
+<div style="width:100%;padding:18px;border-radius:18px;background:#FBF9F4;border:1px solid #DDD6C8">
+<div style="font-size:12px;color:#6B665B">Price before the sale</div>
+<svg width="100%" height="150" viewBox="0 0 280 150" fill="none"><path d="M0 110 L40 104 L80 108 L110 100 L130 40 L170 44 L190 92 L230 96 L280 98" stroke="#17150F" stroke-width="2"></path><path d="M130 40 L170 44" stroke="#B23A22" stroke-width="3"></path><line x1="0" y1="100" x2="280" y2="100" stroke="#1E5B45" stroke-dasharray="3 4"></line><circle cx="280" cy="98" r="4" fill="#17150F"></circle></svg>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><span style="font-size:12px;padding:5px 10px;border-radius:999px;background:#F5E1DA;color:#B23A22">Raised 18% before sale</span><span style="font-size:12px;padding:5px 10px;border-radius:999px;background:#E3EDE6;color:#1E5B45">Real low: ₹35,999</span></div>
+</div>
+</sc-if>
+<sc-if value="{{ onb2 }}" hint-placeholder-val="{{ false }}">
+<div style="width:100%;display:flex;flex-direction:column;gap:10px">
+<div style="padding:14px 16px;border-radius:16px;background:#17150F;color:#F3EFE6;display:flex;flex-direction:column;gap:4px"><span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.7">Britto · now</span><span style="font-size:14px">Sony WH-1000XM5 hit your target</span><span style="font:500 14px 'Geist Mono';color:#B7D8C4">₹24,990 on Amazon · was ₹29,990</span></div>
+<div style="padding:14px 16px;border-radius:16px;background:#FBF9F4;border:1px solid #DDD6C8;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px">Alert me at</span><span style="font:400 30px 'Instrument Serif'">₹25,000</span></div>
+</div>
+</sc-if>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font:400 38px/1.02 'Instrument Serif';letter-spacing:-.01em;text-wrap:pretty">{{ onbTitle }}</div>
+<div style="font-size:15px;line-height:1.5;color:#6B665B;text-wrap:pretty">{{ onbBody }}</div>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px">
+<div style="display:flex;gap:6px"><sc-for list="{{ onbDots }}" as="d" hint-placeholder-count="3"><div style="height:6px;border-radius:9px;background:#17150F;width:{{ d.w }}px;opacity:{{ d.o }};transition:width .3s"></div></sc-for></div>
+<div onClick="{{ onbNext }}" style="height:52px;padding:0 26px;border-radius:999px;background:#17150F;color:#F3EFE6;display:flex;align-items:center;font-size:15px;font-weight:500;cursor:pointer">{{ onbCta }}</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.login }}" hint-placeholder-val="{{ false }}">
+<div style="height:100%;display:flex;flex-direction:column;padding:28px 24px 24px;gap:28px">
+<span style="font:italic 400 26px 'Instrument Serif'">Britto</span>
+<div style="display:flex;flex-direction:column;gap:10px"><div style="font:400 40px/1 'Instrument Serif'">Sign in to start saving.</div><div style="font-size:14px;color:#6B665B;line-height:1.5">Your alerts, watchlist and cashback stay synced to your number.</div></div>
+<div style="display:flex;flex-direction:column;gap:8px"><label style="font-size:12px;color:#6B665B">Mobile number</label>
+<div style="display:flex;align-items:center;gap:10px;height:56px;padding:0 16px;border-radius:14px;background:#FBF9F4;border:1px solid #CFC7B6"><span style="font:500 15px 'Geist Mono';color:#6B665B">+91</span><div style="width:1px;height:22px;background:#DDD6C8"></div><input value="{{ phone }}" onChange="{{ onPhone }}" inputmode="numeric" placeholder="98765 43210" style="flex:1;border:0;background:transparent;outline:none;font:500 16px 'Geist Mono';letter-spacing:.04em;color:#17150F"></input></div>
+</div>
+<div onClick="{{ sendOtp }}" style="height:54px;border-radius:999px;background:#17150F;color:#F3EFE6;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;cursor:pointer;opacity:{{ phoneOk }}">Get OTP</div>
+<div style="display:flex;align-items:center;gap:12px;color:#6B665B;font-size:12px"><div style="flex:1;height:1px;background:#DDD6C8"></div>or<div style="flex:1;height:1px;background:#DDD6C8"></div></div>
+<div onClick="{{ toHome }}" style="height:54px;border-radius:999px;border:1px solid #CFC7B6;display:flex;align-items:center;justify-content:center;gap:10px;font-size:15px;cursor:pointer"><span style="width:20px;height:20px;border-radius:999px;border:1.5px solid #17150F;display:flex;align-items:center;justify-content:center;font:600 11px 'Geist'">G</span>Continue with Google</div>
+<div style="margin-top:auto;font-size:11.5px;color:#6B665B;line-height:1.5;text-align:center">By continuing you agree to Britto's Terms and Privacy Policy.</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.otp }}" hint-placeholder-val="{{ false }}">
+<div style="height:100%;display:flex;flex-direction:column;padding:8px 24px 24px;gap:24px">
+<div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-10px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<div style="display:flex;flex-direction:column;gap:10px"><div style="font:400 38px/1 'Instrument Serif'">Enter the 6-digit code</div><div style="font-size:14px;color:#6B665B">Sent by SMS to +91 {{ phoneShown }}</div></div>
+<div style="position:relative">
+<div style="display:flex;gap:8px"><sc-for list="{{ otpBoxes }}" as="b" hint-placeholder-count="6"><div style="flex:1;height:56px;border-radius:12px;background:#FBF9F4;border:1px solid {{ b.bd }};display:flex;align-items:center;justify-content:center;font:500 22px 'Geist Mono'">{{ b.v }}</div></sc-for></div>
+<input value="{{ otp }}" onChange="{{ onOtp }}" inputmode="numeric" autofocus="true" style="position:absolute;inset:0;opacity:0;width:100%"></input>
+</div>
+<div style="font-size:13px;color:#6B665B">Didn't get it? <span style="color:#17150F;font-weight:500">Resend in 0:24</span></div>
+<div onClick="{{ verifyOtp }}" style="margin-top:auto;height:54px;border-radius:999px;background:#17150F;color:#F3EFE6;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;cursor:pointer;opacity:{{ otpOk }}">Verify and continue</div>
+<div style="font-size:12px;color:#6B665B;text-align:center;margin-top:-12px">Tip: type any 6 digits</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.home }}" hint-placeholder-val="{{ true }}">
+<div style="padding:6px 16px 24px;display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;align-items:center;justify-content:space-between">
+<span style="font:italic 400 30px 'Instrument Serif'">Britto</span>
+<div style="display:flex;gap:4px;align-items:center">
+<div onClick="{{ go.notifications }}" style="position:relative;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1112 0v5l1.5 2h-15z"></path><path d="M10 20a2 2 0 004 0"></path></svg><div style="position:absolute;top:10px;right:11px;width:8px;height:8px;border-radius:9px;background:#B23A22;border:2px solid #F3EFE6"></div></div>
+<div onClick="{{ tab.profile }}" style="width:34px;height:34px;border-radius:999px;background:#17150F;color:#F3EFE6;display:flex;align-items:center;justify-content:center;font:400 17px 'Instrument Serif';cursor:pointer">A</div>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:13px;color:#6B665B">Good evening, Aarav</span><span style="font:400 34px/1.02 'Instrument Serif';text-wrap:pretty">Know the right price before you buy.</span></div>
+<div onClick="{{ go.search }}" style="height:52px;border-radius:14px;background:#FBF9F4;border:1px solid #CFC7B6;display:flex;align-items:center;gap:10px;padding:0 16px;cursor:pointer;color:#6B665B"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg><span style="font-size:14.5px">Search 18 stores…</span></div>
+<div onClick="{{ go.paste }}" style="padding:16px;border-radius:18px;background:#17150F;color:#F3EFE6;display:flex;align-items:center;gap:14px;cursor:pointer">
+<div style="width:44px;height:44px;flex:none;border-radius:12px;background:#2A2720;display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"></path></svg></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:3px"><span style="font-size:15px;font-weight:500">Paste a product link</span><span style="font-size:12.5px;color:#BDB6A6">Or share any product to Britto from the store app</span></div>
+<div style="padding:8px 14px;border-radius:999px;background:#F3EFE6;color:#17150F;font-size:13px;font-weight:500">Paste</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+<div onClick="{{ go.fakesale }}" style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer"><div style="width:100%;aspect-ratio:1;border-radius:16px;background:#F5E1DA;color:#B23A22;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"></path><path d="M9 12l2 2 4-4"></path></svg></div><span style="font-size:11.5px;text-align:center;line-height:1.2">Fake-sale check</span></div>
+<div onClick="{{ go.flights }}" style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer"><div style="width:100%;aspect-ratio:1;border-radius:16px;background:#E3E8EE;color:#2D4A66;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M2.5 13.5l19-8-5.5 15-3.5-6.5z"></path><path d="M12.5 14l9-8.5"></path></svg></div><span style="font-size:11.5px;text-align:center;line-height:1.2">Flights</span></div>
+<div onClick="{{ go.rewards }}" style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer"><div style="width:100%;aspect-ratio:1;border-radius:16px;background:#F1E6CC;color:#8A6417;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 3.5v17M3.5 12h17M6 6l12 12M18 6L6 18"></path></svg></div><span style="font-size:11.5px;text-align:center;line-height:1.2">Spin &amp; win</span></div>
+<div onClick="{{ go.refer }}" style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer"><div style="width:100%;aspect-ratio:1;border-radius:16px;background:#E3EDE6;color:#1E5B45;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c.8-3.5 3.5-5 6.5-5s5.7 1.5 6.5 5"></path><path d="M16 4.5a3.5 3.5 0 010 7M18 15c2 .6 3.2 2.3 3.5 5"></path></svg></div><span style="font-size:11.5px;text-align:center;line-height:1.2">Refer &amp; earn</span></div>
+</div>
+<div onClick="{{ tab.wallet }}" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:16px;border:1px solid #DDD6C8;background:#FBF9F4;cursor:pointer">
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;color:#6B665B">Cashback wallet</span><span style="font:400 26px 'Instrument Serif'">₹1,240.50</span></div>
+<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span style="font-size:12px;padding:4px 9px;border-radius:999px;background:#F1E6CC;color:#8A6417">₹380 pending</span><span style="font-size:12.5px;font-weight:500">Withdraw →</span></div>
+</div>
+<div onClick="{{ go.fakesale }}" style="padding:16px;border-radius:18px;background:#E3EDE6;display:flex;flex-direction:column;gap:8px;cursor:pointer">
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#1E5B45;font-weight:600">Sale watch · Live</span><span style="font-size:12px;color:#1E5B45">Ends in 2d 14h</span></div>
+<div style="font:400 24px/1.1 'Instrument Serif'">Flipkart Big Billion Days: 31% of "deals" we checked were raised first.</div>
+<span style="font-size:13px;font-weight:500;color:#1E5B45">See which ones →</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:400 24px 'Instrument Serif'">Biggest drops today</span><span onClick="{{ tab.deals }}" style="font-size:13px;color:#6B665B;cursor:pointer">All deals</span></div>
+<div style="display:flex;gap:10px;overflow-x:auto;margin:0 -16px;padding:0 16px">
+<sc-for list="{{ drops }}" as="d" hint-placeholder-count="4">
+<div onClick="{{ d.open }}" style="flex:none;width:148px;display:flex;flex-direction:column;gap:8px;cursor:pointer">
+<div style="height:148px;border-radius:14px;background:repeating-linear-gradient(135deg,#E9E3D6 0 8px,#E2DBCC 8px 16px);position:relative;display:flex;align-items:flex-end;padding:8px"><span style="font:500 9.5px 'Geist Mono';color:#8B8575">product shot</span><span style="position:absolute;top:8px;left:8px;padding:3px 8px;border-radius:999px;background:#1E5B45;color:#F3EFE6;font:500 11px 'Geist Mono'">−{{ d.off }}%</span></div>
+<span style="font-size:11px;color:#6B665B">{{ d.store }}</span>
+<span style="font-size:13px;line-height:1.3;height:34px;overflow:hidden">{{ d.name }}</span>
+<div style="display:flex;gap:6px;align-items:baseline"><span style="font:500 14px 'Geist Mono'">{{ d.price }}</span><span style="font:400 11.5px 'Geist Mono';color:#8B8575;text-decoration:line-through">{{ d.was }}</span></div>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:400 24px 'Instrument Serif'">Shop with cashback</span><span style="font-size:13px;color:#6B665B">18 stores</span></div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+<sc-for list="{{ stores }}" as="s" hint-placeholder-count="9">
+<div onClick="{{ s.open }}" style="padding:12px 10px;border-radius:14px;background:#FBF9F4;border:1px solid #DDD6C8;display:flex;flex-direction:column;gap:8px;cursor:pointer">
+<div style="width:34px;height:34px;border-radius:10px;background:#17150F;color:#F3EFE6;display:flex;align-items:center;justify-content:center;font:400 17px 'Instrument Serif'">{{ s.mono }}</div>
+<span style="font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.name }}</span>
+<span style="font-size:11px;color:#1E5B45">Up to {{ s.cb }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.search }}" hint-placeholder-val="{{ false }}">
+<div style="padding:4px 16px 24px;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;align-items:center;gap:6px">
+<div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-10px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<div style="flex:1;height:46px;border-radius:12px;background:#FBF9F4;border:1px solid #17150F;display:flex;align-items:center;gap:8px;padding:0 14px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B665B" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg><input value="{{ query }}" onChange="{{ onQuery }}" style="flex:1;border:0;outline:none;background:transparent;font-size:15px;color:#17150F"></input></div>
+</div>
+<div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ recent }}" as="r" hint-placeholder-count="3"><span onClick="{{ r.pick }}" style="font-size:12.5px;padding:6px 12px;border-radius:999px;border:1px solid #CFC7B6;cursor:pointer;color:#6B665B">{{ r.q }}</span></sc-for></div>
+<div style="display:flex;gap:6px;overflow-x:auto"><sc-for list="{{ sortChips }}" as="c" hint-placeholder-count="4"><span onClick="{{ c.on }}" style="flex:none;font-size:12.5px;padding:7px 13px;border-radius:999px;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1px solid {{ c.bd }}">{{ c.label }}</span></sc-for></div>
+<span style="font-size:12px;color:#6B665B">{{ resultsCount }} results across 18 stores</span>
+<div style="display:flex;flex-direction:column">
+<sc-for list="{{ results }}" as="p" hint-placeholder-count="4">
+<div onClick="{{ open.product }}" style="display:flex;gap:12px;padding:14px 0;border-top:1px solid #DDD6C8;cursor:pointer">
+<div style="width:84px;height:96px;flex:none;border-radius:12px;background:repeating-linear-gradient(135deg,#E9E3D6 0 8px,#E2DBCC 8px 16px)"></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:5px;min-width:0">
+<span style="font-size:14px;line-height:1.3">{{ p.name }}</span>
+<span style="font-size:12px;color:#6B665B">★ {{ p.rating }} · {{ p.stores }} stores</span>
+<div style="display:flex;align-items:baseline;gap:6px"><span style="font:500 16px 'Geist Mono'">{{ p.price }}</span><span style="font-size:12px;color:#6B665B">at {{ p.store }}</span></div>
+<span style="align-self:flex-start;font-size:11px;padding:3px 8px;border-radius:999px;background:{{ p.tbg }};color:{{ p.tfg }}">{{ p.trend }}</span>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.product }}" hint-placeholder-val="{{ false }}">
+<div style="padding-bottom:100px">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px">
+<div onClick="{{ back }}" style="width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<div style="display:flex">
+<div onClick="{{ shareProduct }}" style="width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13M7 8l5-5 5 5"></path><path d="M5 14v6h14v-6"></path></svg></div>
+<div onClick="{{ toggleFav }}" style="width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:{{ favColor }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="{{ favFill }}" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 20s-8-5-8-11a4.5 4.5 0 018-2.8A4.5 4.5 0 0120 9c0 6-8 11-8 11z"></path></svg></div>
+</div>
+</div>
+<div style="margin:0 16px;height:200px;border-radius:18px;background:repeating-linear-gradient(135deg,#E9E3D6 0 8px,#E2DBCC 8px 16px);display:flex;align-items:flex-end;justify-content:space-between;padding:10px 12px"><span style="font:500 10px 'Geist Mono';color:#8B8575">product shot</span><span style="font:500 10px 'Geist Mono';color:#8B8575">1 / 6</span></div>
+<div style="padding:16px;display:flex;flex-direction:column;gap:6px">
+<span style="font-size:12px;color:#6B665B">Apple · Smartphones · ★ 4.6 (48,210)</span>
+<span style="font:400 26px/1.1 'Instrument Serif'">Apple iPhone 15 (128 GB) – Black</span>
+<div style="display:flex;align-items:baseline;gap:8px;margin-top:6px"><span style="font:500 26px 'Geist Mono'">₹61,999</span><span style="font:400 13px 'Geist Mono';color:#8B8575;text-decoration:line-through">₹69,900</span><span style="font:500 13px 'Geist Mono';color:#1E5B45">−11%</span></div>
+<span style="font-size:12.5px;color:#6B665B">Lowest today at Flipkart · + ₹620 Britto cashback</span>
+</div>
+<div style="margin:0 16px;padding:16px;border-radius:18px;background:#E3EDE6;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;gap:10px;align-items:center"><div style="width:32px;height:32px;border-radius:999px;background:#1E5B45;color:#F3EFE6;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"></path></svg></div><div style="display:flex;flex-direction:column"><span style="font-size:15px;font-weight:600;color:#1E5B45">Genuine price · good time to buy</span><span style="font-size:12.5px;color:#2F5A49">7% below its 90-day average. Not inflated before the sale.</span></div></div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<div style="position:relative;height:8px;border-radius:9px;background:linear-gradient(90deg,#1E5B45,#C9B98A,#B23A22)"><div style="position:absolute;left:28%;top:-5px;width:4px;height:18px;border-radius:3px;background:#17150F"></div></div>
+<div style="display:flex;justify-content:space-between;font:400 11px 'Geist Mono';color:#2F5A49"><span>Low {{ statLow }}</span><span>High {{ statHigh }}</span></div>
+</div>
+</div>
+<div style="margin:16px 16px 0;padding:14px;border-radius:18px;background:#FBF9F4;border:1px solid #DDD6C8;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font:400 22px 'Instrument Serif'">Price history</span><span style="font-size:11px;color:#6B665B">Flipkart</span></div>
+<div style="display:flex;gap:4px;padding:3px;border-radius:999px;background:#ECE7DC"><sc-for list="{{ ranges }}" as="r" hint-placeholder-count="5"><span onClick="{{ r.on }}" style="flex:1;text-align:center;font-size:12px;padding:6px 0;border-radius:999px;cursor:pointer;background:{{ r.bg }};color:{{ r.fg }};font-weight:500">{{ r.label }}</span></sc-for></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:500 18px 'Geist Mono'">{{ tipPrice }}</span><span style="font-size:12px;color:#6B665B">{{ tipDate }}</span></div>
+<div style="position:relative">
+<svg width="280" height="140" viewBox="0 0 280 140" onPointerMove="{{ onChartMove }}" onPointerLeave="{{ onChartLeave }}" style="display:block;touch-action:none;cursor:crosshair">
+<path d="{{ chartArea }}" fill="#1E5B45" fill-opacity="0.07"></path>
+<line x1="0" x2="280" y1="{{ lowY }}" y2="{{ lowY }}" stroke="#1E5B45" stroke-dasharray="3 4"></line>
+<path d="{{ chartLine }}" fill="none" stroke="#17150F" stroke-width="1.6" stroke-linejoin="round"></path>
+<line x1="{{ tipX }}" x2="{{ tipX }}" y1="0" y2="140" stroke="#17150F" stroke-opacity="0.18"></line>
+<circle cx="{{ tipX }}" cy="{{ tipY }}" r="4.5" fill="#17150F" stroke="#FBF9F4" stroke-width="2"></circle>
+</svg>
+</div>
+<div style="display:flex;justify-content:space-between;font:400 10.5px 'Geist Mono';color:#8B8575"><span>{{ chartStart }}</span><span>Today</span></div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid #DDD6C8;padding-top:10px">
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;color:#6B665B">Lowest</span><span style="font:500 13px 'Geist Mono';color:#1E5B45">{{ rLow }}</span></div>
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;color:#6B665B">Average</span><span style="font:500 13px 'Geist Mono'">{{ rAvg }}</span></div>
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;color:#6B665B">Highest</span><span style="font:500 13px 'Geist Mono';color:#B23A22">{{ rHigh }}</span></div>
+</div>
+</div>
+<div style="padding:22px 16px 0;display:flex;flex-direction:column;gap:4px">
+<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px"><span style="font:400 22px 'Instrument Serif'">Compare 6 stores</span><span style="font-size:11.5px;color:#6B665B">Updated 4 min ago</span></div>
+<sc-for list="{{ offers }}" as="o" hint-placeholder-count="5">
+<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid #DDD6C8">
+<div style="width:36px;height:36px;flex:none;border-radius:10px;background:{{ o.mbg }};color:{{ o.mfg }};display:flex;align-items:center;justify-content:center;font:400 17px 'Instrument Serif'">{{ o.mono }}</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:14px;font-weight:500">{{ o.store }}</span><span style="font-size:11.5px;color:#6B665B">{{ o.del }} · +{{ o.cb }} cashback</span></div>
+<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px"><span style="font:500 14px 'Geist Mono'">{{ o.price }}</span><span style="font-size:11px;color:{{ o.dcol }}">{{ o.diff }}</span></div>
+<div onClick="{{ o.go }}" style="width:34px;height:34px;border-radius:999px;border:1px solid #CFC7B6;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"></path></svg></div>
+</div>
+</sc-for>
+</div>
+<div style="padding:18px 16px 0;display:flex;flex-direction:column;gap:10px">
+<span style="font:400 22px 'Instrument Serif'">Bank offers &amp; coupons</span>
+<div style="padding:12px 14px;border-radius:14px;border:1px dashed #A99F8A;display:flex;justify-content:space-between;align-items:center;gap:10px"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13.5px;font-weight:500">₹3,000 off with HDFC Bank cards</span><span style="font-size:11.5px;color:#6B665B">Flipkart · Effective price ₹58,999</span></div><span style="font:500 12px 'Geist Mono';color:#1E5B45">Auto</span></div>
+<div style="padding:12px 14px;border-radius:14px;border:1px dashed #A99F8A;display:flex;justify-content:space-between;align-items:center;gap:10px"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13.5px;font-weight:500">Up to ₹6,000 exchange bonus</span><span style="font-size:11.5px;color:#6B665B">Amazon · On select older iPhones</span></div><span style="font:500 12px 'Geist Mono';color:#1E5B45">Info</span></div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.watchlist }}" hint-placeholder-val="{{ false }}">
+<div style="padding:6px 16px 24px;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;justify-content:space-between;align-items:flex-end"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;color:#6B665B">{{ watchCount }} products · 18 stores</span><span style="font:400 36px/1 'Instrument Serif'">Tracking</span></div><div onClick="{{ go.paste }}" style="height:40px;padding:0 14px;border-radius:999px;background:#17150F;color:#F3EFE6;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer">+ Add link</div></div>
+<div style="padding:14px 16px;border-radius:16px;background:#E3EDE6;display:flex;justify-content:space-between;align-items:center"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;color:#2F5A49">Saved if you buy at today's prices</span><span style="font:400 28px 'Instrument Serif';color:#1E5B45">₹8,000</span></div><span style="font-size:12px;color:#2F5A49;text-align:right">2 drops<br></br>this week</span></div>
+<div style="display:flex;gap:6px"><sc-for list="{{ watchFilters }}" as="c" hint-placeholder-count="3"><span onClick="{{ c.on }}" style="font-size:12.5px;padding:7px 13px;border-radius:999px;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1px solid {{ c.bd }}">{{ c.label }}</span></sc-for></div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<sc-for list="{{ watch }}" as="w" hint-placeholder-count="3">
+<div style="padding:12px;border-radius:16px;background:#FBF9F4;border:1px solid #DDD6C8;display:flex;flex-direction:column;gap:10px">
+<div onClick="{{ open.product }}" style="display:flex;gap:12px;cursor:pointer">
+<div style="width:64px;height:64px;flex:none;border-radius:12px;background:repeating-linear-gradient(135deg,#E9E3D6 0 8px,#E2DBCC 8px 16px)"></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:4px;min-width:0"><span style="font-size:13.5px;line-height:1.3">{{ w.name }}</span><div style="display:flex;align-items:baseline;gap:6px"><span style="font:500 15px 'Geist Mono'">{{ w.price }}</span><span style="font-size:11.5px;color:#6B665B">{{ w.store }}</span></div></div>
+<svg width="64" height="28" viewBox="0 0 64 28" fill="none" style="flex:none;align-self:center"><path d="{{ w.spark }}" stroke="{{ w.sc }}" stroke-width="1.6" stroke-linejoin="round"></path></svg>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #ECE7DC;padding-top:10px">
+<span style="font-size:11.5px;padding:4px 9px;border-radius:999px;background:{{ w.bg }};color:{{ w.fg }}">{{ w.status }}</span>
+<span style="font-size:12px;color:#6B665B">Target <span style="font-family:'Geist Mono';color:#17150F">{{ w.target }}</span></span>
+<span onClick="{{ w.remove }}" style="font-size:12px;color:#B23A22;cursor:pointer;padding:4px 0">Stop</span>
+</div>
+</div>
+</sc-for>
+</div>
+<sc-if value="{{ watchEmpty }}" hint-placeholder-val="{{ false }}"><div style="padding:30px 10px;text-align:center;color:#6B665B;font-size:14px">Nothing here yet.</div></sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.deals }}" hint-placeholder-val="{{ false }}">
+<div style="padding:6px 16px 24px;display:flex;flex-direction:column;gap:16px">
+<span style="font:400 36px/1 'Instrument Serif'">Deals</span>
+<div style="display:flex;border-bottom:1px solid #DDD6C8"><sc-for list="{{ dealTabs }}" as="t" hint-placeholder-count="2"><span onClick="{{ t.on }}" style="flex:1;text-align:center;padding:10px 0;font-size:14px;font-weight:500;cursor:pointer;color:{{ t.fg }};border-bottom:2px solid {{ t.bd }};margin-bottom:-1px">{{ t.label }}</span></sc-for></div>
+<div style="display:flex;gap:6px;overflow-x:auto;margin:0 -16px;padding:0 16px"><sc-for list="{{ storeChips }}" as="c" hint-placeholder-count="5"><span onClick="{{ c.on }}" style="flex:none;font-size:12.5px;padding:7px 13px;border-radius:999px;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1px solid {{ c.bd }}">{{ c.label }}</span></sc-for></div>
+<sc-if value="{{ showDeals }}" hint-placeholder-val="{{ true }}">
+<div onClick="{{ open.product }}" style="border-radius:20px;background:#17150F;color:#F3EFE6;overflow:hidden;cursor:pointer">
+<div style="height:150px;background:repeating-linear-gradient(135deg,#2A2720 0 8px,#24211B 8px 16px);display:flex;align-items:flex-end;padding:10px 14px"><span style="font:500 10px 'Geist Mono';color:#8B8575">product shot</span></div>
+<div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:6px"><span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#B7D8C4">Lowest ever · Verified</span><span style="font:400 24px/1.1 'Instrument Serif'">MacBook Air M3 drops to ₹89,990</span><span style="font-size:12.5px;color:#BDB6A6">Flipkart · ₹4,000 more off with HDFC cards · 2h ago</span></div>
+</div>
+<sc-for list="{{ deals }}" as="d" hint-placeholder-count="4">
+<div onClick="{{ open.product }}" style="display:flex;gap:12px;padding-top:14px;border-top:1px solid #DDD6C8;cursor:pointer">
+<div style="width:76px;height:76px;flex:none;border-radius:12px;background:repeating-linear-gradient(135deg,#E9E3D6 0 8px,#E2DBCC 8px 16px)"></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:4px;min-width:0">
+<div style="display:flex;justify-content:space-between"><span style="font-size:11.5px;color:#6B665B">{{ d.store }} · {{ d.ago }}</span><span style="font:500 11.5px 'Geist Mono';color:#1E5B45">−{{ d.off }}%</span></div>
+<span style="font-size:14px;line-height:1.3">{{ d.name }}</span>
+<div style="display:flex;align-items:baseline;gap:6px"><span style="font:500 15px 'Geist Mono'">{{ d.price }}</span><span style="font:400 11.5px 'Geist Mono';color:#8B8575;text-decoration:line-through">{{ d.was }}</span></div>
+<span style="align-self:flex-start;font-size:11px;padding:3px 8px;border-radius:999px;background:#E3EDE6;color:#1E5B45">{{ d.tag }}</span>
+</div>
+</div>
+</sc-for>
+</sc-if>
+<sc-if value="{{ showCoupons }}" hint-placeholder-val="{{ false }}">
+<sc-for list="{{ coupons }}" as="c" hint-placeholder-count="4">
+<div style="border-radius:16px;background:#FBF9F4;border:1px solid #DDD6C8;display:flex;flex-direction:column">
+<div style="padding:14px 16px;display:flex;flex-direction:column;gap:4px">
+<div style="display:flex;justify-content:space-between"><span style="font-size:12px;font-weight:600">{{ c.store }}</span><span style="font-size:11.5px;color:{{ c.ecol }}">{{ c.exp }}</span></div>
+<span style="font:400 21px/1.15 'Instrument Serif'">{{ c.title }}</span>
+<span style="font-size:11.5px;color:#6B665B">Worked for {{ c.rate }} of users today</span>
+</div>
+<div style="border-top:1px dashed #CFC7B6;padding:10px 16px;display:flex;justify-content:space-between;align-items:center">
+<span style="font:500 14px 'Geist Mono';letter-spacing:.06em">{{ c.code }}</span>
+<span onClick="{{ c.copy }}" style="font-size:12.5px;font-weight:500;padding:7px 14px;border-radius:999px;cursor:pointer;background:{{ c.bbg }};color:{{ c.bfg }}">{{ c.blabel }}</span>
+</div>
+</div>
+</sc-for>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.fakesale }}" hint-placeholder-val="{{ false }}">
+<div style="padding:4px 16px 24px;display:flex;flex-direction:column;gap:16px">
+<div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-10px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font:400 36px/1 'Instrument Serif'">Fake-sale detector</span><span style="font-size:14px;color:#6B665B;line-height:1.5">We compare sale prices with each product's price over the last 90 days, so you can see which discounts are real.</span></div>
+<div style="display:flex;gap:8px"><div style="flex:1;height:48px;border-radius:12px;background:#FBF9F4;border:1px solid #CFC7B6;display:flex;align-items:center;padding:0 14px;font-size:13.5px;color:#8B8575">Paste a product link</div><div onClick="{{ go.paste }}" style="height:48px;padding:0 18px;border-radius:12px;background:#17150F;color:#F3EFE6;display:flex;align-items:center;font-size:14px;font-weight:500;cursor:pointer">Check</div></div>
+<div style="padding:16px;border-radius:18px;background:#17150F;color:#F3EFE6;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;font-weight:500">Flipkart Big Billion Days</span><span style="font-size:11px;padding:3px 8px;border-radius:999px;background:#B23A22">Live</span></div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+<div style="display:flex;flex-direction:column"><span style="font:400 28px 'Instrument Serif'">12,480</span><span style="font-size:11px;color:#BDB6A6">prices checked</span></div>
+<div style="display:flex;flex-direction:column"><span style="font:400 28px 'Instrument Serif';color:#F0A898">31%</span><span style="font-size:11px;color:#BDB6A6">raised first</span></div>
+<div style="display:flex;flex-direction:column"><span style="font:400 28px 'Instrument Serif';color:#B7D8C4">22%</span><span style="font-size:11px;color:#BDB6A6">real lows</span></div>
+</div>
+</div>
+<div style="display:flex;gap:6px"><sc-for list="{{ fsFilters }}" as="c" hint-placeholder-count="4"><span onClick="{{ c.on }}" style="font-size:12.5px;padding:7px 12px;border-radius:999px;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1px solid {{ c.bd }}">{{ c.label }}</span></sc-for></div>
+<sc-for list="{{ fsItems }}" as="f" hint-placeholder-count="3">
+<div onClick="{{ open.product }}" style="padding:14px;border-radius:16px;background:#FBF9F4;border:1px solid #DDD6C8;display:flex;flex-direction:column;gap:10px;cursor:pointer">
+<div style="display:flex;justify-content:space-between;gap:10px"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:500">{{ f.name }}</span><span style="font-size:11.5px;color:#6B665B">{{ f.store }} · sale price <span style="font-family:'Geist Mono';color:#17150F">{{ f.sale }}</span></span></div><span style="flex:none;align-self:flex-start;font-size:11.5px;font-weight:500;padding:4px 9px;border-radius:999px;background:{{ f.bg }};color:{{ f.fg }}">{{ f.verdict }}</span></div>
+<svg width="100%" height="40" viewBox="0 0 280 40" preserveAspectRatio="none" fill="none"><path d="{{ f.path }}" stroke="{{ f.fg }}" stroke-width="1.6" vector-effect="non-scaling-stroke"></path></svg>
+<span style="font-size:12.5px;line-height:1.45;color:#3E3A31">{{ f.msg }}</span>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.paste }}" hint-placeholder-val="{{ false }}">
+<div style="padding:4px 16px 24px;display:flex;flex-direction:column;gap:18px;min-height:100%">
+<div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-10px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:400 36px/1 'Instrument Serif'">Track any product</span>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="min-height:88px;border-radius:14px;background:#FBF9F4;border:1px solid {{ linkBorder }};padding:14px;font:400 13px/1.5 'Geist Mono';color:{{ linkColor }};word-break:break-all">{{ linkText }}</div>
+<div style="display:flex;gap:8px">
+<div onClick="{{ pasteLink }}" style="flex:1;height:48px;border-radius:999px;border:1px solid #CFC7B6;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer">Paste from clipboard</div>
+<div onClick="{{ analyze }}" style="flex:1;height:48px;border-radius:999px;background:#17150F;color:#F3EFE6;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;cursor:pointer;opacity:{{ linkOk }}">Check price</div>
+</div>
+</div>
+<sc-if value="{{ analyzing }}" hint-placeholder-val="{{ false }}">
+<div style="padding:16px;border-radius:16px;background:#FBF9F4;border:1px solid #DDD6C8;display:flex;flex-direction:column;gap:12px">
+<sc-for list="{{ steps }}" as="s" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:10px;font-size:13.5px;opacity:{{ s.o }}"><div style="width:18px;height:18px;border-radius:999px;border:1.5px solid #1E5B45;background:{{ s.bg }};transition:background .3s"></div>{{ s.label }}</div></sc-for>
+</div>
+</sc-if>
+<sc-if value="{{ notAnalyzing }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;gap:14px;padding-top:6px">
+<span style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#6B665B;font-weight:600">Or share from the store app</span>
+<div style="display:flex;gap:12px;align-items:flex-start"><span style="font:400 24px/1 'Instrument Serif';width:22px">1</span><span style="font-size:13.5px;line-height:1.45">Open any product on Amazon, Flipkart, Myntra or 15 other stores.</span></div>
+<div style="display:flex;gap:12px;align-items:flex-start"><span style="font:400 24px/1 'Instrument Serif';width:22px">2</span><span style="font-size:13.5px;line-height:1.45">Tap Share and choose Britto.</span></div>
+<div style="display:flex;gap:12px;align-items:flex-start"><span style="font:400 24px/1 'Instrument Serif';width:22px">3</span><span style="font-size:13.5px;line-height:1.45">See price history, other stores and a fake-sale verdict in seconds.</span></div>
+</div>
+<div style="padding:14px 16px;border-radius:16px;background:#ECE7DC;display:flex;justify-content:space-between;align-items:center;gap:12px"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13.5px;font-weight:500">Price bubble</span><span style="font-size:12px;color:#6B665B">Shows Britto prices over store apps</span></div><div onClick="{{ tg.bubble }}" style="width:44px;height:26px;flex:none;border-radius:999px;background:{{ t.bubble.bg }};padding:3px;cursor:pointer;transition:background .2s"><div style="width:20px;height:20px;border-radius:999px;background:#FBF9F4;transform:translateX({{ t.bubble.x }}px);transition:transform .2s"></div></div></div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.wallet }}" hint-placeholder-val="{{ false }}">
+<div style="padding:6px 16px 24px;display:flex;flex-direction:column;gap:18px">
+<span style="font:400 36px/1 'Instrument Serif'">Wallet</span>
+<div style="padding:20px;border-radius:22px;background:#17150F;color:#F3EFE6;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;color:#BDB6A6">Ready to withdraw</span><span style="font:400 48px/1 'Instrument Serif'">{{ balance }}</span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;border-top:1px solid #3A362D;padding-top:14px">
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;color:#BDB6A6">Pending</span><span style="font:500 15px 'Geist Mono';color:#E8CF94">₹380.00</span></div>
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;color:#BDB6A6">Earned all-time</span><span style="font:500 15px 'Geist Mono'">₹6,915.50</span></div>
+</div>
+<div onClick="{{ go.withdraw }}" style="height:48px;border-radius:999px;background:#F3EFE6;color:#17150F;display:flex;align-items:center;justify-content:center;font-size:14.5px;font-weight:500;cursor:pointer">Withdraw</div>
+</div>
+<div style="font-size:12.5px;color:#6B665B;line-height:1.5">Cashback confirms 30–60 days after delivery, once the return window closes. Minimum withdrawal ₹100.</div>
+<div style="display:flex;gap:6px"><sc-for list="{{ txFilters }}" as="c" hint-placeholder-count="3"><span onClick="{{ c.on }}" style="font-size:12.5px;padding:7px 13px;border-radius:999px;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1px solid {{ c.bd }}">{{ c.label }}</span></sc-for></div>
+<div style="display:flex;flex-direction:column">
+<sc-for list="{{ txs }}" as="x" hint-placeholder-count="5">
+<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid #DDD6C8">
+<div style="width:36px;height:36px;flex:none;border-radius:10px;background:#ECE7DC;display:flex;align-items:center;justify-content:center;font:400 16px 'Instrument Serif'">{{ x.mono }}</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ x.item }}</span><span style="font-size:11.5px;color:#6B665B">{{ x.store }} · {{ x.date }}</span></div>
+<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px"><span style="font:500 14px 'Geist Mono';color:{{ x.acol }}">{{ x.amt }}</span><span style="font-size:10.5px;padding:2px 7px;border-radius:999px;background:{{ x.bg }};color:{{ x.fg }}">{{ x.status }}</span></div>
+</div>
+</sc-for>
+</div>
+<div style="padding:14px 16px;border-radius:16px;border:1px solid #DDD6C8;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13.5px">Missing cashback?</span><span style="font-size:13px;font-weight:500">Raise a claim →</span></div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.withdraw }}" hint-placeholder-val="{{ false }}">
+<div style="padding:4px 16px 24px;display:flex;flex-direction:column;gap:18px;min-height:100%">
+<div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-10px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<sc-if value="{{ wdForm }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;gap:4px"><span style="font:400 36px/1 'Instrument Serif'">Withdraw</span><span style="font-size:13px;color:#6B665B">Available {{ balance }}</span></div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<sc-for list="{{ methods }}" as="m" hint-placeholder-count="4">
+<div onClick="{{ m.on }}" style="padding:14px;border-radius:14px;background:#FBF9F4;border:1.5px solid {{ m.bd }};display:flex;align-items:center;gap:12px;cursor:pointer">
+<div style="width:20px;height:20px;flex:none;border-radius:999px;border:1.5px solid #17150F;display:flex;align-items:center;justify-content:center"><div style="width:10px;height:10px;border-radius:999px;background:#17150F;opacity:{{ m.dot }}"></div></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:500">{{ m.label }}</span><span style="font-size:11.5px;color:#6B665B">{{ m.sub }}</span></div>
+<span style="font-size:11px;color:#1E5B45;font-weight:500">{{ m.bonus }}</span>
+</div>
+</sc-for>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<label style="font-size:12px;color:#6B665B">Amount</label>
+<div style="display:flex;align-items:center;gap:6px;height:60px;padding:0 16px;border-radius:14px;background:#FBF9F4;border:1px solid #CFC7B6"><span style="font:400 30px 'Instrument Serif'">₹</span><input value="{{ wdAmt }}" onChange="{{ onWdAmt }}" inputmode="numeric" style="flex:1;border:0;outline:none;background:transparent;font:400 30px 'Instrument Serif';color:#17150F"></input></div>
+<div style="display:flex;gap:6px"><sc-for list="{{ amtChips }}" as="a" hint-placeholder-count="3"><span onClick="{{ a.on }}" style="font-size:12.5px;padding:7px 14px;border-radius:999px;border:1px solid #CFC7B6;cursor:pointer">{{ a.label }}</span></sc-for></div>
+<span style="font-size:12px;color:{{ wdHintCol }}">{{ wdHint }}</span>
+</div>
+<div onClick="{{ doWithdraw }}" style="margin-top:auto;height:54px;border-radius:999px;background:#17150F;color:#F3EFE6;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;cursor:pointer;opacity:{{ wdOk }}">Withdraw {{ wdLabel }}</div>
+</sc-if>
+<sc-if value="{{ wdDone }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:14px;padding-bottom:40px">
+<div style="width:64px;height:64px;border-radius:999px;background:#1E5B45;color:#F3EFE6;display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"></path></svg></div>
+<span style="font:400 40px/1 'Instrument Serif'">{{ wdLabel }} is on its way.</span>
+<span style="font-size:14px;color:#6B665B;line-height:1.5">{{ wdDoneMsg }}</span>
+<div onClick="{{ tab.wallet }}" style="margin-top:20px;height:52px;border-radius:999px;border:1px solid #17150F;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer">Back to wallet</div>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.rewards }}" hint-placeholder-val="{{ false }}">
+<div style="padding:4px 16px 24px;display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;justify-content:space-between;align-items:center"><div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-10px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div><span style="font:500 13px 'Geist Mono';padding:6px 12px;border-radius:999px;background:#F1E6CC;color:#8A6417">{{ coins }} coins</span></div>
+<div style="display:flex;flex-direction:column;gap:4px"><span style="font:400 36px/1 'Instrument Serif'">Daily spin</span><span style="font-size:13.5px;color:#6B665B">{{ spinsLeftLabel }}. 1,000 coins = ₹10 in your wallet.</span></div>
+<div style="position:relative;width:280px;height:280px;align-self:center">
+<div style="position:absolute;left:50%;top:-6px;margin-left:-10px;width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:18px solid #17150F;z-index:2"></div>
+<div style="position:absolute;inset:0;border-radius:999px;background:conic-gradient(#17150F 0 45deg,#F3EFE6 45deg 90deg,#1E5B45 90deg 135deg,#ECE7DC 135deg 180deg,#17150F 180deg 225deg,#F3EFE6 225deg 270deg,#A87A1E 270deg 315deg,#ECE7DC 315deg 360deg);border:6px solid #17150F;transform:rotate({{ wheelDeg }}deg);transition:{{ wheelTr }}">
+<div style="position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(22.5deg)"><span style="position:absolute;left:-30px;top:-118px;width:60px;text-align:center;font:500 12px 'Geist';color:#F3EFE6">10 coins</span></div>
+<div style="position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(67.5deg)"><span style="position:absolute;left:-30px;top:-118px;width:60px;text-align:center;font:400 20px 'Instrument Serif';color:#17150F">₹5</span></div>
+<div style="position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(112.5deg)"><span style="position:absolute;left:-30px;top:-118px;width:60px;text-align:center;font:500 12px 'Geist';color:#F3EFE6">50 coins</span></div>
+<div style="position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(157.5deg)"><span style="position:absolute;left:-30px;top:-118px;width:60px;text-align:center;font:500 12px 'Geist';color:#17150F">Try again</span></div>
+<div style="position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(202.5deg)"><span style="position:absolute;left:-30px;top:-118px;width:60px;text-align:center;font:400 20px 'Instrument Serif';color:#F3EFE6">₹10</span></div>
+<div style="position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(247.5deg)"><span style="position:absolute;left:-30px;top:-118px;width:60px;text-align:center;font:500 12px 'Geist';color:#17150F">25 coins</span></div>
+<div style="position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(292.5deg)"><span style="position:absolute;left:-30px;top:-118px;width:60px;text-align:center;font:400 20px 'Instrument Serif';color:#F3EFE6">₹2</span></div>
+<div style="position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(337.5deg)"><span style="position:absolute;left:-30px;top:-118px;width:60px;text-align:center;font:500 12px 'Geist';color:#17150F">100 coins</span></div>
+</div>
+<div onClick="{{ spin }}" style="position:absolute;left:50%;top:50%;width:76px;height:76px;margin:-38px 0 0 -38px;border-radius:999px;background:#F3EFE6;border:6px solid #17150F;display:flex;align-items:center;justify-content:center;font:italic 400 22px 'Instrument Serif';cursor:pointer;z-index:2">Spin</div>
+</div>
+<span style="text-align:center;font-size:14px;min-height:20px;font-weight:500;color:#1E5B45">{{ spinMsg }}</span>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:400 22px 'Instrument Serif'">Check-in streak</span><span style="font-size:12px;color:#6B665B">Day 4 of 7</span></div>
+<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px"><sc-for list="{{ streak }}" as="s" hint-placeholder-count="7"><div style="aspect-ratio:.8;border-radius:10px;background:{{ s.bg }};color:{{ s.fg }};border:1px solid {{ s.bd }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font:500 11px 'Geist Mono'">+{{ s.c }}</span><span style="font-size:9.5px;opacity:.75">D{{ s.d }}</span></div></sc-for></div>
+</div>
+<div style="display:flex;flex-direction:column">
+<span style="font:400 22px 'Instrument Serif';margin-bottom:6px">Earn more coins</span>
+<sc-for list="{{ tasks }}" as="k" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid #DDD6C8"><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:13.5px">{{ k.t }}</span><span style="font-size:11.5px;color:#6B665B">{{ k.p }}</span></div><span style="font:500 12.5px 'Geist Mono';color:#8A6417">+{{ k.c }}</span></div></sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.refer }}" hint-placeholder-val="{{ false }}">
+<div style="padding:4px 16px 24px;display:flex;flex-direction:column;gap:18px">
+<div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-10px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#1E5B45;font-weight:600">Refer &amp; earn</span><span style="font:400 42px/1 'Instrument Serif'">Give ₹50.<br></br>Get ₹50.</span><span style="font-size:14px;color:#6B665B;line-height:1.5">Your friend gets ₹50 on their first cashback order. You get ₹50 when it confirms, plus 10% of their cashback for a year.</span></div>
+<div style="padding:4px 4px 4px 16px;border-radius:14px;border:1.5px dashed #17150F;display:flex;align-items:center;justify-content:space-between"><span style="font:500 17px 'Geist Mono';letter-spacing:.08em">AARAV50</span><div onClick="{{ copyRef }}" style="height:44px;padding:0 16px;border-radius:10px;background:#17150F;color:#F3EFE6;display:flex;align-items:center;font-size:13.5px;font-weight:500;cursor:pointer">{{ refCopyLabel }}</div></div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+<div onClick="{{ shareRef }}" style="height:48px;border-radius:12px;background:#1E5B45;color:#F3EFE6;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;cursor:pointer">WhatsApp</div>
+<div onClick="{{ shareRef }}" style="height:48px;border-radius:12px;border:1px solid #CFC7B6;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer">Telegram</div>
+<div onClick="{{ shareRef }}" style="height:48px;border-radius:12px;border:1px solid #CFC7B6;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer">More</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid #DDD6C8;border-bottom:1px solid #DDD6C8;padding:14px 0">
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font:400 28px 'Instrument Serif'">6</span><span style="font-size:11.5px;color:#6B665B">Invited</span></div>
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font:400 28px 'Instrument Serif'">4</span><span style="font-size:11.5px;color:#6B665B">Joined</span></div>
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font:400 28px 'Instrument Serif';color:#1E5B45">₹200</span><span style="font-size:11.5px;color:#6B665B">Earned</span></div>
+</div>
+<div style="display:flex;flex-direction:column">
+<span style="font:400 22px 'Instrument Serif';margin-bottom:6px">Your friends</span>
+<sc-for list="{{ friends }}" as="f" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid #DDD6C8"><div style="width:34px;height:34px;border-radius:999px;background:#ECE7DC;display:flex;align-items:center;justify-content:center;font:400 16px 'Instrument Serif'">{{ f.i }}</div><span style="flex:1;font-size:13.5px">{{ f.n }}</span><span style="font-size:11.5px;padding:3px 8px;border-radius:999px;background:{{ f.bg }};color:{{ f.fg }}">{{ f.s }}</span></div></sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.flights }}" hint-placeholder-val="{{ false }}">
+<div style="padding:4px 16px 24px;display:flex;flex-direction:column;gap:16px">
+<div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-10px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<div style="display:flex;flex-direction:column;gap:4px"><span style="font:400 36px/1 'Instrument Serif'">Flights</span><span style="font-size:13.5px;color:#6B665B">One search across MakeMyTrip, Ixigo, Goibibo, Cleartrip, EaseMyTrip and airline sites.</span></div>
+<div style="display:flex;gap:4px;padding:3px;border-radius:999px;background:#ECE7DC"><sc-for list="{{ tripTypes }}" as="r" hint-placeholder-count="2"><span onClick="{{ r.on }}" style="flex:1;text-align:center;font-size:13px;padding:8px 0;border-radius:999px;cursor:pointer;background:{{ r.bg }};color:{{ r.fg }};font-weight:500">{{ r.label }}</span></sc-for></div>
+<div style="position:relative;border-radius:18px;background:#FBF9F4;border:1px solid #DDD6C8">
+<div style="padding:14px 16px;display:flex;flex-direction:column;gap:2px;border-bottom:1px solid #DDD6C8"><span style="font-size:11.5px;color:#6B665B">From</span><div style="display:flex;align-items:baseline;gap:8px"><span style="font:400 30px/1 'Instrument Serif'">{{ from.code }}</span><span style="font-size:13px;color:#6B665B">{{ from.city }}</span></div></div>
+<div style="padding:14px 16px;display:flex;flex-direction:column;gap:2px"><span style="font-size:11.5px;color:#6B665B">To</span><div style="display:flex;align-items:baseline;gap:8px"><span style="font:400 30px/1 'Instrument Serif'">{{ to.code }}</span><span style="font-size:13px;color:#6B665B">{{ to.city }}</span></div></div>
+<div onClick="{{ swapCities }}" style="position:absolute;right:18px;top:50%;margin-top:-22px;width:44px;height:44px;border-radius:999px;background:#17150F;color:#F3EFE6;display:flex;align-items:center;justify-content:center;cursor:pointer;transform:rotate({{ swapDeg }}deg);transition:transform .35s"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"></path></svg></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<div style="padding:12px 14px;border-radius:14px;background:#FBF9F4;border:1px solid #DDD6C8;display:flex;flex-direction:column;gap:2px"><span style="font-size:11.5px;color:#6B665B">Departure</span><span style="font-size:14.5px;font-weight:500">Wed, 4 Nov</span></div>
+<div style="padding:12px 14px;border-radius:14px;background:#FBF9F4;border:1px solid #DDD6C8;display:flex;flex-direction:column;gap:2px;opacity:{{ retOpacity }}"><span style="font-size:11.5px;color:#6B665B">Return</span><span style="font-size:14.5px;font-weight:500">{{ retLabel }}</span></div>
+<div style="padding:12px 14px;border-radius:14px;background:#FBF9F4;border:1px solid #DDD6C8;display:flex;flex-direction:column;gap:2px"><span style="font-size:11.5px;color:#6B665B">Travellers</span><span style="font-size:14.5px;font-weight:500">1 Adult</span></div>
+<div style="padding:12px 14px;border-radius:14px;background:#FBF9F4;border:1px solid #DDD6C8;display:flex;flex-direction:column;gap:2px"><span style="font-size:11.5px;color:#6B665B">Class</span><span style="font-size:14.5px;font-weight:500">Economy</span></div>
+</div>
+<div onClick="{{ go.flightResults }}" style="height:54px;border-radius:999px;background:#17150F;color:#F3EFE6;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;cursor:pointer">Compare fares</div>
+<div style="display:flex;flex-direction:column">
+<span style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#6B665B;font-weight:600;margin-bottom:6px">Recent searches</span>
+<div style="display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid #DDD6C8;font-size:13.5px"><span>BLR → DEL · 14 Nov</span><span style="font-family:'Geist Mono'">from ₹5,620</span></div>
+<div style="display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid #DDD6C8;font-size:13.5px"><span>BOM → GOI · 20 Dec</span><span style="font-family:'Geist Mono'">from ₹3,980</span></div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.flightResults }}" hint-placeholder-val="{{ false }}">
+<div style="padding:4px 0 24px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;align-items:center;gap:6px;padding:0 16px">
+<div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-10px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<div style="display:flex;flex-direction:column"><span style="font:400 22px/1 'Instrument Serif'">{{ from.code }} → {{ to.code }}</span><span style="font-size:12px;color:#6B665B">Wed, 4 Nov · 1 Adult · Economy</span></div>
+</div>
+<div style="display:flex;gap:6px;overflow-x:auto;padding:0 16px"><sc-for list="{{ dateStrip }}" as="d" hint-placeholder-count="5"><div onClick="{{ d.on }}" style="flex:none;width:68px;padding:8px 0;border-radius:12px;text-align:center;display:flex;flex-direction:column;gap:2px;cursor:pointer;background:{{ d.bg }};color:{{ d.fg }};border:1px solid {{ d.bd }}"><span style="font-size:11px;opacity:.8">{{ d.day }}</span><span style="font:500 12px 'Geist Mono'">{{ d.price }}</span></div></sc-for></div>
+<div style="display:flex;gap:6px;padding:0 16px"><sc-for list="{{ flightSorts }}" as="c" hint-placeholder-count="3"><span onClick="{{ c.on }}" style="font-size:12.5px;padding:7px 13px;border-radius:999px;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1px solid {{ c.bd }}">{{ c.label }}</span></sc-for></div>
+<div style="display:flex;flex-direction:column;gap:10px;padding:0 16px">
+<sc-for list="{{ flightsList }}" as="f" hint-placeholder-count="4">
+<div style="border-radius:16px;background:#FBF9F4;border:1px solid #DDD6C8;overflow:hidden">
+<div onClick="{{ f.toggle }}" style="padding:14px;display:flex;flex-direction:column;gap:10px;cursor:pointer">
+<div style="display:flex;justify-content:space-between;font-size:12px;color:#6B665B"><span>{{ f.air }} · {{ f.no }}</span><span>{{ f.stops }}</span></div>
+<div style="display:flex;align-items:center;gap:10px"><span style="font:500 17px 'Geist Mono'">{{ f.dep }}</span><div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:10.5px;color:#6B665B">{{ f.dur }}</span><div style="width:100%;height:1px;background:#CFC7B6"></div></div><span style="font:500 17px 'Geist Mono'">{{ f.arr }}</span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid #ECE7DC;padding-top:10px"><span style="font-size:12px;color:#6B665B">Cheapest on <span style="color:#17150F;font-weight:500">{{ f.best }}</span> · {{ f.nsites }} sites</span><span style="font:500 17px 'Geist Mono';color:#1E5B45">{{ f.price }}</span></div>
+</div>
+<sc-if value="{{ f.open }}" hint-placeholder-val="{{ false }}">
+<div style="background:#ECE7DC;padding:4px 14px">
+<sc-for list="{{ f.providers }}" as="p" hint-placeholder-count="4"><div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #DDD6C8"><span style="font-size:13px">{{ p.n }}</span><div style="display:flex;align-items:center;gap:10px"><span style="font:500 13px 'Geist Mono'">{{ p.p }}</span><span onClick="{{ p.go }}" style="font-size:12px;font-weight:500;padding:5px 11px;border-radius:999px;background:#17150F;color:#F3EFE6;cursor:pointer">Book</span></div></div></sc-for>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.notifications }}" hint-placeholder-val="{{ false }}">
+<div style="padding:4px 16px 24px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;justify-content:space-between;align-items:center"><div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-10px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div><span onClick="{{ markRead }}" style="font-size:13px;color:#6B665B;cursor:pointer">Mark all read</span></div>
+<span style="font:400 36px/1 'Instrument Serif'">Notifications</span>
+<div style="display:flex;gap:6px;overflow-x:auto"><sc-for list="{{ notifFilters }}" as="c" hint-placeholder-count="4"><span onClick="{{ c.on }}" style="flex:none;font-size:12.5px;padding:7px 13px;border-radius:999px;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1px solid {{ c.bd }}">{{ c.label }}</span></sc-for></div>
+<div style="display:flex;flex-direction:column">
+<sc-for list="{{ notifs }}" as="n" hint-placeholder-count="5">
+<div onClick="{{ n.open }}" style="display:flex;gap:12px;padding:14px 0;border-top:1px solid #DDD6C8;cursor:pointer">
+<div style="width:8px;flex:none;padding-top:6px"><div style="width:8px;height:8px;border-radius:9px;background:#B23A22;opacity:{{ n.unread }}"></div></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:3px"><div style="display:flex;justify-content:space-between;gap:8px"><span style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;color:{{ n.col }}">{{ n.kind }}</span><span style="font-size:11.5px;color:#8B8575">{{ n.time }}</span></div><span style="font-size:14px;line-height:1.35">{{ n.title }}</span><span style="font-size:12.5px;color:#6B665B;line-height:1.4">{{ n.body }}</span></div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.profile }}" hint-placeholder-val="{{ false }}">
+<div style="padding:10px 16px 24px;display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:center;gap:14px">
+<div style="width:60px;height:60px;border-radius:999px;background:#17150F;color:#F3EFE6;display:flex;align-items:center;justify-content:center;font:400 30px 'Instrument Serif'">A</div>
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font:400 28px/1 'Instrument Serif'">Aarav Mehta</span><span style="font-size:13px;color:#6B665B">+91 98765 43210 · since 2024</span></div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid #DDD6C8;border-bottom:1px solid #DDD6C8;padding:14px 0">
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font:400 26px 'Instrument Serif';color:#1E5B45">₹18.4k</span><span style="font-size:11.5px;color:#6B665B">Saved with Britto</span></div>
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font:400 26px 'Instrument Serif'">{{ watchCount }}</span><span style="font-size:11.5px;color:#6B665B">Tracking</span></div>
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font:400 26px 'Instrument Serif'">{{ coins }}</span><span style="font-size:11.5px;color:#6B665B">Coins</span></div>
+</div>
+<div style="display:flex;flex-direction:column">
+<span style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#6B665B;font-weight:600;margin-bottom:4px">Account</span>
+<div onClick="{{ tab.wallet }}" style="display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #DDD6C8;cursor:pointer;font-size:14.5px"><span>Wallet &amp; withdrawals</span><span style="color:#6B665B">{{ balance }}</span></div>
+<div onClick="{{ go.rewards }}" style="display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #DDD6C8;cursor:pointer;font-size:14.5px"><span>Rewards &amp; daily spin</span><span style="color:#6B665B">›</span></div>
+<div onClick="{{ go.refer }}" style="display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #DDD6C8;cursor:pointer;font-size:14.5px"><span>Refer &amp; earn</span><span style="color:#6B665B">›</span></div>
+<div style="display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #DDD6C8;font-size:14.5px"><span>Payout methods</span><span style="color:#6B665B">UPI · aarav@okhdfc</span></div>
+</div>
+<div style="display:flex;flex-direction:column">
+<span style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#6B665B;font-weight:600;margin-bottom:4px">Alerts</span>
+<sc-for list="{{ toggles }}" as="g" hint-placeholder-count="4">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #DDD6C8"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:14.5px">{{ g.label }}</span><span style="font-size:12px;color:#6B665B">{{ g.sub }}</span></div><div onClick="{{ g.on }}" style="width:44px;height:26px;flex:none;border-radius:999px;background:{{ g.bg }};padding:3px;cursor:pointer;transition:background .2s"><div style="width:20px;height:20px;border-radius:999px;background:#FBF9F4;transform:translateX({{ g.x }}px);transition:transform .2s"></div></div></div>
+</sc-for>
+</div>
+<div style="display:flex;flex-direction:column">
+<span style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#6B665B;font-weight:600;margin-bottom:4px">App</span>
+<div style="display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #DDD6C8;font-size:14.5px"><span>Language</span><span style="color:#6B665B">English</span></div>
+<div style="display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #DDD6C8;font-size:14.5px"><span>Help &amp; cashback claims</span><span style="color:#6B665B">›</span></div>
+<div style="display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #DDD6C8;font-size:14.5px"><span>Privacy &amp; data</span><span style="color:#6B665B">›</span></div>
+<div onClick="{{ logout }}" style="padding:14px 0;font-size:14.5px;color:#B23A22;cursor:pointer">Log out</div>
+</div>
+<span style="font-size:11px;color:#8B8575;text-align:center">Britto 2.4.0</span>
+</div>
+</sc-if>
+
+</div>
+
+<sc-if value="{{ is.product }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:0;right:0;bottom:22px;padding:12px 16px;background:#F3EFE6;border-top:1px solid #DDD6C8;display:flex;gap:8px;z-index:3">
+<div onClick="{{ openAlert }}" style="flex:1;height:50px;border-radius:999px;border:1px solid #17150F;display:flex;align-items:center;justify-content:center;gap:6px;font-size:14px;font-weight:500;cursor:pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1112 0v5l1.5 2h-15z"></path><path d="M10 20a2 2 0 004 0"></path></svg>{{ alertBtn }}</div>
+<div onClick="{{ buyNow }}" style="flex:1.2;height:50px;border-radius:999px;background:#17150F;color:#F3EFE6;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;cursor:pointer">Buy · ₹61,999</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ showNav }}" hint-placeholder-val="{{ true }}">
+<div style="flex:none;height:64px;display:flex;border-top:1px solid #DDD6C8;background:#F3EFE6">
+<div onClick="{{ tab.home }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:{{ nav.home }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9h-5v-6h-6v6H4z"></path></svg><span style="font-size:10.5px;font-weight:500">Home</span></div>
+<div onClick="{{ tab.deals }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:{{ nav.deals }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M3 12V4h8l10 10-8 8z"></path><circle cx="7.5" cy="7.5" r="1.5"></circle></svg><span style="font-size:10.5px;font-weight:500">Deals</span></div>
+<div onClick="{{ tab.watchlist }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:{{ nav.watchlist }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l5-6 4 3 8-9"></path><path d="M15 6h5v5"></path></svg><span style="font-size:10.5px;font-weight:500">Tracking</span></div>
+<div onClick="{{ tab.wallet }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:{{ nav.wallet }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="6" width="18" height="13" rx="2"></rect><path d="M3 10h18M16 14.5h2"></path></svg><span style="font-size:10.5px;font-weight:500">Wallet</span></div>
+<div onClick="{{ tab.profile }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:{{ nav.profile }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"></path></svg><span style="font-size:10.5px;font-weight:500">Profile</span></div>
+</div>
+</sc-if>
+<div style="flex:none;height:22px;display:flex;align-items:center;justify-content:center;background:#F3EFE6"><div style="width:108px;height:4px;border-radius:9px;background:#17150F;opacity:.85"></div></div>
+
+<sc-if value="{{ alertOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeAlert }}" style="position:absolute;inset:0;background:rgba(23,21,15,.45);z-index:5"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;z-index:6;background:#F3EFE6;border-radius:26px 26px 0 0;padding:10px 20px 34px;display:flex;flex-direction:column;gap:16px">
+<div style="width:40px;height:4px;border-radius:9px;background:#CFC7B6;align-self:center"></div>
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font:400 28px 'Instrument Serif'">Alert me when it drops to</span><span style="font-size:12.5px;color:#6B665B">Now ₹61,999 · Lowest ever {{ statLow }}</span></div>
+<span style="font:400 52px/1 'Instrument Serif';color:#1E5B45">{{ targetLabel }}</span>
+<input type="range" min="52000" max="61999" step="500" value="{{ target }}" onChange="{{ onTarget }}" style="width:100%;accent-color:#17150F"></input>
+<div style="display:flex;gap:6px"><sc-for list="{{ targetChips }}" as="c" hint-placeholder-count="3"><span onClick="{{ c.on }}" style="font-size:12.5px;padding:7px 13px;border-radius:999px;border:1px solid #CFC7B6;cursor:pointer">{{ c.label }}</span></sc-for></div>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:12px;color:#6B665B">Notify me on</span>
+<div style="display:flex;gap:6px"><sc-for list="{{ channels }}" as="c" hint-placeholder-count="3"><span onClick="{{ c.on }}" style="font-size:12.5px;padding:7px 13px;border-radius:999px;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1px solid {{ c.bd }}">{{ c.label }}</span></sc-for></div>
+</div>
+<div onClick="{{ saveAlert }}" style="height:54px;border-radius:999px;background:#17150F;color:#F3EFE6;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;cursor:pointer">Save alert</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:16px;right:16px;bottom:100px;z-index:8;padding:13px 16px;border-radius:14px;background:#17150F;color:#F3EFE6;font-size:13.5px;line-height:1.4;box-shadow:0 10px 30px -10px rgba(0,0,0,.5)">{{ toast }}</div>
+</sc-if>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;onboarding&quot;,&quot;login&quot;,&quot;otp&quot;,&quot;home&quot;,&quot;search&quot;,&quot;product&quot;,&quot;watchlist&quot;,&quot;deals&quot;,&quot;fakesale&quot;,&quot;paste&quot;,&quot;wallet&quot;,&quot;withdraw&quot;,&quot;rewards&quot;,&quot;refer&quot;,&quot;flights&quot;,&quot;flightResults&quot;,&quot;notifications&quot;,&quot;profile&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;alertOpen&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const INK='#17150F',PAPER='#F3EFE6',MUTED='#6B665B',LINE='#CFC7B6',GREEN='#1E5B45',RED='#B23A22',GOLD='#8A6417';
+const TONE={good:{bg:'#E3EDE6',fg:GREEN},bad:{bg:'#F5E1DA',fg:RED},neutral:{bg:'#ECE7DC',fg:MUTED},gold:{bg:'#F1E6CC',fg:GOLD}};
+const inr=n=>'₹'+Math.round(n).toLocaleString('en-IN');
+const chip=a=>({bg:a?INK:'transparent',fg:a?PAPER:INK,bd:a?INK:LINE});
+const seg=a=>({bg:a?'#FBF9F4':'transparent',fg:a?INK:MUTED});
+const STORES=[['Amazon','Am','6%'],['Flipkart','Fk','7%'],['Myntra','My','8%'],['Ajio','Aj','10%'],['Croma','Cr','4%'],['Reliance Digital','RD','3%'],['Tata CLiQ','TC','6%'],['Nykaa','Ny','9%'],['Meesho','Me','5%'],['JioMart','JM','4%'],['Vijay Sales','VS','3%'],['Snapdeal','Sd','8%'],['Shopsy','Sh','6%'],['FirstCry','FC','7%'],['Lenskart','Lk','12%'],['Pepperfry','Pf','9%'],['BigBasket','BB','3%'],['Bewakoof','Bw','11%']];
+const MONO=Object.fromEntries(STORES.map(s=>[s[0],s[1]]));
+const TABS=['home','deals','watchlist','wallet','profile'];
+const SCREENS=['onboarding','login','otp','home','search','product','watchlist','deals','fakesale','paste','wallet','withdraw','rewards','refer','flights','flightResults','notifications','profile'];
+const TODAY=new Date(2026,9,27);
+const fmtD=d=>{const x=new Date(TODAY);x.setDate(x.getDate()-d);return x.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+(d>300?' '+String(x.getFullYear()).slice(2):'');};
+const priceAt=d=>{if(d===0)return 61999;let v=61999+d*8+Math.sin(d/9)*900+(d>=18&&d<=30?2600:0)-(d>=55&&d<=62?3800:0);return Math.min(69900,Math.round(v/100)*100-1);};
+const RANGES={'1M':[30,30],'3M':[45,90],'6M':[60,180],'1Y':[73,365],'All':[97,730]};
+const hist=r=>{const[n,days]=RANGES[r];return Array.from({length:n},(_,i)=>{const d=Math.round((1-i/(n-1))*days);return{d,v:priceAt(d)};});};
+const ALL=hist('All');const LOW=Math.min(...ALL.map(p=>p.v)),HIGH=Math.max(...ALL.map(p=>p.v));
+const W=280,H=140,P=12;
+const spark=(a,w=64,h=28)=>{const mn=Math.min(...a),mx=Math.max(...a);return a.map((v,i)=>(i?'L':'M')+(i/(a.length-1)*w).toFixed(1)+' '+(3+(mx-v)/((mx-mn)||1)*(h-6)).toFixed(1)).join(' ');};
+const OFFERS=[['Flipkart',61999,620,'Delivery tomorrow'],['Amazon',63499,380,'Delivery tomorrow'],['Vijay Sales',63990,190,'In 2 days'],['Reliance Digital',64900,320,'Pickup today'],['Croma',64990,260,'In 2 days'],['Tata CLiQ',65200,390,'In 3 days']];
+const WATCH=[{id:1,name:'Apple iPhone 15 (128 GB) – Black',store:'Flipkart',price:61999,target:60000,status:'Dropped ₹3,000',tone:'good',flag:'dropped',s:[65,64.9,65,64.5,64.9,63.9,62]},{id:2,name:'Sony WH-1000XM5 Wireless Headphones',store:'Amazon',price:24990,target:25000,status:'Target hit',tone:'good',flag:'hit',s:[29.9,29.9,28.5,29,27.9,26,24.99]},{id:3,name:'Nike Air Zoom Pegasus 41',store:'Myntra',price:9897,target:8500,status:'No change',tone:'neutral',flag:'',s:[9.9,9.9,9.6,9.9,9.9,9.9,9.9]},{id:4,name:'Samsung 7 kg Front Load Washing Machine',store:'Croma',price:31490,target:28000,status:'Up ₹500',tone:'bad',flag:'',s:[30.5,30.9,30.99,30.7,30.99,31.2,31.49]}];
+const DROPS=[['Amazon','Sony WH-1000XM5 Wireless Headphones',24990,29990],['Flipkart','OnePlus Nord CE4 5G (8/128)',22999,24999],['Myntra',"Levi's 511 Slim Fit Jeans",1679,2999],['Amazon','Prestige Iris 750W Mixer Grinder',2399,3299],['Croma','boAt Airdopes 141 ANC',1099,1799]];
+const RESULTS=[{name:'Apple iPhone 15 (128 GB) – Black',price:61999,store:'Flipkart',stores:6,rating:4.6,trend:'Near lowest ever',tone:'good',drop:11},{name:'Apple iPhone 15 (256 GB) – Blue',price:71999,store:'Amazon',stores:5,rating:4.6,trend:'Price up ₹2,000',tone:'bad',drop:4},{name:'Apple iPhone 15 Plus (128 GB) – Pink',price:70999,store:'Croma',stores:5,rating:4.5,trend:'Usual price',tone:'neutral',drop:6},{name:'Apple iPhone 15 Pro (128 GB) – Natural Titanium',price:119900,store:'Tata CLiQ',stores:4,rating:4.7,trend:'Usual price',tone:'neutral',drop:0},{name:'Apple iPhone 15 Silicone Case with MagSafe',price:3999,store:'Amazon',stores:3,rating:4.4,trend:'Dropped 18%',tone:'good',drop:18}];
+const DEALS=[['Amazon','Sony WH-1000XM5 Wireless Headphones',24990,29990,'Lowest in 90 days','35m'],['Myntra',"Levi's 511 Slim Fit Jeans",1679,2999,'Verified low','1h'],['Flipkart','Samsung Galaxy Tab S9 FE (6/128)',26999,36999,'Lowest ever','3h'],['Ajio','Puma Smash v2 Sneakers',1799,3999,'Verified low','4h'],['Croma','LG 1.5 Ton 5 Star Split AC',38990,49990,'Lowest in 6 months','5h'],['Nykaa','Minimalist 10% Niacinamide Serum',479,599,'Verified low','6h']];
+const COUPONS=[['Myntra','Flat ₹300 off on orders above ₹1,499','MYNTRA300','Ends tonight','94%'],['Ajio','Extra 15% off on fashion','AJIO15','Ends 31 Oct','88%'],['Nykaa','Free gift on orders above ₹999','NYKGIFT','Ends 2 Nov','81%'],['Lenskart','Buy 1 get 1 free on eyeglasses','BOGOLK','Ends 15 Nov','90%'],['Croma','₹1,000 off on ACs above ₹30,000','CRAC1000','Ends 5 Nov','76%'],['Flipkart','₹500 off on first Shopsy order','SHOPSY500','Ends 30 Oct','69%']];
+const FS=[{name:'Samsung Galaxy S24 FE (8/128)',store:'Flipkart',sale:36999,verdict:'Inflated',tone:'bad',s:[36,36,35.9,36,41.9,41.9,41.9,37],msg:'Raised to ₹41,999 on 12 Oct, then "discounted" to ₹36,999. It sold for ₹35,999 in September.'},{name:'Noise ColorFit Pro 5 Smartwatch',store:'Flipkart',sale:2499,verdict:'Genuine',tone:'good',s:[3.5,3.4,3.5,3.3,3.4,3.3,3.2,2.5],msg:'₹2,499 is the lowest price in 6 months.'},{name:'LG 1.5 Ton 5 Star Split AC',store:'Flipkart',sale:42990,verdict:'Same as usual',tone:'neutral',s:[43,43.5,42.99,43,43.2,42.99,43,42.99],msg:'Sold at around ₹42,990 for most of the last 90 days.'},{name:'HP Victus Gaming Laptop (i5, RTX 3050)',store:'Flipkart',sale:57990,verdict:'Inflated',tone:'bad',s:[55,54.9,55,62,63,62.9,63,58],msg:'List price raised 14% two weeks before the sale.'}];
+const TXS=[['Flipkart','boAt Airdopes 141',60,'21 Oct','Pending'],['Myntra',"Levi's 511 Slim Fit Jeans",134,'14 Oct','Pending'],['Amazon','Prestige Iris Mixer Grinder',186,'2 Oct','Pending'],['Ajio','Puma Smash v2 Sneakers',242,'3 Sep','Confirmed'],['Britto','Referral bonus · Riya',50,'28 Aug','Confirmed'],['Britto','Withdrawn to UPI',-500,'20 Aug','Paid'],['Britto','Daily spin reward',10,'18 Aug','Confirmed']];
+const FLIGHTS=[{air:'IndiGo',no:'6E 2135',dep:'06:10',arr:'08:20',dur:'2h 10m',stops:'Non-stop',min:130,p:[['Ixigo',4812],['MakeMyTrip',4899],['Goibibo',4905],['Cleartrip',4950],['IndiGo',5010]]},{air:'Akasa Air',no:'QP 1103',dep:'09:45',arr:'11:55',dur:'2h 10m',stops:'Non-stop',min:130,p:[['EaseMyTrip',4960],['Cleartrip',5020],['Akasa Air',5104]]},{air:'Air India',no:'AI 805',dep:'08:00',arr:'10:15',dur:'2h 15m',stops:'Non-stop',min:135,p:[['MakeMyTrip',5390],['Air India',5420],['Ixigo',5455],['Goibibo',5480]]},{air:'SpiceJet',no:'SG 8169',dep:'13:20',arr:'17:05',dur:'3h 45m',stops:'1 stop · JAI',min:225,p:[['Goibibo',4390],['Ixigo',4425],['SpiceJet',4520]]},{air:'Air India Express',no:'IX 1192',dep:'19:30',arr:'21:45',dur:'2h 15m',stops:'Non-stop',min:135,p:[['Cleartrip',5120],['Air India Express',5199]]}];
+const NOTIFS=[{k:'drop',kind:'Price drop',time:'12m',title:'Apple iPhone 15 dropped ₹3,000',body:'Now ₹61,999 on Flipkart. ₹1,999 above your target.',to:'product'},{k:'drop',kind:'Target hit',time:'2h',title:'Sony WH-1000XM5 is ₹24,990',body:'Below your ₹25,000 target on Amazon.',to:'product'},{k:'cash',kind:'Cashback',time:'5h',title:'₹60 cashback tracked',body:'Flipkart order for boAt Airdopes 141 is pending.',to:'wallet'},{k:'deal',kind:'Sale watch',time:'Yesterday',title:'Big Billion Days is live',body:'We flagged 3,870 inflated prices. Check before you buy.',to:'fakesale'},{k:'cash',kind:'Cashback',time:'2 days',title:'₹242 confirmed',body:'Your Ajio cashback is ready to withdraw.',to:'wallet'},{k:'deal',kind:'Coupon',time:'3 days',title:'MYNTRA300 works on your wishlist',body:'Flat ₹300 off on orders above ₹1,499.',to:'deals'}];
+const ONB=[['Every price, every store.','Britto compares 18 stores, from Amazon and Flipkart to Croma and Nykaa, so you see the lowest price first.'],['A sale price is only a number.','See the full price history and know whether a discount is real or was raised before the sale.'],['Set a price. We\'ll watch it.','Pick a target. We alert you on push or WhatsApp the moment it drops.']];
+const WHEEL=[['10 coins',10,0],['₹5',0,5],['50 coins',50,0],['Try again',0,0],['₹10',0,10],['25 coins',25,0],['₹2',0,2],['100 coins',100,0]];
+const SORTS=['Relevance','Lowest price','Biggest drop','Rating'];
+
+class Component extends DCLogic {
+  state={screen:'home',stack:[],onb:0,phone:'',otp:'',query:'iphone 15',sort:'Relevance',range:'6M',hover:null,fav:false,alertOpen:false,target:60000,channels:{Push:true,WhatsApp:true,Email:false},alertSet:false,watch:WATCH,watchF:'All',dealTab:'Deals',dealStore:'All',copied:null,fsF:'All',link:'',analyzing:false,step:0,toggles:{drop:true,wa:true,cash:true,sale:false,bubble:true},balance:1240.5,txF:'All',method:'upi',wdAmt:'500',wdDone:false,wdSent:0,coins:2350,deg:0,spinning:false,spinsLeft:1,spinMsg:'',refCopied:false,trip:'One way',swap:false,dateIdx:2,fSort:'Cheapest',openFlight:0,notifF:'All',read:false,toast:''};
+  componentDidMount(){this.applyProp();}
+  componentDidUpdate(p){if(p.screen!==this.props.screen)this.applyProp();}
+  componentWillUnmount(){clearTimeout(this.tt);(this.timers||[]).forEach(clearTimeout);}
+  applyProp(){const s=this.props.screen;if(s&&SCREENS.includes(s))this.setState({screen:s,stack:s==='home'?[]:['home'],alertOpen:!!this.props.alertOpen});}
+  go(s){this.setState(st=>({stack:[...st.stack,st.screen],screen:s,alertOpen:false,wdDone:false,hover:null}));}
+  tab(s){this.setState({screen:s,stack:[],alertOpen:false});}
+  back(){this.setState(st=>{const k=[...st.stack];const s=k.pop()||'home';return{screen:s,stack:k,analyzing:false,step:0};});}
+  toastMsg(t){clearTimeout(this.tt);this.setState({toast:t});this.tt=setTimeout(()=>this.setState({toast:''}),2400);}
+  renderVals(){
+    const s=this.state,set=o=>this.setState(o);
+    const is=Object.fromEntries(SCREENS.map(k=>[k,s.screen===k]));
+    const go=Object.fromEntries(SCREENS.map(k=>[k,()=>this.go(k)]));
+    const tab=Object.fromEntries(TABS.map(k=>[k,()=>this.tab(k)]));
+    const nav=Object.fromEntries(TABS.map(k=>[k,s.screen===k?INK:'#9A9384']));
+    const openProduct=()=>this.go('product');
+    // chart
+    const h=hist(s.range),vs=h.map(p=>p.v),mn=Math.min(...vs),mx=Math.max(...vs);
+    const X=i=>i/(h.length-1)*W,Y=v=>P+(mx-v)/((mx-mn)||1)*(H-2*P);
+    const line=h.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(p.v).toFixed(1)).join(' ');
+    const hi=s.hover==null?h.length-1:s.hover;const hp=h[hi];
+    const toggle=k=>()=>this.setState(st=>({toggles:{...st.toggles,[k]:!st.toggles[k]}}));
+    const tg=v=>({bg:v?GREEN:'#CFC7B6',x:v?18:0});
+    // watch
+    const wl=s.watch.filter(w=>s.watchF==='All'||(s.watchF==='Dropped'?w.flag==='dropped'||w.flag==='hit':w.flag==='hit'));
+    // wallet
+    const txs=TXS.filter(t=>s.txF==='All'||(s.txF==='Pending'?t[4]==='Pending':t[4]!=='Pending'));
+    const amt=parseInt(s.wdAmt||'0',10)||0;const methods=[['upi','UPI','aarav@okhdfc · instant',''],['bank','Bank transfer','HDFC ••4821 · 1–2 days',''],['amazon','Amazon Pay gift card','Delivered by email','+5% bonus'],['flipkart','Flipkart gift card','Delivered by email','+5% bonus']];
+    const bonus=s.method==='amazon'||s.method==='flipkart';const wdOk=amt>=100&&amt<=s.balance;
+    const spinNow=()=>{if(s.spinning)return;if(s.spinsLeft<1){this.toastMsg('No spins left today. Come back tomorrow, or earn one by tracking a product.');return;}const i=Math.floor(Math.random()*8);const base=Math.ceil(s.deg/360)*360;const deg=base+1800+(360-(i*45+22.5));this.setState({deg,spinning:true,spinMsg:''});(this.timers=this.timers||[]).push(setTimeout(()=>{const w=WHEEL[i];this.setState(st=>({spinning:false,spinsLeft:st.spinsLeft-1,coins:st.coins+w[1],balance:st.balance+w[2],spinMsg:w[1]?`You won ${w[1]} coins`:w[2]?`₹${w[2]} added to your wallet`:'No luck this time'}));},4200));};
+    const analyze=()=>{if(!s.link)return;this.setState({analyzing:true,step:0});this.timers=this.timers||[];[1,2,3,4].forEach(n=>this.timers.push(setTimeout(()=>this.setState({step:n}),n*650)));this.timers.push(setTimeout(()=>{this.setState({analyzing:false,step:0});this.go('product');},3000));};
+    const fs=FS.filter(f=>s.fsF==='All'||f.verdict===s.fsF);
+    const fl=[...FLIGHTS].map((f,i)=>({...f,i,best:f.p[0][0],price:f.p[0][1]})).sort((a,b)=>s.fSort==='Cheapest'?a.price-b.price:s.fSort==='Fastest'?a.min-b.min:a.dep.localeCompare(b.dep));
+    const cities=[{code:'DEL',city:'Delhi'},{code:'BOM',city:'Mumbai'}];const from=s.swap?cities[1]:cities[0],to=s.swap?cities[0]:cities[1];
+    const nk={All:null,'Price drops':'drop',Cashback:'cash',Deals:'deal'};
+    const resSorted=[...RESULTS].sort((a,b)=>s.sort==='Lowest price'?a.price-b.price:s.sort==='Biggest drop'?b.drop-a.drop:s.sort==='Rating'?b.rating-a.rating:0);
+    return {
+      is,go,tab,nav,back:()=>this.back(),showNav:TABS.includes(s.screen),
+      onb0:s.onb===0,onb1:s.onb===1,onb2:s.onb===2,onbTitle:ONB[s.onb][0],onbBody:ONB[s.onb][1],onbCta:s.onb===2?'Get started':'Next',
+      onbDots:[0,1,2].map(i=>({w:i===s.onb?22:6,o:i===s.onb?1:.25})),
+      onbNext:()=>s.onb<2?set({onb:s.onb+1}):this.go('login'),toLogin:()=>this.go('login'),toHome:()=>this.tab('home'),
+      phone:s.phone,onPhone:e=>set({phone:e.target.value.replace(/\D/g,'').slice(0,10)}),phoneOk:s.phone.length===10?1:.35,
+      sendOtp:()=>{if(s.phone.length===10)this.go('otp');else this.toastMsg('Enter a 10-digit mobile number');},
+      phoneShown:s.phone?s.phone.slice(0,5)+' '+s.phone.slice(5):'98765 43210',
+      otp:s.otp,onOtp:e=>set({otp:e.target.value.replace(/\D/g,'').slice(0,6)}),
+      otpBoxes:Array.from({length:6},(_,i)=>({v:s.otp[i]||'',bd:i===s.otp.length?INK:'#DDD6C8'})),otpOk:s.otp.length===6?1:.35,
+      verifyOtp:()=>{if(s.otp.length===6){this.tab('home');this.toastMsg('Welcome to Britto, Aarav');}},
+      drops:DROPS.map(d=>({store:d[0],name:d[1],price:inr(d[2]),was:inr(d[3]),off:Math.round((1-d[2]/d[3])*100),open:openProduct})),
+      stores:STORES.slice(0,9).map(x=>({name:x[0],mono:x[1],cb:x[2],open:()=>this.toastMsg(`Opening ${x[0]}. Cashback up to ${x[2]} is being tracked.`)})),
+      query:s.query,onQuery:e=>set({query:e.target.value}),
+      recent:['iphone 15','air fryer','running shoes'].map(q=>({q,pick:()=>set({query:q})})),
+      sortChips:SORTS.map(l=>({label:l,...chip(s.sort===l),on:()=>set({sort:l})})),
+      results:resSorted.map(r=>({...r,price:inr(r.price),tbg:TONE[r.tone].bg,tfg:TONE[r.tone].fg})),resultsCount:'214',
+      open:{product:openProduct},
+      favColor:s.fav?RED:INK,favFill:s.fav?RED:'none',
+      toggleFav:()=>{set({fav:!s.fav});this.toastMsg(s.fav?'Removed from wishlist':'Saved to wishlist');},
+      shareProduct:()=>this.toastMsg('Link copied with price history card'),
+      statLow:inr(LOW),statHigh:inr(HIGH),
+      ranges:Object.keys(RANGES).map(r=>({label:r,...seg(s.range===r),on:()=>set({range:r,hover:null})})),
+      chartLine:line,chartArea:line+` L${W} ${H} L0 ${H} Z`,lowY:Y(mn).toFixed(1),
+      tipX:X(hi).toFixed(1),tipY:Y(hp.v).toFixed(1),tipPrice:inr(hp.v),tipDate:hp.d===0?'Today':fmtD(hp.d),
+      chartStart:fmtD(h[0].d),rLow:inr(mn),rHigh:inr(mx),rAvg:inr(vs.reduce((a,b)=>a+b,0)/vs.length),
+      onChartMove:e=>{const r=e.currentTarget.getBoundingClientRect();const i=Math.max(0,Math.min(h.length-1,Math.round((e.clientX-r.left)/r.width*(h.length-1))));if(i!==s.hover)set({hover:i});},
+      onChartLeave:()=>set({hover:null}),
+      offers:OFFERS.map((o,i)=>({store:o[0],mono:MONO[o[0]],price:inr(o[1]),cb:inr(o[2]),del:o[3],diff:i?'+'+inr(o[1]-OFFERS[0][1]):'Lowest',dcol:i?MUTED:GREEN,mbg:i?'#ECE7DC':INK,mfg:i?INK:PAPER,go:()=>this.toastMsg(`Opening ${o[0]} · ${inr(o[2])} cashback tracked`)})),
+      alertBtn:s.alertSet?'Alert on':'Price alert',openAlert:()=>set({alertOpen:true}),closeAlert:()=>set({alertOpen:false}),alertOpen:s.alertOpen,
+      buyNow:()=>this.toastMsg('Opening Flipkart · ₹620 cashback tracked'),
+      target:s.target,targetLabel:inr(s.target),onTarget:e=>set({target:+e.target.value}),
+      targetChips:[['−5%',58899],['−10%',55799],['Lowest ever',LOW]].map(([l,v])=>({label:l,on:()=>set({target:Math.round(v/500)*500})})),
+      channels:Object.keys(s.channels).map(k=>({label:k,...chip(s.channels[k]),on:()=>this.setState(st=>({channels:{...st.channels,[k]:!st.channels[k]}}))})),
+      saveAlert:()=>{this.setState(st=>({alertOpen:false,alertSet:true,watch:st.watch.map(w=>w.id===1?{...w,target:st.target}:w)}));this.toastMsg(`We'll alert you when it hits ${inr(s.target)}`);},
+      watchCount:s.watch.length,watchEmpty:wl.length===0,
+      watchFilters:['All','Dropped','Target hit'].map(l=>({label:l,...chip(s.watchF===l),on:()=>set({watchF:l})})),
+      watch:wl.map(w=>({...w,price:inr(w.price),target:inr(w.target),spark:spark(w.s),sc:TONE[w.tone].fg,bg:TONE[w.tone].bg,fg:TONE[w.tone].fg,remove:()=>{this.setState(st=>({watch:st.watch.filter(x=>x.id!==w.id)}));this.toastMsg('Stopped tracking');}})),
+      dealTabs:['Deals','Coupons'].map(l=>({label:l,fg:s.dealTab===l?INK:MUTED,bd:s.dealTab===l?INK:'transparent',on:()=>set({dealTab:l,dealStore:'All'})})),
+      showDeals:s.dealTab==='Deals',showCoupons:s.dealTab==='Coupons',
+      storeChips:['All','Amazon','Flipkart','Myntra','Ajio','Croma','Nykaa','Lenskart'].map(l=>({label:l,...chip(s.dealStore===l),on:()=>set({dealStore:l})})),
+      deals:DEALS.filter(d=>s.dealStore==='All'||d[0]===s.dealStore).map(d=>({store:d[0],name:d[1],price:inr(d[2]),was:inr(d[3]),off:Math.round((1-d[2]/d[3])*100),tag:d[4],ago:d[5]+' ago'})),
+      coupons:COUPONS.filter(c=>s.dealStore==='All'||c[0]===s.dealStore).map(c=>({store:c[0],title:c[1],code:c[2],exp:c[3],rate:c[4],ecol:c[3]==='Ends tonight'?RED:MUTED,blabel:s.copied===c[2]?'Copied':'Copy code',bbg:s.copied===c[2]?GREEN:INK,bfg:PAPER,copy:()=>{set({copied:c[2]});this.toastMsg(`${c[2]} copied. Opening ${c[0]}…`);}})),
+      fsFilters:['All','Inflated','Genuine','Same as usual'].map(l=>({label:l,...chip(s.fsF===l),on:()=>set({fsF:l})})),
+      fsItems:fs.map(f=>({...f,sale:inr(f.sale),bg:TONE[f.tone].bg,fg:TONE[f.tone].fg,path:spark(f.s,280,40)})),
+      linkText:s.link||'https://www.flipkart.com/apple-iphone-15-black-128-gb/p/…',linkColor:s.link?INK:'#A39C8C',linkBorder:s.link?INK:LINE,linkOk:s.link?1:.35,
+      pasteLink:()=>set({link:'https://www.flipkart.com/apple-iphone-15-black-128-gb/p/itm6ac6485515ae4'}),analyze,
+      analyzing:s.analyzing,notAnalyzing:!s.analyzing,
+      steps:['Reading product page','Fetching 2 years of prices','Comparing 18 stores','Running fake-sale check'].map((l,i)=>({label:l,o:s.step>=i?1:.4,bg:s.step>i?GREEN:'transparent'})),
+      tg:{bubble:toggle('bubble')},t:{bubble:tg(s.toggles.bubble)},
+      balance:inr(s.balance)+'.'+String(Math.round((s.balance%1)*100)).padStart(2,'0'),
+      txFilters:['All','Pending','Confirmed'].map(l=>({label:l,...chip(s.txF===l),on:()=>set({txF:l})})),
+      txs:txs.map(t=>{const tone=t[4]==='Pending'?TONE.gold:t[4]==='Paid'?TONE.neutral:TONE.good;return{store:t[0],item:t[1],mono:MONO[t[0]]||'Br',amt:(t[2]<0?'−':'+')+inr(Math.abs(t[2])),acol:t[2]<0?MUTED:INK,date:t[3],status:t[4],bg:tone.bg,fg:tone.fg};}),
+      methods:methods.map(m=>({label:m[1],sub:m[2],bonus:m[3],bd:s.method===m[0]?INK:'#DDD6C8',dot:s.method===m[0]?1:0,on:()=>set({method:m[0]})})),
+      wdAmt:s.wdAmt,onWdAmt:e=>set({wdAmt:e.target.value.replace(/\D/g,'').slice(0,5)}),
+      amtChips:[['₹100',100],['₹500',500],['All',Math.floor(s.balance)]].map(([l,v])=>({label:l,on:()=>set({wdAmt:String(v)})})),
+      wdHint:amt<100?'Minimum ₹100':amt>s.balance?'More than your balance':bonus?`You'll get ${inr(amt*1.05)} with the 5% bonus`:'No fees',
+      wdHintCol:amt<100||amt>s.balance?RED:MUTED,wdOk:wdOk?1:.35,wdLabel:inr(s.wdDone?s.wdSent:amt),
+      wdForm:!s.wdDone,wdDone:s.wdDone,
+      wdDoneMsg:s.method==='upi'?'Sent to aarav@okhdfc. UPI transfers usually land within a few minutes.':s.method==='bank'?'Bank transfers arrive in 1–2 working days.':'Your gift card code will arrive by email within an hour.',
+      doWithdraw:()=>{if(wdOk)this.setState(st=>({wdDone:true,wdSent:amt,balance:st.balance-amt}));},
+      coins:s.coins.toLocaleString('en-IN'),spin:spinNow,wheelDeg:s.deg,wheelTr:s.spinning?'transform 4s cubic-bezier(.17,.67,.2,1)':'none',
+      spinMsg:s.spinning?'Spinning…':s.spinMsg,spinsLeftLabel:s.spinsLeft?`${s.spinsLeft} free spin today`:'No spins left today',
+      streak:[5,5,10,10,15,20,50].map((c,i)=>{const done=i<3,today=i===3;return{c,d:i+1,bg:done?GREEN:today?INK:'#FBF9F4',fg:done||today?PAPER:INK,bd:done?GREEN:today?INK:'#DDD6C8'};}),
+      tasks:[{t:'Track 3 new products',p:'1 of 3 done',c:50},{t:'Shop once via Britto this week',p:'Any store',c:200},{t:'Turn on WhatsApp alerts',p:'Takes 10 seconds',c:25}],
+      copyRef:()=>{set({refCopied:true});this.toastMsg('Referral code copied');},refCopyLabel:s.refCopied?'Copied':'Copy',
+      shareRef:()=>this.toastMsg('Opening share sheet…'),
+      friends:[['R','Riya Sharma','₹50 earned','good'],['K','Kabir Singh','₹50 earned','good'],['N','Neha Iyer','Order pending','gold'],['V','Vikram Rao','Joined','neutral']].map(f=>({i:f[0],n:f[1],s:f[2],bg:TONE[f[3]].bg,fg:TONE[f[3]].fg})),
+      tripTypes:['One way','Round trip'].map(l=>({label:l,...seg(s.trip===l),on:()=>set({trip:l})})),
+      retOpacity:s.trip==='One way'?.45:1,retLabel:s.trip==='One way'?'Add return':'Sun, 8 Nov',
+      from,to,swapDeg:s.swap?180:0,swapCities:()=>set({swap:!s.swap}),
+      dateStrip:[['Mon 2',5240],['Tue 3',4990],['Wed 4',4390],['Thu 5',4780],['Fri 6',5610],['Sat 7',6020]].map((d,i)=>({day:d[0],price:inr(d[1]),...chip(s.dateIdx===i),on:()=>set({dateIdx:i})})),
+      flightSorts:['Cheapest','Fastest','Earliest'].map(l=>({label:l,...chip(s.fSort===l),on:()=>set({fSort:l})})),
+      flightsList:fl.map(f=>({...f,price:inr(f.price),nsites:f.p.length,open:s.openFlight===f.i,toggle:()=>set({openFlight:s.openFlight===f.i?-1:f.i}),providers:f.p.map(p=>({n:p[0],p:inr(p[1]),go:()=>this.toastMsg(`Opening ${p[0]} at ${inr(p[1])}`)}))})),
+      notifFilters:Object.keys(nk).map(l=>({label:l,...chip(s.notifF===l),on:()=>set({notifF:l})})),
+      notifs:NOTIFS.filter(n=>!nk[s.notifF]||n.k===nk[s.notifF]).map((n,i)=>({...n,unread:!s.read&&i<3?1:0,col:n.k==='drop'?GREEN:n.k==='cash'?GOLD:RED,open:()=>n.to==='wallet'||n.to==='deals'?this.tab(n.to):this.go(n.to)})),
+      markRead:()=>set({read:true}),
+      toggles:[['drop','Price-drop alerts','Push notification when a tracked item drops'],['wa','WhatsApp alerts','Target-hit messages on +91 98765 43210'],['cash','Cashback updates','Tracked, confirmed and paid'],['sale','Sale-watch digest','One summary per big sale']].map(([k,l,sub])=>({label:l,sub,...tg(s.toggles[k]),on:toggle(k)})),
+      logout:()=>this.setState({screen:'onboarding',stack:[],onb:0,phone:'',otp:''}),
+      hasToast:!!s.toast,toast:s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

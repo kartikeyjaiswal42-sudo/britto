@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><meta name="design_doc_mode" content="canvas"><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet"><style>body{margin:0;background:#DCE3F3}a{color:#1E5B45}a:hover{color:#141B34}</style></helmet>
+<div style="padding:48px 40px 20px;font-family:'Manrope',sans-serif;color:#141B34;display:flex;flex-direction:column;gap:8px;max-width:900px">
+<span style="font:700 56px/1 'Outfit'">Britto</span>
+<span style="font-size:15px;line-height:1.55;color:#6B7390;text-wrap:pretty">A price comparison and tracking app for Indian shoppers. These are all 32 Android screens. Every frame works on its own, and the first frame starts at onboarding and runs through the whole flow. Product images are placeholders and store tiles use monograms, so no store logos are used.</span>
+</div>
+<sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+<section style="padding:24px 16px 8px;border-top:1px solid #C9D3EC;font-family:'Manrope',sans-serif">
+<div style="display:flex;align-items:baseline;gap:12px;padding:0 24px"><span style="font:700 30px 'Outfit';color:#141B34">{{ g.title }}</span><span style="font-size:13px;color:#6B7390">{{ g.sub }}</span></div>
+<div style="display:flex;flex-wrap:wrap">
+<sc-for list="{{ g.items }}" as="it" hint-placeholder-count="3">
+<div style="display:flex;flex-direction:column;align-items:center">
+<dc-import name="Britto App v4" screen="{{ it.screen }}" alert-open="{{ it.alert }}" hint-size="408px,828px"></dc-import>
+<span style="font:500 12px 'Manrope';color:#6B7390;margin-top:-8px">{{ it.label }}</span>
+</div>
+</sc-for>
+</div>
+</section>
+</sc-for>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const G=[
+['Get started','Onboarding, sign-in, setup',[['onboarding','Onboarding'],['login','Phone login'],['otp','OTP'],['permissions','Permissions'],['interests','Interests']]],
+['Discover','Home, categories, stores',[['home','Home'],['categories','Categories'],['allStores','All stores'],['store','Store & cashback rates']]],
+['Shop & compare','Search, product, alerts',[['search','Search results'],['filters','Filters'],['product','Product · compare & history'],['product','Set price alert',true]]],
+['Buy','Redirect and in-app price bubble',[['redirect','Cashback activation'],['overlay','Price bubble on store app']]],
+['Track & check','Tracker, link tracking, fake sales',[['watchlist','Price tracker'],['paste','Paste / share link'],['fakesale','Fake-sale detector']]],
+['Deals','Deals, coupons, notifications',[['deals','Deals & coupons'],['notifications','Notifications']]],
+['Money','Cashback, payouts, claims, rewards',[['wallet','Wallet'],['cashbackDetail','Cashback status'],['claim','Missing cashback claim'],['withdraw','Withdraw'],['payout','Payout methods'],['rewards','Spin & rewards'],['refer','Refer & earn']]],
+['Travel','Flight fare comparison',[['flights','Flight search'],['flightResults','Flight results']]],
+['Account','Profile and settings',[['profile','Profile'],['editProfile','Edit profile'],['language','Language'],['help','Help & support']]]];
+class Component extends DCLogic{renderVals(){return{groups:G.map(([title,sub,items])=>({title,sub,items:items.map(([screen,label,alert])=>({screen,label,alert:!!alert}))}))};}}
+</script>
+</body>
+</html>

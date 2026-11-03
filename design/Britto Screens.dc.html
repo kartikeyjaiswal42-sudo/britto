@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><meta name="design_doc_mode" content="canvas"><link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&display=swap" rel="stylesheet"><style>body{margin:0;background:#E7E2D7}a{color:#1E5B45}a:hover{color:#17150F}</style></helmet>
+<div style="padding:48px 40px 20px;font-family:'Geist',sans-serif;color:#17150F;display:flex;flex-direction:column;gap:8px;max-width:900px">
+<span style="font:italic 400 56px/1 'Instrument Serif'">Britto</span>
+<span style="font-size:15px;line-height:1.55;color:#6B665B;text-wrap:pretty">A price comparison and tracking app for Indian shoppers. These are all 18 Android screens. Every frame works on its own, and the first frame starts at onboarding and runs through the whole flow. Product images are placeholders and store tiles use monograms, so no store logos are used.</span>
+</div>
+<sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+<section style="padding:24px 16px 8px;border-top:1px solid rgba(23,21,15,.1);font-family:'Geist',sans-serif">
+<div style="display:flex;align-items:baseline;gap:12px;padding:0 24px"><span style="font:400 30px 'Instrument Serif';color:#17150F">{{ g.title }}</span><span style="font-size:13px;color:#6B665B">{{ g.sub }}</span></div>
+<div style="display:flex;flex-wrap:wrap">
+<sc-for list="{{ g.items }}" as="it" hint-placeholder-count="3">
+<div style="display:flex;flex-direction:column;align-items:center">
+<dc-import name="Britto App" screen="{{ it.screen }}" alert-open="{{ it.alert }}" hint-size="408px,828px"></dc-import>
+<span style="font:500 12px 'Geist';color:#6B665B;margin-top:-8px">{{ it.label }}</span>
+</div>
+</sc-for>
+</div>
+</section>
+</sc-for>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const G=[
+['Get started','Onboarding and sign-in',[['onboarding','Onboarding'],['login','Phone login'],['otp','OTP']]],
+['Shop & compare','Search, product, price history, alerts',[['home','Home'],['search','Search results'],['product','Product · compare & history'],['product','Set price alert',true]]],
+['Track & check','Watchlist, link tracking, fake sales',[['watchlist','Tracking'],['paste','Paste / share link'],['fakesale','Fake-sale detector']]],
+['Deals','Deals and coupons feed',[['deals','Deals & coupons'],['notifications','Notifications']]],
+['Money','Cashback, withdrawals, rewards, referrals',[['wallet','Wallet'],['withdraw','Withdraw'],['rewards','Spin & rewards'],['refer','Refer & earn']]],
+['Travel','Flight fare comparison',[['flights','Flight search'],['flightResults','Flight results']]],
+['Account','Profile and settings',[['profile','Profile & settings']]]];
+class Component extends DCLogic{renderVals(){return{groups:G.map(([title,sub,items])=>({title,sub,items:items.map(([screen,label,alert])=>({screen,label,alert:!!alert}))}))};}}
+</script>
+</body>
+</html>

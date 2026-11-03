@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#DCE3F3}*{box-sizing:border-box}*::-webkit-scrollbar{display:none}a{color:#1F5BFF}a:hover{color:#1544C9}input{font:inherit}input[type=range]{accent-color:#1F5BFF}</style>
+</helmet>
+<div style="display:flex;justify-content:center;padding:24px;font-family:'Manrope',sans-serif;color:#141B34">
+<div style="width:360px;height:780px;border-radius:44px;background:#11131A;padding:9px;box-shadow:0 30px 60px -20px rgba(20,30,80,.4)">
+<div style="position:relative;width:100%;height:100%;border-radius:36px;overflow:hidden;background:#F4F6FB;display:flex;flex-direction:column">
+<div style="height:32px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font:600 12.5px 'Manrope';position:relative;background:{{ sbBg }};color:{{ sbFg }}">
+<span>9:41</span>
+<div style="position:absolute;left:50%;top:9px;width:12px;height:12px;margin-left:-6px;border-radius:999px;background:#11131A"></div>
+<div style="display:flex;gap:5px;align-items:center"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M2 20h20L22 4z"></path></svg><svg width="18" height="11" viewBox="0 0 26 14" fill="none" stroke="currentColor"><rect x="1" y="1" width="21" height="12" rx="3"></rect><rect x="3" y="3" width="14" height="8" rx="1" fill="currentColor"></rect></svg></div>
+</div>
+<div style="flex:1;overflow-y:auto;position:relative">
+
+<sc-if value="{{ is.onboarding }}" hint-placeholder-val="{{ false }}">
+<div style="height:100%;display:flex;flex-direction:column;background:#FFFFFF">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 20px"><div style="display:flex;align-items:center;gap:8px"><div style="width:30px;height:30px;border-radius:9px;background:#1F5BFF;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font:800 17px 'Outfit'">b</div><span style="font:700 20px 'Outfit'">Britto</span></div><span onClick="{{ toLogin }}" style="font-size:14px;font-weight:600;color:#6B7390;cursor:pointer;padding:10px 0">Skip</span></div>
+<div style="flex:1;margin:8px 20px 0;border-radius:28px;background:#EAF0FF;display:flex;align-items:center;justify-content:center;padding:22px">
+<sc-if value="{{ onb0 }}" hint-placeholder-val="{{ true }}">
+<div style="width:100%;display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:14px;background:#FFFFFF;box-shadow:0 6px 20px rgba(31,91,255,.18);border:2px solid #0E9F55"><span style="width:32px;height:32px;border-radius:999px;background:#2874F0;color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px 'Outfit'">Fk</span><span style="flex:1;font-size:14px;font-weight:600">Flipkart</span><span style="font:800 15px 'Outfit';color:#0E9F55">₹61,999</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:14px;background:#FFFFFF"><span style="width:32px;height:32px;border-radius:999px;background:#232F3E;color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px 'Outfit'">Am</span><span style="flex:1;font-size:14px;font-weight:600">Amazon</span><span style="font:700 15px 'Outfit'">₹63,499</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:14px;background:#FFFFFF"><span style="width:32px;height:32px;border-radius:999px;background:#0BA89A;color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px 'Outfit'">Cr</span><span style="flex:1;font-size:14px;font-weight:600">Croma</span><span style="font:700 15px 'Outfit'">₹64,990</span></div>
+<div style="align-self:center;margin-top:6px;font-size:12px;font-weight:700;color:#0E9F55;background:#E5F7EE;padding:6px 12px;border-radius:999px">You save ₹2,991</div>
+</div>
+</sc-if>
+<sc-if value="{{ onb1 }}" hint-placeholder-val="{{ false }}">
+<div style="width:100%;padding:16px;border-radius:20px;background:#FFFFFF;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 14px 'Outfit'">Price history</span><span style="font-size:11px;font-weight:800;color:#E23B3B;background:#FDEBEB;padding:4px 9px;border-radius:999px">FAKE SALE</span></div>
+<svg width="100%" height="130" viewBox="0 0 280 130" fill="none"><path d="M0 100 L40 96 L80 98 L110 92 L130 34 L170 38 L190 86 L230 88 L280 90 L280 130 L0 130Z" fill="#1F5BFF" fill-opacity=".08"></path><path d="M0 100 L40 96 L80 98 L110 92 L130 34 L170 38 L190 86 L230 88 L280 90" stroke="#1F5BFF" stroke-width="2.5" stroke-linejoin="round"></path><path d="M130 34 L170 38" stroke="#E23B3B" stroke-width="4" stroke-linecap="round"></path><circle cx="280" cy="90" r="5" fill="#1F5BFF" stroke="#fff" stroke-width="2"></circle></svg>
+<span style="font-size:12.5px;color:#6B7390">Price was raised 18% just before the sale.</span>
+</div>
+</sc-if>
+<sc-if value="{{ onb2 }}" hint-placeholder-val="{{ false }}">
+<div style="width:100%;display:flex;flex-direction:column;gap:10px">
+<div style="padding:14px;border-radius:18px;background:#FFFFFF;box-shadow:0 10px 30px rgba(31,91,255,.18);display:flex;gap:12px;align-items:flex-start"><div style="width:36px;height:36px;flex:none;border-radius:10px;background:#1F5BFF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 18px 'Outfit'">b</div><div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:11px;color:#6B7390;font-weight:600">Britto · now</span><span style="font-size:14px;font-weight:700">Price dropped! 🔔</span><span style="font-size:13px;color:#6B7390">Sony WH-1000XM5 is now <b style="color:#0E9F55">₹24,990</b> on Amazon</span></div></div>
+<div style="padding:14px;border-radius:18px;background:#FFFFFF;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;font-weight:600;color:#6B7390">Your target</span><span style="font:800 24px 'Outfit';color:#1F5BFF">₹25,000</span></div>
+</div>
+</sc-if>
+</div>
+<div style="padding:24px 24px 24px;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;gap:6px"><sc-for list="{{ onbDots }}" as="d" hint-placeholder-count="3"><div style="height:6px;border-radius:9px;background:#1F5BFF;width:{{ d.w }}px;opacity:{{ d.o }};transition:width .3s"></div></sc-for></div>
+<div style="font:700 30px/1.1 'Outfit';text-wrap:pretty">{{ onbTitle }}</div>
+<div style="font-size:14.5px;line-height:1.5;color:#6B7390;text-wrap:pretty">{{ onbBody }}</div>
+<div onClick="{{ onbNext }}" style="margin-top:10px;height:54px;border-radius:14px;background:#1F5BFF;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font:700 16px 'Manrope';cursor:pointer;box-shadow:0 8px 20px -6px rgba(31,91,255,.6)">{{ onbCta }}</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.login }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100%;display:flex;flex-direction:column;background:#FFFFFF">
+<div style="height:200px;background:#1F5BFF;border-radius:0 0 32px 32px;padding:24px;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;color:#FFFFFF;position:relative;overflow:hidden">
+<div style="position:absolute;right:-40px;top:-40px;width:180px;height:180px;border-radius:999px;background:rgba(255,255,255,.1)"></div>
+<div style="position:absolute;right:40px;top:60px;width:70px;height:70px;border-radius:999px;background:#FF8A1F"></div>
+<span style="font:700 28px/1.1 'Outfit'">Welcome to Britto</span><span style="font-size:14px;opacity:.85">Compare prices. Track drops. Earn cashback.</span>
+</div>
+<div style="padding:28px 24px 24px;display:flex;flex-direction:column;gap:16px;flex:1">
+<label style="font-size:13px;font-weight:700">Enter your mobile number</label>
+<div style="display:flex;align-items:center;gap:10px;height:56px;padding:0 16px;border-radius:14px;background:#F4F6FB;border:1.5px solid #E3E7F2"><span style="font-weight:700">🇮🇳 +91</span><div style="width:1px;height:22px;background:#E3E7F2"></div><input value="{{ phone }}" onChange="{{ onPhone }}" inputmode="numeric" placeholder="98765 43210" style="flex:1;border:0;background:transparent;outline:none;font:600 16px 'Manrope';letter-spacing:.04em;color:#141B34"></input></div>
+<div onClick="{{ sendOtp }}" style="height:54px;border-radius:14px;background:#1F5BFF;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;cursor:pointer;opacity:{{ phoneOk }}">Get OTP</div>
+<div style="display:flex;align-items:center;gap:12px;color:#9AA1B8;font-size:12px;font-weight:600"><div style="flex:1;height:1px;background:#E3E7F2"></div>OR<div style="flex:1;height:1px;background:#E3E7F2"></div></div>
+<div onClick="{{ toHome }}" style="height:54px;border-radius:14px;border:1.5px solid #E3E7F2;display:flex;align-items:center;justify-content:center;gap:10px;font-size:15px;font-weight:700;cursor:pointer"><span style="font:800 18px 'Outfit';color:#EA4335">G</span>Continue with Google</div>
+<div style="margin-top:auto;padding:12px;border-radius:12px;background:#FFF1E4;font-size:12.5px;font-weight:600;color:#B35A00;text-align:center">🎁 Get ₹50 welcome bonus on sign-up</div>
+<div style="font-size:11.5px;color:#9AA1B8;text-align:center">By continuing you agree to our Terms &amp; Privacy Policy</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.otp }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100%;display:flex;flex-direction:column;padding:8px 24px 24px;gap:22px;background:#FFFFFF">
+<div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-8px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<div style="display:flex;flex-direction:column;gap:8px"><div style="font:700 28px/1.1 'Outfit'">Verify your number</div><div style="font-size:14px;color:#6B7390">Enter the 6-digit code sent to <b style="color:#141B34">+91 {{ phoneShown }}</b></div></div>
+<div style="position:relative">
+<div style="display:flex;gap:8px"><sc-for list="{{ otpBoxes }}" as="b" hint-placeholder-count="6"><div style="flex:1;height:56px;border-radius:12px;background:#F4F6FB;border:2px solid {{ b.bd }};display:flex;align-items:center;justify-content:center;font:700 22px 'Outfit'">{{ b.v }}</div></sc-for></div>
+<input value="{{ otp }}" onChange="{{ onOtp }}" inputmode="numeric" autofocus="true" style="position:absolute;inset:0;opacity:0;width:100%"></input>
+</div>
+<div style="font-size:13.5px;color:#6B7390">Didn't receive it? <span style="color:#1F5BFF;font-weight:700">Resend in 0:24</span></div>
+<div onClick="{{ verifyOtp }}" style="margin-top:auto;height:54px;border-radius:14px;background:#1F5BFF;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;cursor:pointer;opacity:{{ otpOk }}">Verify &amp; continue</div>
+<div style="font-size:12px;color:#9AA1B8;text-align:center;margin-top:-12px">Tip: type any 6 digits</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.home }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;gap:18px;padding-bottom:24px">
+<div style="background:#1F5BFF;padding:6px 16px 46px;border-radius:0 0 28px 28px;display:flex;flex-direction:column;gap:14px;color:#FFFFFF">
+<div style="display:flex;align-items:center;justify-content:space-between">
+<div style="display:flex;align-items:center;gap:8px"><div style="width:32px;height:32px;border-radius:10px;background:#FFFFFF;color:#1F5BFF;display:flex;align-items:center;justify-content:center;font:800 18px 'Outfit'">b</div><div style="display:flex;flex-direction:column"><span style="font:700 18px/1 'Outfit'">Britto</span><span style="font-size:11px;opacity:.85">Hi Aarav 👋</span></div></div>
+<div style="display:flex;gap:8px;align-items:center">
+<div onClick="{{ go.rewards }}" style="height:32px;padding:0 10px;border-radius:999px;background:rgba(255,255,255,.18);display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;cursor:pointer"><span style="width:16px;height:16px;border-radius:999px;background:#FFC531;display:inline-block"></span>{{ coins }}</div>
+<div onClick="{{ go.notifications }}" style="position:relative;width:36px;height:36px;border-radius:999px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1112 0v5l1.5 2h-15z"></path><path d="M10 20a2 2 0 004 0"></path></svg><div style="position:absolute;top:6px;right:7px;width:8px;height:8px;border-radius:9px;background:#FF8A1F;border:1.5px solid #1F5BFF"></div></div>
+</div>
+</div>
+<div onClick="{{ go.search }}" style="height:50px;border-radius:14px;background:#FFFFFF;display:flex;align-items:center;gap:10px;padding:0 14px;cursor:pointer;color:#9AA1B8"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F5BFF" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg><span style="flex:1;font-size:14px;font-weight:500">Search products across 18 stores</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7390" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0014 0M12 18v3"></path></svg></div>
+</div>
+<div onClick="{{ go.paste }}" style="margin:-48px 16px 0;padding:14px;border-radius:18px;background:#FFFFFF;box-shadow:0 8px 24px rgba(20,30,80,.10);display:flex;align-items:center;gap:12px;cursor:pointer">
+<div style="width:46px;height:46px;flex:none;border-radius:14px;background:#FFF1E4;color:#FF7A1A;display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"></path></svg></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:14.5px;font-weight:700">Paste a product link</span><span style="font-size:12px;color:#6B7390">Check price history &amp; fake sales</span></div>
+<div style="height:36px;padding:0 14px;border-radius:10px;background:#FF7A1A;color:#FFFFFF;display:flex;align-items:center;font-size:13px;font-weight:700">Paste</div>
+</div>
+<div style="display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:0 16px">
+<div onClick="{{ go.fakesale }}" style="flex:none;width:288px;height:132px;scroll-snap-align:center;border-radius:20px;background:linear-gradient(120deg,#FF7A1A,#FF4E6A);color:#FFFFFF;padding:16px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;position:relative;overflow:hidden"><div style="position:absolute;right:-20px;bottom:-30px;width:130px;height:130px;border-radius:999px;background:rgba(255,255,255,.15)"></div><span style="align-self:flex-start;font-size:10.5px;font-weight:800;letter-spacing:.06em;background:rgba(255,255,255,.25);padding:4px 8px;border-radius:6px">LIVE · BIG BILLION DAYS</span><span style="font:700 20px/1.15 'Outfit';max-width:210px">31% of sale prices were raised first</span><span style="font-size:12.5px;font-weight:700">Check before you buy →</span></div>
+<div onClick="{{ tab.deals }}" style="flex:none;width:288px;height:132px;scroll-snap-align:center;border-radius:20px;background:linear-gradient(120deg,#1F5BFF,#7B4DFF);color:#FFFFFF;padding:16px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;position:relative;overflow:hidden"><div style="position:absolute;right:-20px;bottom:-30px;width:130px;height:130px;border-radius:999px;background:rgba(255,255,255,.15)"></div><span style="align-self:flex-start;font-size:10.5px;font-weight:800;letter-spacing:.06em;background:rgba(255,255,255,.25);padding:4px 8px;border-radius:6px">EXTRA CASHBACK</span><span style="font:700 20px/1.15 'Outfit';max-width:210px">Up to 12% cashback on Lenskart</span><span style="font-size:12.5px;font-weight:700">Shop now →</span></div>
+<div onClick="{{ go.refer }}" style="flex:none;width:288px;height:132px;scroll-snap-align:center;border-radius:20px;background:linear-gradient(120deg,#0E9F55,#14C38E);color:#FFFFFF;padding:16px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;position:relative;overflow:hidden"><div style="position:absolute;right:-20px;bottom:-30px;width:130px;height:130px;border-radius:999px;background:rgba(255,255,255,.15)"></div><span style="align-self:flex-start;font-size:10.5px;font-weight:800;letter-spacing:.06em;background:rgba(255,255,255,.25);padding:4px 8px;border-radius:6px">REFER &amp; EARN</span><span style="font:700 20px/1.15 'Outfit';max-width:210px">Invite friends, get ₹50 each</span><span style="font-size:12.5px;font-weight:700">Invite now →</span></div>
+</div>
+<div style="margin:0 16px;padding:16px 8px;border-radius:18px;background:#FFFFFF;display:grid;grid-template-columns:repeat(4,1fr);row-gap:14px">
+<div onClick="{{ go.fakesale }}" style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer"><div style="width:50px;height:50px;border-radius:16px;background:#FDEBEB;color:#E23B3B;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"></path><path d="M9 12l2 2 4-4"></path></svg></div><span style="font-size:11.5px;font-weight:600;text-align:center;line-height:1.2">Fake Sale<br></br>Check</span></div>
+<div onClick="{{ tab.watchlist }}" style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer"><div style="width:50px;height:50px;border-radius:16px;background:#EAF0FF;color:#1F5BFF;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l5-6 4 3 8-9"></path><path d="M15 6h5v5"></path></svg></div><span style="font-size:11.5px;font-weight:600;text-align:center;line-height:1.2">Price<br></br>Tracker</span></div>
+<div onClick="{{ go.flights }}" style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer"><div style="width:50px;height:50px;border-radius:16px;background:#E6F6FF;color:#0886C9;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M2.5 13.5l19-8-5.5 15-3.5-6.5z"></path><path d="M12.5 14l9-8.5"></path></svg></div><span style="font-size:11.5px;font-weight:600;text-align:center;line-height:1.2">Flights</span></div>
+<div onClick="{{ tab.deals }}" style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer"><div style="width:50px;height:50px;border-radius:16px;background:#FFF1E4;color:#FF7A1A;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 12V4h8l10 10-8 8z"></path><circle cx="7.5" cy="7.5" r="1.5"></circle></svg></div><span style="font-size:11.5px;font-weight:600;text-align:center;line-height:1.2">Coupons</span></div>
+<div onClick="{{ go.rewards }}" style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer"><div style="width:50px;height:50px;border-radius:16px;background:#FFF7D6;color:#D9A100;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 3.5v17M3.5 12h17"></path></svg></div><span style="font-size:11.5px;font-weight:600;text-align:center;line-height:1.2">Spin &amp;<br></br>Win</span></div>
+<div onClick="{{ go.refer }}" style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer"><div style="width:50px;height:50px;border-radius:16px;background:#E5F7EE;color:#0E9F55;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c.8-3.5 3.5-5 6.5-5s5.7 1.5 6.5 5"></path><path d="M16 4.5a3.5 3.5 0 010 7M18 15c2 .6 3.2 2.3 3.5 5"></path></svg></div><span style="font-size:11.5px;font-weight:600;text-align:center;line-height:1.2">Refer &amp;<br></br>Earn</span></div>
+<div onClick="{{ tab.wallet }}" style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer"><div style="width:50px;height:50px;border-radius:16px;background:#F3EBFF;color:#7B4DFF;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="6" width="18" height="13" rx="2"></rect><path d="M3 10h18M16 14.5h2"></path></svg></div><span style="font-size:11.5px;font-weight:600;text-align:center;line-height:1.2">Cashback</span></div>
+<div onClick="{{ go.paste }}" style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer"><div style="width:50px;height:50px;border-radius:16px;background:#FFEAF0;color:#E5306B;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13M7 8l5-5 5 5"></path><path d="M5 14v6h14v-6"></path></svg></div><span style="font-size:11.5px;font-weight:600;text-align:center;line-height:1.2">Share to<br></br>Track</span></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:0 16px"><span style="font:700 18px 'Outfit'">Shop by category</span><span onClick="{{ go.categories }}" style="font-size:13px;font-weight:700;color:#1F5BFF;cursor:pointer">See all</span></div>
+<div style="display:flex;gap:12px;overflow-x:auto;padding:0 16px">
+<sc-for list="{{ homeCats }}" as="c" hint-placeholder-count="6"><div onClick="{{ c.open }}" style="flex:none;width:68px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer"><div style="width:64px;height:64px;border-radius:999px;background:{{ c.tint }};display:flex;align-items:center;justify-content:center;font-size:28px">{{ c.icon }}</div><span style="font-size:11px;font-weight:700;text-align:center;line-height:1.2">{{ c.name }}</span></div></sc-for>
+</div>
+</div>
+<div onClick="{{ tab.wallet }}" style="margin:0 16px;padding:14px 16px;border-radius:18px;background:linear-gradient(120deg,#141B34,#2A3566);color:#FFFFFF;display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;opacity:.75">Cashback wallet</span><span style="font:700 24px 'Outfit'">{{ balance }}</span><span style="font-size:11.5px;color:#FFC531;font-weight:600">+ ₹380 pending</span></div>
+<div style="height:38px;padding:0 16px;border-radius:10px;background:#FFFFFF;color:#141B34;display:flex;align-items:center;font-size:13px;font-weight:700">Withdraw</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:0 16px"><span style="font:700 18px 'Outfit'">🔥 Biggest price drops</span><span onClick="{{ tab.deals }}" style="font-size:13px;font-weight:700;color:#1F5BFF;cursor:pointer">View all</span></div>
+<div style="display:flex;gap:10px;overflow-x:auto;padding:0 16px 4px">
+<sc-for list="{{ drops }}" as="d" hint-placeholder-count="4">
+<div onClick="{{ d.open }}" style="flex:none;width:150px;border-radius:16px;background:#FFFFFF;padding:8px;display:flex;flex-direction:column;gap:6px;cursor:pointer">
+<div style="height:124px;border-radius:12px;background:{{ d.tint }};position:relative;display:flex;align-items:center;justify-content:center"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="rgba(20,27,52,.22)" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 16l-5-5-8 9"></path></svg><span style="position:absolute;top:8px;left:8px;padding:3px 7px;border-radius:6px;background:#0E9F55;color:#FFFFFF;font-size:11px;font-weight:800">↓ {{ d.off }}%</span></div>
+<span style="font-size:10.5px;font-weight:700;color:#6B7390;text-transform:uppercase;letter-spacing:.03em">{{ d.store }}</span>
+<span style="font-size:12.5px;font-weight:600;line-height:1.3;height:32px;overflow:hidden">{{ d.name }}</span>
+<div style="display:flex;gap:6px;align-items:baseline"><span style="font:700 15px 'Outfit'">{{ d.price }}</span><span style="font-size:11px;color:#9AA1B8;text-decoration:line-through">{{ d.was }}</span></div>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;padding:0 16px">
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 18px 'Outfit'">Shop &amp; earn cashback</span><span onClick="{{ go.allStores }}" style="font-size:13px;font-weight:700;color:#1F5BFF;cursor:pointer">All 18 stores</span></div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+<sc-for list="{{ stores }}" as="s" hint-placeholder-count="8">
+<div onClick="{{ s.open }}" style="padding:12px 4px 10px;border-radius:16px;background:#FFFFFF;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">
+<div style="width:42px;height:42px;border-radius:999px;background:{{ s.col }};color:#FFFFFF;display:flex;align-items:center;justify-content:center;font:700 14px 'Outfit'">{{ s.mono }}</div>
+<span style="font-size:11px;font-weight:700;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.name }}</span>
+<span style="font-size:10px;font-weight:700;color:#0E9F55;background:#E5F7EE;padding:2px 6px;border-radius:5px">{{ s.cb }} CB</span>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.search }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column">
+<div style="background:#FFFFFF;padding:6px 12px 12px;display:flex;flex-direction:column;gap:10px;position:sticky;top:0;z-index:2;box-shadow:0 2px 8px rgba(20,30,80,.05)">
+<div style="display:flex;align-items:center;gap:6px">
+<div onClick="{{ back }}" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<div style="flex:1;height:44px;border-radius:12px;background:#F4F6FB;border:1.5px solid #1F5BFF;display:flex;align-items:center;gap:8px;padding:0 12px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F5BFF" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg><input value="{{ query }}" onChange="{{ onQuery }}" style="flex:1;border:0;outline:none;background:transparent;font:600 14.5px 'Manrope';color:#141B34"></input></div>
+</div>
+<div style="display:flex;gap:6px;overflow-x:auto"><span onClick="{{ go.filters }}" style="flex:none;font-size:12.5px;font-weight:800;padding:7px 12px;border-radius:999px;cursor:pointer;background:#141B34;color:#FFFFFF;border:1.5px solid #141B34">⚙ Filters · {{ filterCount }}</span><sc-for list="{{ sortChips }}" as="c" hint-placeholder-count="4"><span onClick="{{ c.on }}" style="flex:none;font-size:12.5px;font-weight:700;padding:7px 12px;border-radius:999px;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1.5px solid {{ c.bd }}">{{ c.label }}</span></sc-for></div>
+</div>
+<div style="padding:12px 16px 4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:12px;color:#6B7390;font-weight:600">Recent:</span><sc-for list="{{ recent }}" as="r" hint-placeholder-count="3"><span onClick="{{ r.pick }}" style="font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;background:#FFFFFF;cursor:pointer">{{ r.q }}</span></sc-for></div>
+<span style="padding:6px 16px;font-size:12px;color:#6B7390">Showing {{ resultsCount }} results from 18 stores</span>
+<div style="display:flex;flex-direction:column;gap:10px;padding:4px 16px 24px">
+<sc-for list="{{ results }}" as="p" hint-placeholder-count="4">
+<div onClick="{{ open.product }}" style="display:flex;gap:12px;padding:10px;border-radius:16px;background:#FFFFFF;cursor:pointer">
+<div style="width:92px;height:104px;flex:none;border-radius:12px;background:{{ p.tint }};display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="rgba(20,27,52,.22)" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 16l-5-5-8 9"></path></svg></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:5px;min-width:0">
+<span style="font-size:13.5px;font-weight:600;line-height:1.3">{{ p.name }}</span>
+<span style="font-size:11.5px;color:#6B7390"><span style="background:#0E9F55;color:#fff;padding:1px 5px;border-radius:4px;font-weight:700">{{ p.rating }} ★</span> · {{ p.stores }} stores</span>
+<div style="display:flex;align-items:baseline;gap:6px"><span style="font:700 17px 'Outfit'">{{ p.price }}</span><span style="font-size:11.5px;color:#6B7390">on {{ p.store }}</span></div>
+<span style="align-self:flex-start;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;background:{{ p.tbg }};color:{{ p.tfg }}">{{ p.trend }}</span>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.product }}" hint-placeholder-val="{{ false }}">
+<div style="padding-bottom:100px;display:flex;flex-direction:column;gap:10px">
+<div style="background:#FFFFFF;padding-bottom:14px">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px">
+<div onClick="{{ back }}" style="width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<div style="display:flex">
+<div onClick="{{ shareProduct }}" style="width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13M7 8l5-5 5 5"></path><path d="M5 14v6h14v-6"></path></svg></div>
+<div onClick="{{ toggleFav }}" style="width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:{{ favColor }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="{{ favFill }}" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-8-5-8-11a4.5 4.5 0 018-2.8A4.5 4.5 0 0120 9c0 6-8 11-8 11z"></path></svg></div>
+</div>
+</div>
+<div style="margin:0 16px;height:210px;border-radius:18px;background:#EAF0FF;display:flex;align-items:center;justify-content:center;position:relative"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(20,27,52,.22)" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 16l-5-5-8 9"></path></svg><div style="position:absolute;bottom:10px;display:flex;gap:5px"><span style="width:16px;height:5px;border-radius:9px;background:#1F5BFF"></span><span style="width:5px;height:5px;border-radius:9px;background:#C3CDEB"></span><span style="width:5px;height:5px;border-radius:9px;background:#C3CDEB"></span><span style="width:5px;height:5px;border-radius:9px;background:#C3CDEB"></span></div></div>
+<div style="padding:14px 16px 0;display:flex;flex-direction:column;gap:6px">
+<span style="font-size:15.5px;font-weight:600;line-height:1.35">Apple iPhone 15 (128 GB) – Black</span>
+<span style="font-size:12px;color:#6B7390"><span style="background:#0E9F55;color:#fff;padding:1px 6px;border-radius:4px;font-weight:700">4.6 ★</span> 48,210 ratings</span>
+<div style="display:flex;align-items:baseline;gap:8px;margin-top:4px"><span style="font-size:15px;font-weight:800;color:#0E9F55">↓11%</span><span style="font:700 26px 'Outfit'">₹61,999</span><span style="font-size:13px;color:#9AA1B8;text-decoration:line-through">₹69,900</span></div>
+<span style="align-self:flex-start;font-size:12px;font-weight:700;color:#7B4DFF;background:#F3EBFF;padding:5px 10px;border-radius:8px">+ ₹620 Britto cashback on Flipkart</span>
+</div>
+</div>
+<div style="margin:0 16px;padding:14px;border-radius:18px;background:#E5F7EE;border:1.5px solid #9EDDBB;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;gap:10px;align-items:center"><div style="width:38px;height:38px;flex:none;border-radius:12px;background:#0E9F55;color:#FFFFFF;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"></path></svg></div><div style="display:flex;flex-direction:column;gap:1px"><span style="font:700 16px 'Outfit';color:#0B7A41">Genuine deal · Good time to buy</span><span style="font-size:12px;color:#2D6B4A">7% below 90-day average · not inflated</span></div></div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<div style="position:relative;height:10px;border-radius:9px;background:linear-gradient(90deg,#0E9F55,#FFC531,#E23B3B)"><div style="position:absolute;left:28%;top:-5px;width:20px;height:20px;margin-left:-10px;border-radius:999px;background:#FFFFFF;border:3px solid #141B34"></div></div>
+<div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:#2D6B4A"><span>Low {{ statLow }}</span><span>High {{ statHigh }}</span></div>
+</div>
+</div>
+<div style="margin:0 16px;padding:14px;border-radius:18px;background:#FFFFFF;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 17px 'Outfit'">Price history</span><span style="font-size:11.5px;font-weight:600;color:#6B7390">Flipkart</span></div>
+<div style="display:flex;gap:4px;padding:4px;border-radius:12px;background:#F4F6FB"><sc-for list="{{ ranges }}" as="r" hint-placeholder-count="5"><span onClick="{{ r.on }}" style="flex:1;text-align:center;font-size:12px;padding:6px 0;border-radius:9px;cursor:pointer;background:{{ r.bg }};color:{{ r.fg }};font-weight:700">{{ r.label }}</span></sc-for></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:700 19px 'Outfit';color:#1F5BFF">{{ tipPrice }}</span><span style="font-size:12px;font-weight:600;color:#6B7390">{{ tipDate }}</span></div>
+<svg width="100%" height="150" viewBox="0 0 280 140" preserveAspectRatio="none" onPointerMove="{{ onChartMove }}" onPointerLeave="{{ onChartLeave }}" style="display:block;touch-action:none;cursor:crosshair">
+<path d="{{ chartArea }}" fill="#1F5BFF" fill-opacity="0.09"></path>
+<line x1="0" x2="280" y1="{{ lowY }}" y2="{{ lowY }}" stroke="#0E9F55" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"></line>
+<path d="{{ chartLine }}" fill="none" stroke="#1F5BFF" stroke-width="2.2" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>
+<line x1="{{ tipX }}" x2="{{ tipX }}" y1="0" y2="140" stroke="#1F5BFF" stroke-opacity="0.25" vector-effect="non-scaling-stroke"></line>
+</svg>
+<div style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;color:#9AA1B8"><span>{{ chartStart }}</span><span>Today</span></div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+<div style="padding:8px 10px;border-radius:10px;background:#E5F7EE;display:flex;flex-direction:column;gap:2px"><span style="font-size:10.5px;font-weight:600;color:#2D6B4A">Lowest</span><span style="font:700 13.5px 'Outfit';color:#0E9F55">{{ rLow }}</span></div>
+<div style="padding:8px 10px;border-radius:10px;background:#F4F6FB;display:flex;flex-direction:column;gap:2px"><span style="font-size:10.5px;font-weight:600;color:#6B7390">Average</span><span style="font:700 13.5px 'Outfit'">{{ rAvg }}</span></div>
+<div style="padding:8px 10px;border-radius:10px;background:#FDEBEB;display:flex;flex-direction:column;gap:2px"><span style="font-size:10.5px;font-weight:600;color:#A33">Highest</span><span style="font:700 13.5px 'Outfit';color:#E23B3B">{{ rHigh }}</span></div>
+</div>
+</div>
+<div style="margin:0 16px;padding:14px;border-radius:18px;background:#FFFFFF;display:flex;flex-direction:column;gap:2px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font:700 17px 'Outfit'">Compare prices</span><span style="font-size:11.5px;color:#6B7390">Updated 4 min ago</span></div>
+<sc-for list="{{ offers }}" as="o" hint-placeholder-count="5">
+<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #EEF1F7">
+<div style="width:36px;height:36px;flex:none;border-radius:999px;background:{{ o.mbg }};color:{{ o.mfg }};display:flex;align-items:center;justify-content:center;font:700 12.5px 'Outfit'">{{ o.mono }}</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:13.5px;font-weight:700">{{ o.store }}</span><span style="font-size:11px;color:#6B7390">{{ o.del }} · <span style="color:#7B4DFF;font-weight:700">+{{ o.cb }} CB</span></span></div>
+<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px"><span style="font:700 14.5px 'Outfit'">{{ o.price }}</span><span style="font-size:10.5px;font-weight:700;color:{{ o.dcol }}">{{ o.diff }}</span></div>
+<div onClick="{{ o.go }}" style="height:32px;padding:0 12px;border-radius:9px;background:#EAF0FF;color:#1F5BFF;display:flex;align-items:center;font-size:12px;font-weight:800;cursor:pointer">Go</div>
+</div>
+</sc-for>
+</div>
+<div style="margin:0 16px;padding:14px;border-radius:18px;background:#FFFFFF;display:flex;flex-direction:column;gap:10px">
+<span style="font:700 17px 'Outfit'">Bank offers &amp; coupons</span>
+<div style="padding:12px;border-radius:12px;background:#FFF1E4;display:flex;justify-content:space-between;align-items:center;gap:10px"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700">₹3,000 off with HDFC Bank cards</span><span style="font-size:11.5px;color:#8A5A1F">Flipkart · Effective price ₹58,999</span></div><span style="font-size:11px;font-weight:800;color:#D9730D">AUTO</span></div>
+<div style="padding:12px;border-radius:12px;background:#F4F6FB;display:flex;justify-content:space-between;align-items:center;gap:10px"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700">Up to ₹6,000 exchange bonus</span><span style="font-size:11.5px;color:#6B7390">Amazon · On select older iPhones</span></div><span style="font-size:11px;font-weight:800;color:#1F5BFF">INFO</span></div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.watchlist }}" hint-placeholder-val="{{ false }}">
+<div style="padding:8px 16px 24px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;flex-direction:column"><span style="font:700 24px 'Outfit'">Price Tracker</span><span style="font-size:12.5px;color:#6B7390">{{ watchCount }} products being watched</span></div><div onClick="{{ go.paste }}" style="height:40px;padding:0 14px;border-radius:12px;background:#1F5BFF;color:#FFFFFF;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;cursor:pointer">+ Add</div></div>
+<div style="padding:14px 16px;border-radius:18px;background:linear-gradient(120deg,#0E9F55,#14C38E);color:#FFFFFF;display:flex;justify-content:space-between;align-items:center"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;opacity:.9">You can save today</span><span style="font:700 28px 'Outfit'">₹8,000</span></div><span style="font-size:12px;font-weight:700;background:rgba(255,255,255,.22);padding:6px 10px;border-radius:9px">2 drops this week</span></div>
+<div style="display:flex;gap:6px"><sc-for list="{{ watchFilters }}" as="c" hint-placeholder-count="3"><span onClick="{{ c.on }}" style="font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1.5px solid {{ c.bd }}">{{ c.label }}</span></sc-for></div>
+<sc-for list="{{ watch }}" as="w" hint-placeholder-count="3">
+<div style="padding:12px;border-radius:18px;background:#FFFFFF;display:flex;flex-direction:column;gap:10px">
+<div onClick="{{ open.product }}" style="display:flex;gap:12px;cursor:pointer">
+<div style="width:68px;height:68px;flex:none;border-radius:12px;background:{{ w.tint }};display:flex;align-items:center;justify-content:center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="rgba(20,27,52,.22)" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 16l-5-5-8 9"></path></svg></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:4px;min-width:0"><span style="font-size:13.5px;font-weight:600;line-height:1.3">{{ w.name }}</span><div style="display:flex;align-items:baseline;gap:6px"><span style="font:700 16px 'Outfit'">{{ w.price }}</span><span style="font-size:11.5px;color:#6B7390">{{ w.store }}</span></div></div>
+<svg width="56" height="28" viewBox="0 0 64 28" fill="none" style="flex:none;align-self:center"><path d="{{ w.spark }}" stroke="{{ w.sc }}" stroke-width="2" stroke-linejoin="round"></path></svg>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #EEF1F7;padding-top:10px">
+<span style="font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:7px;background:{{ w.bg }};color:{{ w.fg }}">{{ w.status }}</span>
+<span style="font-size:12px;color:#6B7390">Target <b style="color:#141B34">{{ w.target }}</b></span>
+<span onClick="{{ w.remove }}" style="font-size:12px;font-weight:700;color:#E23B3B;cursor:pointer;padding:4px 0">Remove</span>
+</div>
+</div>
+</sc-for>
+<sc-if value="{{ watchEmpty }}" hint-placeholder-val="{{ false }}"><div style="padding:30px 10px;text-align:center;color:#6B7390;font-size:14px">No products here yet.</div></sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.deals }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column">
+<div style="background:#FFFFFF;padding:8px 16px 0;display:flex;flex-direction:column;gap:10px;position:sticky;top:0;z-index:2">
+<span style="font:700 24px 'Outfit'">Deals &amp; Coupons</span>
+<div style="display:flex"><sc-for list="{{ dealTabs }}" as="t" hint-placeholder-count="2"><span onClick="{{ t.on }}" style="flex:1;text-align:center;padding:10px 0;font-size:14px;font-weight:700;cursor:pointer;color:{{ t.fg }};border-bottom:3px solid {{ t.bd }}">{{ t.label }}</span></sc-for></div>
+</div>
+<div style="display:flex;gap:6px;overflow-x:auto;padding:12px 16px"><sc-for list="{{ storeChips }}" as="c" hint-placeholder-count="5"><span onClick="{{ c.on }}" style="flex:none;font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1.5px solid {{ c.bd }}">{{ c.label }}</span></sc-for></div>
+<div style="display:flex;flex-direction:column;gap:10px;padding:0 16px 24px">
+<sc-if value="{{ showDeals }}" hint-placeholder-val="{{ true }}">
+<div onClick="{{ open.product }}" style="border-radius:20px;background:linear-gradient(120deg,#1F5BFF,#7B4DFF);color:#FFFFFF;padding:16px;display:flex;gap:12px;align-items:center;cursor:pointer">
+<div style="flex:1;display:flex;flex-direction:column;gap:6px"><span style="align-self:flex-start;font-size:10.5px;font-weight:800;background:#FFC531;color:#141B34;padding:3px 8px;border-radius:6px">LOWEST EVER</span><span style="font:700 19px/1.2 'Outfit'">MacBook Air M3 drops to ₹89,990</span><span style="font-size:12px;opacity:.85">Flipkart · Extra ₹4,000 off with HDFC</span></div>
+<div style="width:86px;height:86px;flex:none;border-radius:14px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 16l-5-5-8 9"></path></svg></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<sc-for list="{{ deals }}" as="d" hint-placeholder-count="4">
+<div onClick="{{ open.product }}" style="border-radius:16px;background:#FFFFFF;padding:8px;display:flex;flex-direction:column;gap:5px;cursor:pointer">
+<div style="height:120px;border-radius:12px;background:{{ d.tint }};position:relative;display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="rgba(20,27,52,.22)" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 16l-5-5-8 9"></path></svg><span style="position:absolute;top:7px;left:7px;padding:3px 7px;border-radius:6px;background:#0E9F55;color:#FFFFFF;font-size:10.5px;font-weight:800">↓ {{ d.off }}%</span></div>
+<span style="font-size:10.5px;font-weight:700;color:#6B7390">{{ d.store }} · {{ d.ago }}</span>
+<span style="font-size:12.5px;font-weight:600;line-height:1.3;height:32px;overflow:hidden">{{ d.name }}</span>
+<div style="display:flex;align-items:baseline;gap:5px"><span style="font:700 15px 'Outfit'">{{ d.price }}</span><span style="font-size:10.5px;color:#9AA1B8;text-decoration:line-through">{{ d.was }}</span></div>
+<span style="align-self:flex-start;font-size:10px;font-weight:700;padding:3px 7px;border-radius:6px;background:#E5F7EE;color:#0E9F55">{{ d.tag }}</span>
+</div>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{ showCoupons }}" hint-placeholder-val="{{ false }}">
+<sc-for list="{{ coupons }}" as="c" hint-placeholder-count="4">
+<div style="display:flex;border-radius:16px;background:#FFFFFF;overflow:hidden">
+<div style="width:8px;flex:none;background:#FF7A1A"></div>
+<div style="flex:1;padding:14px;display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;justify-content:space-between"><span style="font-size:12px;font-weight:800">{{ c.store }}</span><span style="font-size:11px;font-weight:700;color:{{ c.ecol }}">{{ c.exp }}</span></div>
+<span style="font:700 16px/1.25 'Outfit'">{{ c.title }}</span>
+<span style="font-size:11.5px;color:#0E9F55;font-weight:600">✓ Worked for {{ c.rate }} users today</span>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;padding:6px 6px 6px 12px;border-radius:10px;border:1.5px dashed #C3CDEB;background:#F4F6FB">
+<span style="font:700 14px 'Outfit';letter-spacing:.08em">{{ c.code }}</span>
+<span onClick="{{ c.copy }}" style="font-size:12px;font-weight:800;padding:7px 14px;border-radius:8px;cursor:pointer;background:{{ c.bbg }};color:{{ c.bfg }}">{{ c.blabel }}</span>
+</div>
+</div>
+</div>
+</sc-for>
+</sc-if>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.fakesale }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:14px;padding-bottom:24px">
+<div style="background:linear-gradient(160deg,#FF4E6A,#FF7A1A);color:#FFFFFF;padding:4px 16px 20px;border-radius:0 0 28px 28px;display:flex;flex-direction:column;gap:12px">
+<div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-8px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:700 26px/1.1 'Outfit'">Fake Sale Detector</span>
+<span style="font-size:13.5px;opacity:.92;line-height:1.45">We check every sale price against the last 90 days, so you know if the discount is real.</span>
+<div style="display:flex;gap:8px"><div style="flex:1;height:46px;border-radius:12px;background:#FFFFFF;display:flex;align-items:center;padding:0 12px;font-size:13px;color:#9AA1B8">Paste product link here</div><div onClick="{{ go.paste }}" style="height:46px;padding:0 16px;border-radius:12px;background:#141B34;color:#FFFFFF;display:flex;align-items:center;font-size:13.5px;font-weight:700;cursor:pointer">Check</div></div>
+</div>
+<div style="margin:0 16px;padding:14px;border-radius:18px;background:#FFFFFF;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13.5px;font-weight:700">Flipkart Big Billion Days</span><span style="font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:6px;background:#FDEBEB;color:#E23B3B">● LIVE</span></div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+<div style="padding:10px;border-radius:12px;background:#F4F6FB;display:flex;flex-direction:column"><span style="font:700 20px 'Outfit'">12,480</span><span style="font-size:10.5px;color:#6B7390;font-weight:600">checked</span></div>
+<div style="padding:10px;border-radius:12px;background:#FDEBEB;display:flex;flex-direction:column"><span style="font:700 20px 'Outfit';color:#E23B3B">31%</span><span style="font-size:10.5px;color:#A33;font-weight:600">fake</span></div>
+<div style="padding:10px;border-radius:12px;background:#E5F7EE;display:flex;flex-direction:column"><span style="font:700 20px 'Outfit';color:#0E9F55">22%</span><span style="font-size:10.5px;color:#2D6B4A;font-weight:600">real lows</span></div>
+</div>
+</div>
+<div style="display:flex;gap:6px;overflow-x:auto;padding:0 16px"><sc-for list="{{ fsFilters }}" as="c" hint-placeholder-count="4"><span onClick="{{ c.on }}" style="flex:none;font-size:12.5px;font-weight:700;padding:7px 12px;border-radius:999px;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1.5px solid {{ c.bd }}">{{ c.label }}</span></sc-for></div>
+<div style="display:flex;flex-direction:column;gap:10px;padding:0 16px">
+<sc-for list="{{ fsItems }}" as="f" hint-placeholder-count="3">
+<div onClick="{{ open.product }}" style="padding:12px;border-radius:18px;background:#FFFFFF;display:flex;flex-direction:column;gap:10px;cursor:pointer">
+<div style="display:flex;gap:10px;align-items:center"><div style="width:48px;height:48px;flex:none;border-radius:12px;background:{{ f.tint }}"></div><div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:13.5px;font-weight:700;line-height:1.3">{{ f.name }}</span><span style="font-size:11.5px;color:#6B7390">{{ f.store }} · Sale price <b style="color:#141B34">{{ f.sale }}</b></span></div><span style="flex:none;align-self:flex-start;font-size:11px;font-weight:800;padding:4px 8px;border-radius:7px;background:{{ f.bg }};color:{{ f.fg }}">{{ f.verdict }}</span></div>
+<svg width="100%" height="36" viewBox="0 0 280 40" preserveAspectRatio="none" fill="none"><path d="{{ f.path }}" stroke="{{ f.fg }}" stroke-width="2" vector-effect="non-scaling-stroke"></path></svg>
+<span style="font-size:12.5px;line-height:1.45;color:#454C66">{{ f.msg }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.paste }}" hint-placeholder-val="{{ false }}">
+<div style="padding:4px 16px 24px;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;align-items:center;gap:6px"><div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-8px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div><span style="font:700 20px 'Outfit'">Track any product</span></div>
+<div style="padding:14px;border-radius:18px;background:#FFFFFF;display:flex;flex-direction:column;gap:12px">
+<span style="font-size:13px;font-weight:700">Product link</span>
+<div style="min-height:80px;border-radius:12px;background:#F4F6FB;border:1.5px solid {{ linkBorder }};padding:12px;font-size:13px;line-height:1.5;color:{{ linkColor }};word-break:break-all">{{ linkText }}</div>
+<div style="display:flex;gap:8px">
+<div onClick="{{ pasteLink }}" style="flex:1;height:48px;border-radius:12px;background:#EAF0FF;color:#1F5BFF;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;cursor:pointer">📋 Paste</div>
+<div onClick="{{ analyze }}" style="flex:1;height:48px;border-radius:12px;background:#1F5BFF;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;cursor:pointer;opacity:{{ linkOk }}">Check price</div>
+</div>
+</div>
+<sc-if value="{{ analyzing }}" hint-placeholder-val="{{ false }}">
+<div style="padding:16px;border-radius:18px;background:#FFFFFF;display:flex;flex-direction:column;gap:12px">
+<sc-for list="{{ steps }}" as="s" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:10px;font-size:13.5px;font-weight:600;opacity:{{ s.o }}"><div style="width:20px;height:20px;border-radius:999px;border:2px solid #0E9F55;background:{{ s.bg }};transition:background .3s"></div>{{ s.label }}</div></sc-for>
+</div>
+</sc-if>
+<sc-if value="{{ notAnalyzing }}" hint-placeholder-val="{{ true }}">
+<div style="padding:16px;border-radius:18px;background:#FFFFFF;display:flex;flex-direction:column;gap:14px">
+<span style="font:700 16px 'Outfit'">Or share directly from store apps</span>
+<div style="display:flex;gap:12px;align-items:center"><span style="width:30px;height:30px;flex:none;border-radius:999px;background:#EAF0FF;color:#1F5BFF;display:flex;align-items:center;justify-content:center;font:700 14px 'Outfit'">1</span><span style="font-size:13px;line-height:1.4">Open a product on Amazon, Flipkart, Myntra or 15 other stores</span></div>
+<div style="display:flex;gap:12px;align-items:center"><span style="width:30px;height:30px;flex:none;border-radius:999px;background:#EAF0FF;color:#1F5BFF;display:flex;align-items:center;justify-content:center;font:700 14px 'Outfit'">2</span><span style="font-size:13px;line-height:1.4">Tap <b>Share</b> and choose <b>Britto</b></span></div>
+<div style="display:flex;gap:12px;align-items:center"><span style="width:30px;height:30px;flex:none;border-radius:999px;background:#EAF0FF;color:#1F5BFF;display:flex;align-items:center;justify-content:center;font:700 14px 'Outfit'">3</span><span style="font-size:13px;line-height:1.4">See price history, other stores and fake-sale check</span></div>
+</div>
+<div style="padding:14px 16px;border-radius:18px;background:#FFFFFF;display:flex;justify-content:space-between;align-items:center;gap:12px"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:700">Price bubble</span><span style="font-size:12px;color:#6B7390">Show Britto prices on top of store apps · <span onClick="{{ demoBubble }}" style="color:#1F5BFF;font-weight:800;cursor:pointer">See demo</span></span></div><div onClick="{{ tg.bubble }}" style="width:46px;height:26px;flex:none;border-radius:999px;background:{{ t.bubble.bg }};padding:3px;cursor:pointer;transition:background .2s"><div style="width:20px;height:20px;border-radius:999px;background:#FFFFFF;transform:translateX({{ t.bubble.x }}px);transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div></div></div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.wallet }}" hint-placeholder-val="{{ false }}">
+<div style="padding:8px 16px 24px;display:flex;flex-direction:column;gap:14px">
+<span style="font:700 24px 'Outfit'">My Wallet</span>
+<div style="padding:18px;border-radius:22px;background:linear-gradient(130deg,#1F5BFF,#7B4DFF);color:#FFFFFF;display:flex;flex-direction:column;gap:14px;position:relative;overflow:hidden">
+<div style="position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:999px;background:rgba(255,255,255,.12)"></div>
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:12.5px;opacity:.85">Available cashback</span><span style="font:700 38px/1.1 'Outfit'">{{ balance }}</span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<div style="padding:10px;border-radius:12px;background:rgba(255,255,255,.16);display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;opacity:.85">Pending</span><span style="font:700 15px 'Outfit';color:#FFD666">₹380.00</span></div>
+<div style="padding:10px;border-radius:12px;background:rgba(255,255,255,.16);display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;opacity:.85">Total earned</span><span style="font:700 15px 'Outfit'">₹6,915.50</span></div>
+</div>
+<div onClick="{{ go.withdraw }}" style="height:48px;border-radius:12px;background:#FFFFFF;color:#1F5BFF;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;cursor:pointer">Withdraw money</div>
+</div>
+<div style="padding:10px 12px;border-radius:12px;background:#FFF7D6;font-size:12px;color:#7A5A00;line-height:1.45">ℹ️ Cashback confirms 30–60 days after delivery. Minimum withdrawal ₹100.</div>
+<div style="display:flex;gap:6px"><sc-for list="{{ txFilters }}" as="c" hint-placeholder-count="3"><span onClick="{{ c.on }}" style="font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1.5px solid {{ c.bd }}">{{ c.label }}</span></sc-for></div>
+<div style="border-radius:18px;background:#FFFFFF;padding:4px 14px">
+<sc-for list="{{ txs }}" as="x" hint-placeholder-count="5">
+<div onClick="{{ x.open }}" style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #EEF1F7;cursor:pointer">
+<div style="width:38px;height:38px;flex:none;border-radius:999px;background:{{ x.col }};color:#FFFFFF;display:flex;align-items:center;justify-content:center;font:700 12.5px 'Outfit'">{{ x.mono }}</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ x.item }}</span><span style="font-size:11px;color:#6B7390">{{ x.store }} · {{ x.date }}</span></div>
+<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px"><span style="font:700 14px 'Outfit';color:{{ x.acol }}">{{ x.amt }}</span><span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;background:{{ x.bg }};color:{{ x.fg }}">{{ x.status }}</span></div>
+</div>
+</sc-for>
+</div>
+<div onClick="{{ go.claim }}" style="padding:14px 16px;border-radius:16px;background:#FFFFFF;display:flex;justify-content:space-between;align-items:center;cursor:pointer"><span style="font-size:13.5px;font-weight:600">Missing cashback?</span><span style="font-size:13px;font-weight:800;color:#1F5BFF">Raise a claim →</span></div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.withdraw }}" hint-placeholder-val="{{ false }}">
+<div style="padding:4px 16px 24px;display:flex;flex-direction:column;gap:16px;min-height:100%">
+<div style="display:flex;align-items:center;gap:6px"><div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-8px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div><span style="font:700 20px 'Outfit'">Withdraw</span></div>
+<sc-if value="{{ wdForm }}" hint-placeholder-val="{{ true }}">
+<div style="padding:16px;border-radius:18px;background:#FFFFFF;display:flex;flex-direction:column;gap:10px">
+<span style="font-size:12.5px;color:#6B7390;font-weight:600">Enter amount · Available {{ balance }}</span>
+<div style="display:flex;align-items:center;gap:4px;border-bottom:2px solid #1F5BFF;padding-bottom:6px"><span style="font:700 34px 'Outfit'">₹</span><input value="{{ wdAmt }}" onChange="{{ onWdAmt }}" inputmode="numeric" style="flex:1;border:0;outline:none;background:transparent;font:700 34px 'Outfit';color:#141B34;width:100%"></input></div>
+<div style="display:flex;gap:6px"><sc-for list="{{ amtChips }}" as="a" hint-placeholder-count="3"><span onClick="{{ a.on }}" style="font-size:12.5px;font-weight:700;padding:7px 14px;border-radius:999px;background:#EAF0FF;color:#1F5BFF;cursor:pointer">{{ a.label }}</span></sc-for></div>
+<span style="font-size:12px;font-weight:600;color:{{ wdHintCol }}">{{ wdHint }}</span>
+</div>
+<span style="font:700 15px 'Outfit'">Choose payout method</span>
+<div style="display:flex;flex-direction:column;gap:8px">
+<sc-for list="{{ methods }}" as="m" hint-placeholder-count="4">
+<div onClick="{{ m.on }}" style="padding:14px;border-radius:14px;background:#FFFFFF;border:2px solid {{ m.bd }};display:flex;align-items:center;gap:12px;cursor:pointer">
+<div style="width:20px;height:20px;flex:none;border-radius:999px;border:2px solid #1F5BFF;display:flex;align-items:center;justify-content:center"><div style="width:10px;height:10px;border-radius:999px;background:#1F5BFF;opacity:{{ m.dot }}"></div></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:700">{{ m.label }}</span><span style="font-size:11.5px;color:#6B7390">{{ m.sub }}</span></div>
+<span style="font-size:11px;font-weight:800;color:#0E9F55">{{ m.bonus }}</span>
+</div>
+</sc-for>
+</div>
+<div onClick="{{ doWithdraw }}" style="margin-top:auto;height:54px;border-radius:14px;background:#1F5BFF;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;cursor:pointer;opacity:{{ wdOk }}"><span>Withdraw {{ wdLabel }}</span></div>
+</sc-if>
+<sc-if value="{{ wdDone }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding-bottom:40px;text-align:center">
+<div style="width:84px;height:84px;border-radius:999px;background:#E5F7EE;display:flex;align-items:center;justify-content:center"><div style="width:60px;height:60px;border-radius:999px;background:#0E9F55;color:#FFFFFF;display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"></path></svg></div></div>
+<span style="font:700 26px 'Outfit'">{{ wdLabel }} withdrawn!</span>
+<span style="font-size:14px;color:#6B7390;line-height:1.5;max-width:260px">{{ wdDoneMsg }}</span>
+<div onClick="{{ tab.wallet }}" style="margin-top:16px;height:52px;width:100%;border-radius:14px;background:#EAF0FF;color:#1F5BFF;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;cursor:pointer">Back to wallet</div>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.rewards }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:16px;padding-bottom:24px">
+<div style="background:linear-gradient(170deg,#7B4DFF,#1F5BFF);color:#FFFFFF;padding:4px 16px 24px;border-radius:0 0 28px 28px;display:flex;flex-direction:column;gap:10px;align-items:center">
+<div style="width:100%;display:flex;justify-content:space-between;align-items:center"><div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-8px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div><span style="height:32px;padding:0 12px;border-radius:999px;background:rgba(255,255,255,.2);display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800"><span style="width:16px;height:16px;border-radius:999px;background:#FFC531"></span>{{ coins }} coins</span></div>
+<span style="font:700 26px 'Outfit'">Spin &amp; Win</span>
+<span style="font-size:13px;opacity:.9">{{ spinsLeftLabel }} · 1,000 coins = ₹10</span>
+<div style="position:relative;width:260px;height:260px;margin-top:6px">
+<div style="position:absolute;left:50%;top:-8px;margin-left:-11px;width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-top:22px solid #FFC531;z-index:2;filter:drop-shadow(0 2px 2px rgba(0,0,0,.3))"></div>
+<div style="position:absolute;inset:0;border-radius:999px;background:conic-gradient(#FF7A1A 0 45deg,#FFFFFF 45deg 90deg,#0E9F55 90deg 135deg,#FFF1E4 135deg 180deg,#E5306B 180deg 225deg,#FFFFFF 225deg 270deg,#FFC531 270deg 315deg,#EAF0FF 315deg 360deg);border:8px solid #FFC531;box-shadow:0 10px 30px rgba(0,0,0,.25);transform:rotate({{ wheelDeg }}deg);transition:{{ wheelTr }}">
+<div style="position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(22.5deg)"><span style="position:absolute;left:-30px;top:-108px;width:60px;text-align:center;font:800 12px 'Outfit';color:#FFFFFF">10 coins</span></div>
+<div style="position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(67.5deg)"><span style="position:absolute;left:-30px;top:-110px;width:60px;text-align:center;font:800 18px 'Outfit';color:#141B34">₹5</span></div>
+<div style="position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(112.5deg)"><span style="position:absolute;left:-30px;top:-108px;width:60px;text-align:center;font:800 12px 'Outfit';color:#FFFFFF">50 coins</span></div>
+<div style="position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(157.5deg)"><span style="position:absolute;left:-30px;top:-108px;width:60px;text-align:center;font:800 11px 'Outfit';color:#141B34">Try again</span></div>
+<div style="position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(202.5deg)"><span style="position:absolute;left:-30px;top:-110px;width:60px;text-align:center;font:800 18px 'Outfit';color:#FFFFFF">₹10</span></div>
+<div style="position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(247.5deg)"><span style="position:absolute;left:-30px;top:-108px;width:60px;text-align:center;font:800 12px 'Outfit';color:#141B34">25 coins</span></div>
+<div style="position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(292.5deg)"><span style="position:absolute;left:-30px;top:-110px;width:60px;text-align:center;font:800 18px 'Outfit';color:#141B34">₹2</span></div>
+<div style="position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(337.5deg)"><span style="position:absolute;left:-30px;top:-108px;width:60px;text-align:center;font:800 11px 'Outfit';color:#141B34">100 coins</span></div>
+</div>
+<div onClick="{{ spin }}" style="position:absolute;left:50%;top:50%;width:74px;height:74px;margin:-37px 0 0 -37px;border-radius:999px;background:#141B34;border:5px solid #FFC531;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font:800 16px 'Outfit';cursor:pointer;z-index:2">SPIN</div>
+</div>
+<span style="font-size:14px;font-weight:800;min-height:20px;color:#FFD666">{{ spinMsg }}</span>
+</div>
+<div style="margin:0 16px;padding:14px;border-radius:18px;background:#FFFFFF;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 16px 'Outfit'">Daily check-in</span><span style="font-size:12px;font-weight:700;color:#FF7A1A">🔥 Day 4 streak</span></div>
+<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px"><sc-for list="{{ streak }}" as="s" hint-placeholder-count="7"><div style="height:56px;border-radius:12px;background:{{ s.bg }};color:{{ s.fg }};border:1.5px solid {{ s.bd }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font:800 12px 'Outfit'">+{{ s.c }}</span><span style="font-size:9.5px;font-weight:700;opacity:.8">Day {{ s.d }}</span></div></sc-for></div>
+</div>
+<div style="margin:0 16px;padding:6px 14px;border-radius:18px;background:#FFFFFF;display:flex;flex-direction:column">
+<span style="font:700 16px 'Outfit';padding:8px 0">Earn more coins</span>
+<sc-for list="{{ tasks }}" as="k" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid #EEF1F7"><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:13.5px;font-weight:600">{{ k.t }}</span><span style="font-size:11.5px;color:#6B7390">{{ k.p }}</span></div><span style="font-size:12px;font-weight:800;padding:6px 10px;border-radius:9px;background:#FFF7D6;color:#B38400">+{{ k.c }}</span></div></sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.refer }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:14px;padding-bottom:24px">
+<div style="background:linear-gradient(160deg,#0E9F55,#14C38E);color:#FFFFFF;padding:4px 16px 24px;border-radius:0 0 28px 28px;display:flex;flex-direction:column;gap:10px">
+<div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-8px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:800 32px/1.05 'Outfit'">Invite friends,<br></br>earn ₹50 each</span>
+<span style="font-size:13.5px;opacity:.92;line-height:1.45">Your friend gets ₹50 on their first cashback order. You get ₹50 when it confirms, plus 10% of their cashback for a year.</span>
+</div>
+<div style="margin:0 16px;padding:14px;border-radius:18px;background:#FFFFFF;display:flex;flex-direction:column;gap:12px">
+<span style="font-size:12.5px;font-weight:600;color:#6B7390">Your referral code</span>
+<div style="padding:6px 6px 6px 16px;border-radius:12px;border:2px dashed #0E9F55;background:#E5F7EE;display:flex;align-items:center;justify-content:space-between"><span style="font:800 19px 'Outfit';letter-spacing:.1em;color:#0B7A41">AARAV50</span><div onClick="{{ copyRef }}" style="height:40px;padding:0 16px;border-radius:9px;background:#0E9F55;color:#FFFFFF;display:flex;align-items:center;font-size:13.5px;font-weight:800;cursor:pointer">{{ refCopyLabel }}</div></div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:8px">
+<div onClick="{{ shareRef }}" style="height:48px;border-radius:12px;background:#25D366;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;cursor:pointer">Share on WhatsApp</div>
+<div onClick="{{ shareRef }}" style="height:48px;border-radius:12px;background:#EAF0FF;color:#1F5BFF;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;cursor:pointer">More</div>
+</div>
+</div>
+<div style="margin:0 16px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+<div style="padding:12px;border-radius:16px;background:#FFFFFF;display:flex;flex-direction:column;gap:2px"><span style="font:700 22px 'Outfit'">6</span><span style="font-size:11.5px;color:#6B7390;font-weight:600">Invited</span></div>
+<div style="padding:12px;border-radius:16px;background:#FFFFFF;display:flex;flex-direction:column;gap:2px"><span style="font:700 22px 'Outfit'">4</span><span style="font-size:11.5px;color:#6B7390;font-weight:600">Joined</span></div>
+<div style="padding:12px;border-radius:16px;background:#FFFFFF;display:flex;flex-direction:column;gap:2px"><span style="font:700 22px 'Outfit';color:#0E9F55">₹200</span><span style="font-size:11.5px;color:#6B7390;font-weight:600">Earned</span></div>
+</div>
+<div style="margin:0 16px;padding:6px 14px;border-radius:18px;background:#FFFFFF;display:flex;flex-direction:column">
+<span style="font:700 16px 'Outfit';padding:8px 0">Your friends</span>
+<sc-for list="{{ friends }}" as="f" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid #EEF1F7"><div style="width:36px;height:36px;border-radius:999px;background:#EAF0FF;color:#1F5BFF;display:flex;align-items:center;justify-content:center;font:700 15px 'Outfit'">{{ f.i }}</div><span style="flex:1;font-size:13.5px;font-weight:600">{{ f.n }}</span><span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;background:{{ f.bg }};color:{{ f.fg }}">{{ f.s }}</span></div></sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.flights }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:14px;padding-bottom:24px">
+<div style="background:linear-gradient(160deg,#0886C9,#1F5BFF);color:#FFFFFF;padding:4px 16px 70px;border-radius:0 0 28px 28px;display:flex;flex-direction:column;gap:8px">
+<div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-8px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:700 26px 'Outfit'">Compare flights</span>
+<span style="font-size:13px;opacity:.9;line-height:1.45">MakeMyTrip, Ixigo, Goibibo, Cleartrip, EaseMyTrip and airline sites in one search.</span>
+</div>
+<div style="margin:-70px 16px 0;padding:14px;border-radius:20px;background:#FFFFFF;box-shadow:0 10px 30px rgba(20,30,80,.12);display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;gap:4px;padding:4px;border-radius:12px;background:#F4F6FB"><sc-for list="{{ tripTypes }}" as="r" hint-placeholder-count="2"><span onClick="{{ r.on }}" style="flex:1;text-align:center;font-size:13px;padding:8px 0;border-radius:9px;cursor:pointer;background:{{ r.bg }};color:{{ r.fg }};font-weight:700">{{ r.label }}</span></sc-for></div>
+<div style="position:relative;display:flex;flex-direction:column;border:1.5px solid #E3E7F2;border-radius:14px">
+<div style="padding:12px 14px;display:flex;flex-direction:column;gap:2px;border-bottom:1.5px solid #E3E7F2"><span style="font-size:11px;font-weight:600;color:#6B7390">From</span><div style="display:flex;align-items:baseline;gap:8px"><span style="font:800 22px 'Outfit'">{{ from.code }}</span><span style="font-size:13px;color:#6B7390">{{ from.city }}</span></div></div>
+<div style="padding:12px 14px;display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;font-weight:600;color:#6B7390">To</span><div style="display:flex;align-items:baseline;gap:8px"><span style="font:800 22px 'Outfit'">{{ to.code }}</span><span style="font-size:13px;color:#6B7390">{{ to.city }}</span></div></div>
+<div onClick="{{ swapCities }}" style="position:absolute;right:16px;top:50%;margin-top:-20px;width:40px;height:40px;border-radius:999px;background:#1F5BFF;color:#FFFFFF;display:flex;align-items:center;justify-content:center;cursor:pointer;transform:rotate({{ swapDeg }}deg);transition:transform .35s;box-shadow:0 4px 12px rgba(31,91,255,.4)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"></path></svg></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<div style="padding:10px 12px;border-radius:12px;background:#F4F6FB;display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;font-weight:600;color:#6B7390">Departure</span><span style="font-size:14px;font-weight:700">Wed, 4 Nov</span></div>
+<div style="padding:10px 12px;border-radius:12px;background:#F4F6FB;display:flex;flex-direction:column;gap:2px;opacity:{{ retOpacity }}"><span style="font-size:11px;font-weight:600;color:#6B7390">Return</span><span style="font-size:14px;font-weight:700">{{ retLabel }}</span></div>
+<div style="padding:10px 12px;border-radius:12px;background:#F4F6FB;display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;font-weight:600;color:#6B7390">Travellers</span><span style="font-size:14px;font-weight:700">1 Adult</span></div>
+<div style="padding:10px 12px;border-radius:12px;background:#F4F6FB;display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;font-weight:600;color:#6B7390">Class</span><span style="font-size:14px;font-weight:700">Economy</span></div>
+</div>
+<div onClick="{{ go.flightResults }}" style="height:52px;border-radius:14px;background:#FF7A1A;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;cursor:pointer">Search flights</div>
+</div>
+<div style="margin:0 16px;padding:6px 14px;border-radius:18px;background:#FFFFFF;display:flex;flex-direction:column">
+<span style="font:700 15px 'Outfit';padding:8px 0">Recent searches</span>
+<div style="display:flex;justify-content:space-between;padding:11px 0;border-top:1px solid #EEF1F7;font-size:13.5px;font-weight:600"><span>BLR → DEL · 14 Nov</span><span style="color:#0E9F55">from ₹5,620</span></div>
+<div style="display:flex;justify-content:space-between;padding:11px 0;border-top:1px solid #EEF1F7;font-size:13.5px;font-weight:600"><span>BOM → GOI · 20 Dec</span><span style="color:#0E9F55">from ₹3,980</span></div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.flightResults }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:12px;padding-bottom:24px">
+<div style="background:#FFFFFF;padding:4px 12px 12px;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:center;gap:6px">
+<div onClick="{{ back }}" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<div style="display:flex;flex-direction:column"><span style="font:700 17px 'Outfit'">{{ from.city }} → {{ to.city }}</span><span style="font-size:11.5px;color:#6B7390">Wed, 4 Nov · 1 Adult · Economy</span></div>
+</div>
+<div style="display:flex;gap:6px;overflow-x:auto"><sc-for list="{{ dateStrip }}" as="d" hint-placeholder-count="5"><div onClick="{{ d.on }}" style="flex:none;width:70px;padding:8px 0;border-radius:12px;text-align:center;display:flex;flex-direction:column;gap:2px;cursor:pointer;background:{{ d.bg }};color:{{ d.fg }};border:1.5px solid {{ d.bd }}"><span style="font-size:11px;font-weight:600">{{ d.day }}</span><span style="font:700 12.5px 'Outfit'">{{ d.price }}</span></div></sc-for></div>
+</div>
+<div style="display:flex;gap:6px;padding:0 16px"><sc-for list="{{ flightSorts }}" as="c" hint-placeholder-count="3"><span onClick="{{ c.on }}" style="font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1.5px solid {{ c.bd }}">{{ c.label }}</span></sc-for></div>
+<div style="display:flex;flex-direction:column;gap:10px;padding:0 16px">
+<sc-for list="{{ flightsList }}" as="f" hint-placeholder-count="4">
+<div style="border-radius:18px;background:#FFFFFF;overflow:hidden">
+<div onClick="{{ f.toggle }}" style="padding:14px;display:flex;flex-direction:column;gap:10px;cursor:pointer">
+<div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;align-items:center;gap:8px"><span style="width:26px;height:26px;border-radius:8px;background:#EAF0FF;display:flex;align-items:center;justify-content:center;color:#1F5BFF"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M2.5 13.5l19-8-5.5 15-3.5-6.5z"></path></svg></span><span style="font-size:13px;font-weight:700">{{ f.air }}</span><span style="font-size:11px;color:#9AA1B8">{{ f.no }}</span></div><span style="font:800 17px 'Outfit';color:#0E9F55">{{ f.price }}</span></div>
+<div style="display:flex;align-items:center;gap:10px"><span style="font:700 18px 'Outfit'">{{ f.dep }}</span><div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:10.5px;color:#6B7390;font-weight:600">{{ f.dur }}</span><div style="width:100%;height:2px;border-radius:2px;background:#E3E7F2"></div><span style="font-size:10.5px;color:#0E9F55;font-weight:700">{{ f.stops }}</span></div><span style="font:700 18px 'Outfit'">{{ f.arr }}</span></div>
+<div style="font-size:11.5px;color:#6B7390;border-top:1px solid #EEF1F7;padding-top:8px">Cheapest on <b style="color:#141B34">{{ f.best }}</b> · compare {{ f.nsites }} sites ▾</div>
+</div>
+<sc-if value="{{ f.open }}" hint-placeholder-val="{{ false }}">
+<div style="background:#F4F6FB;padding:4px 14px">
+<sc-for list="{{ f.providers }}" as="p" hint-placeholder-count="4"><div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #E3E7F2"><span style="font-size:13px;font-weight:600">{{ p.n }}</span><div style="display:flex;align-items:center;gap:10px"><span style="font:700 13.5px 'Outfit'">{{ p.p }}</span><span onClick="{{ p.go }}" style="font-size:12px;font-weight:800;padding:6px 12px;border-radius:8px;background:#FF7A1A;color:#FFFFFF;cursor:pointer">Book</span></div></div></sc-for>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.notifications }}" hint-placeholder-val="{{ false }}">
+<div style="padding:4px 16px 24px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;align-items:center;gap:6px"><div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-8px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div><span style="font:700 20px 'Outfit'">Notifications</span></div><span onClick="{{ markRead }}" style="font-size:12.5px;font-weight:700;color:#1F5BFF;cursor:pointer">Mark all read</span></div>
+<div style="display:flex;gap:6px;overflow-x:auto"><sc-for list="{{ notifFilters }}" as="c" hint-placeholder-count="4"><span onClick="{{ c.on }}" style="flex:none;font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1.5px solid {{ c.bd }}">{{ c.label }}</span></sc-for></div>
+<sc-for list="{{ notifs }}" as="n" hint-placeholder-count="5">
+<div onClick="{{ n.open }}" style="display:flex;gap:12px;padding:12px;border-radius:16px;background:#FFFFFF;cursor:pointer;position:relative">
+<div style="width:40px;height:40px;flex:none;border-radius:12px;background:#F4F6FB;color:{{ n.col }};display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1112 0v5l1.5 2h-15z"></path><path d="M10 20a2 2 0 004 0"></path></svg></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:3px"><div style="display:flex;justify-content:space-between;gap:8px"><span style="font-size:11px;font-weight:800;color:{{ n.col }}">{{ n.kind }}</span><span style="font-size:11px;color:#9AA1B8">{{ n.time }}</span></div><span style="font-size:13.5px;font-weight:700;line-height:1.35">{{ n.title }}</span><span style="font-size:12.5px;color:#6B7390;line-height:1.4">{{ n.body }}</span></div>
+<div style="position:absolute;top:12px;right:12px;width:8px;height:8px;border-radius:9px;background:#1F5BFF;opacity:{{ n.unread }}"></div>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.profile }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:14px;padding-bottom:24px">
+<div style="background:#1F5BFF;color:#FFFFFF;padding:16px 16px 60px;border-radius:0 0 28px 28px;display:flex;align-items:center;gap:14px">
+<div style="width:62px;height:62px;border-radius:999px;background:#FFFFFF;color:#1F5BFF;display:flex;align-items:center;justify-content:center;font:800 26px 'Outfit'">A</div>
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font:700 21px 'Outfit'">{{ pname }}</span><span style="font-size:12.5px;opacity:.85">+91 98765 43210</span></div><div onClick="{{ go.editProfile }}" style="margin-left:auto;height:34px;padding:0 14px;border-radius:999px;background:rgba(255,255,255,.2);display:flex;align-items:center;font-size:12.5px;font-weight:800;cursor:pointer">Edit</div>
+</div>
+<div style="margin:-56px 16px 0;padding:14px 8px;border-radius:18px;background:#FFFFFF;box-shadow:0 8px 24px rgba(20,30,80,.1);display:grid;grid-template-columns:repeat(3,1fr);text-align:center">
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font:700 20px 'Outfit';color:#0E9F55">₹18.4k</span><span style="font-size:11px;color:#6B7390;font-weight:600">Total saved</span></div>
+<div style="display:flex;flex-direction:column;gap:2px;border-left:1px solid #EEF1F7;border-right:1px solid #EEF1F7"><span style="font:700 20px 'Outfit'">{{ watchCount }}</span><span style="font-size:11px;color:#6B7390;font-weight:600">Tracking</span></div>
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font:700 20px 'Outfit';color:#D9A100">{{ coins }}</span><span style="font-size:11px;color:#6B7390;font-weight:600">Coins</span></div>
+</div>
+<div style="margin:0 16px;padding:4px 14px;border-radius:18px;background:#FFFFFF;display:flex;flex-direction:column">
+<div onClick="{{ tab.wallet }}" style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #EEF1F7;cursor:pointer;font-size:14px;font-weight:600"><span>💰 Wallet &amp; withdrawals</span><span style="color:#6B7390;font-size:13px">{{ balance }} ›</span></div>
+<div onClick="{{ go.rewards }}" style="display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #EEF1F7;cursor:pointer;font-size:14px;font-weight:600"><span>🎡 Rewards &amp; spin</span><span style="color:#9AA1B8">›</span></div>
+<div onClick="{{ go.refer }}" style="display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #EEF1F7;cursor:pointer;font-size:14px;font-weight:600"><span>🎁 Refer &amp; earn</span><span style="color:#9AA1B8">›</span></div>
+<div onClick="{{ go.payout }}" style="display:flex;justify-content:space-between;padding:14px 0;font-size:14px;font-weight:600;cursor:pointer"><span>🏦 Payout methods</span><span style="color:#6B7390;font-size:12.5px">UPI ›</span></div>
+</div>
+<div style="margin:0 16px;padding:4px 14px;border-radius:18px;background:#FFFFFF;display:flex;flex-direction:column">
+<span style="font:700 15px 'Outfit';padding:12px 0 4px">Alert settings</span>
+<sc-for list="{{ toggles }}" as="g" hint-placeholder-count="4">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #EEF1F7"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13.5px;font-weight:600">{{ g.label }}</span><span style="font-size:11.5px;color:#6B7390">{{ g.sub }}</span></div><div onClick="{{ g.on }}" style="width:46px;height:26px;flex:none;border-radius:999px;background:{{ g.bg }};padding:3px;cursor:pointer;transition:background .2s"><div style="width:20px;height:20px;border-radius:999px;background:#FFFFFF;transform:translateX({{ g.x }}px);transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div></div></div>
+</sc-for>
+</div>
+<div style="margin:0 16px;padding:4px 14px;border-radius:18px;background:#FFFFFF;display:flex;flex-direction:column">
+<div onClick="{{ go.language }}" style="display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #EEF1F7;font-size:14px;font-weight:600;cursor:pointer"><span>🌐 Language</span><span style="color:#6B7390;font-size:13px">{{ lang }} ›</span></div>
+<div onClick="{{ go.help }}" style="display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #EEF1F7;font-size:14px;font-weight:600;cursor:pointer"><span>❓ Help &amp; support</span><span style="color:#9AA1B8">›</span></div>
+<div style="display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #EEF1F7;font-size:14px;font-weight:600"><span>🔒 Privacy</span><span style="color:#9AA1B8">›</span></div>
+<div onClick="{{ logout }}" style="padding:14px 0;font-size:14px;font-weight:700;color:#E23B3B;cursor:pointer">Log out</div>
+</div>
+<span style="font-size:11px;color:#9AA1B8;text-align:center">Britto v4.0.0</span>
+</div>
+</sc-if>
+<sc-if value="{{ is.permissions }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100%;display:flex;flex-direction:column;gap:18px;padding:16px 20px 24px;background:#FFFFFF">
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;font-weight:800;color:#1F5BFF;letter-spacing:.04em">STEP 1 OF 2</span><span onClick="{{ permsNext }}" style="font-size:13px;font-weight:700;color:#6B7390;cursor:pointer;padding:8px 0">Skip</span></div>
+<div style="height:6px;border-radius:9px;background:#EAF0FF"><div style="width:50%;height:100%;border-radius:9px;background:#1F5BFF"></div></div>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font:700 26px/1.15 'Outfit'">Let Britto watch prices for you</span><span style="font-size:14px;color:#6B7390;line-height:1.5">These let us alert you and show prices while you shop in other apps. Change them any time in Settings.</span></div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<sc-for list="{{ perms }}" as="p" hint-placeholder-count="3">
+<div style="padding:14px;border-radius:16px;background:#F4F6FB;display:flex;gap:12px;align-items:center">
+<div style="width:44px;height:44px;flex:none;border-radius:12px;background:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:20px">{{ p.icon }}</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:3px"><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:14px;font-weight:700">{{ p.label }}</span><span style="font-size:9.5px;font-weight:800;padding:2px 6px;border-radius:5px;background:{{ p.tbg }};color:{{ p.tfg }}">{{ p.tag }}</span></div><span style="font-size:12px;color:#6B7390;line-height:1.4">{{ p.sub }}</span></div>
+<div onClick="{{ p.on }}" style="width:46px;height:26px;flex:none;border-radius:999px;background:{{ p.bg }};padding:3px;cursor:pointer;transition:background .2s"><div style="width:20px;height:20px;border-radius:999px;background:#FFFFFF;transform:translateX({{ p.x }}px);transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div></div>
+</div>
+</sc-for>
+</div>
+<div style="padding:12px;border-radius:12px;background:#E5F7EE;font-size:12px;color:#2D6B4A;line-height:1.45">🔒 Britto only reads product pages on shopping apps. We never read messages, passwords or payment details.</div>
+<div style="margin-top:auto"><div onClick="{{ permsNext }}" style="height:54px;border-radius:14px;background:#1F5BFF;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;cursor:pointer;">Continue</div></div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.interests }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100%;display:flex;flex-direction:column;gap:18px;padding:16px 20px 24px;background:#FFFFFF">
+<div style="display:flex;justify-content:space-between;align-items:center"><div onClick="{{ back }}" style="display:flex;align-items:center;gap:2px;cursor:pointer;margin-left:-6px;color:#6B7390"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div><span style="font-size:12px;font-weight:800;color:#1F5BFF;letter-spacing:.04em">STEP 2 OF 2</span></div>
+<div style="height:6px;border-radius:9px;background:#EAF0FF"><div style="width:100%;height:100%;border-radius:9px;background:#1F5BFF"></div></div>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font:700 26px/1.15 'Outfit'">Tell us about you</span><span style="font-size:14px;color:#6B7390">We'll show deals you actually care about.</span></div>
+<div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:12.5px;font-weight:700">Your name</label><input value="{{ pname }}" onChange="{{ onPname }}" style="height:52px;padding:0 14px;border-radius:14px;background:#F4F6FB;border:1.5px solid #E3E7F2;outline:none;font:600 15px 'Manrope';color:#141B34"></input></div>
+<div style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between"><label style="font-size:12.5px;font-weight:700">What do you shop for?</label><span style="font-size:12px;font-weight:700;color:#1F5BFF">{{ interestCount }} selected</span></div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+<sc-for list="{{ interests }}" as="c" hint-placeholder-count="12">
+<div onClick="{{ c.on }}" style="padding:12px 6px;border-radius:14px;background:{{ c.tbg }};border:2px solid {{ c.bd }};display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;position:relative"><span style="font-size:24px">{{ c.icon }}</span><span style="font-size:11.5px;font-weight:700;text-align:center">{{ c.label }}</span><span style="position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:999px;background:#1F5BFF;color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;opacity:{{ c.on1 }}">✓</span></div>
+</sc-for>
+</div></div>
+<div style="margin-top:auto"><div onClick="{{ finishSetup }}" style="height:54px;border-radius:14px;background:#1F5BFF;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;cursor:pointer;">Start saving</div></div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.categories }}" hint-placeholder-val="{{ false }}">
+<div style="padding:4px 16px 24px;display:flex;flex-direction:column;gap:14px"><div style="display:flex;align-items:center;gap:6px"><div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-8px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div><span style="font:700 20px 'Outfit'">All categories</span></div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+<sc-for list="{{ cats }}" as="c" hint-placeholder-count="12">
+<div onClick="{{ c.open }}" style="border-radius:18px;background:#FFFFFF;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer"><div style="width:60px;height:60px;border-radius:18px;background:{{ c.tint }};display:flex;align-items:center;justify-content:center;font-size:28px">{{ c.icon }}</div><span style="font-size:12px;font-weight:700;text-align:center;line-height:1.2">{{ c.name }}</span><span style="font-size:10.5px;font-weight:700;color:#0E9F55">{{ c.count }} deals</span></div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.allStores }}" hint-placeholder-val="{{ false }}">
+<div style="padding:4px 16px 24px;display:flex;flex-direction:column;gap:12px"><div style="display:flex;align-items:center;gap:6px"><div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-8px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div><span style="font:700 20px 'Outfit'">All stores</span></div>
+<div style="height:46px;border-radius:12px;background:#FFFFFF;border:1.5px solid #E3E7F2;display:flex;align-items:center;gap:8px;padding:0 12px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7390" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg><input value="{{ storeQ }}" onChange="{{ onStoreQ }}" placeholder="Search stores" style="flex:1;border:0;outline:none;background:transparent;font:600 14px 'Manrope';color:#141B34"></input></div>
+<div style="border-radius:18px;background:#FFFFFF;padding:4px 14px">
+<sc-for list="{{ allStores }}" as="s" hint-placeholder-count="8">
+<div onClick="{{ s.open }}" style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #EEF1F7;cursor:pointer">
+<div style="width:42px;height:42px;flex:none;border-radius:999px;background:{{ s.col }};color:#FFFFFF;display:flex;align-items:center;justify-content:center;font:700 14px 'Outfit'">{{ s.mono }}</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:700">{{ s.name }}</span><span style="font-size:11.5px;color:#6B7390">{{ s.cat }}</span></div>
+<span style="font-size:11.5px;font-weight:800;color:#0E9F55;background:#E5F7EE;padding:5px 9px;border-radius:8px">Up to {{ s.cb }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.store }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:12px;padding-bottom:100px">
+<div style="background:{{ storeD.col }};color:#FFFFFF;padding:4px 16px 56px;border-radius:0 0 28px 28px;display:flex;flex-direction:column;gap:6px">
+<div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-8px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+</div>
+<div style="margin:-56px 16px 0;border-radius:18px;background:#FFFFFF;padding:16px;box-shadow:0 8px 24px rgba(20,30,80,.1);display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center">
+<div style="width:64px;height:64px;margin-top:-44px;border-radius:999px;background:{{ storeD.col }};border:4px solid #FFFFFF;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font:800 20px 'Outfit'">{{ storeD.mono }}</div>
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font:700 22px 'Outfit'">{{ storeD.name }}</span><span style="font-size:12.5px;color:#6B7390">{{ storeD.cat }}</span></div>
+<div style="padding:10px 16px;border-radius:12px;background:#E5F7EE;display:flex;flex-direction:column;gap:1px"><span style="font:800 22px 'Outfit';color:#0E9F55">Up to {{ storeD.cb }} cashback</span><span style="font-size:11.5px;color:#2D6B4A;font-weight:600">Tracks in ~30 min · Confirms in 45 days</span></div>
+</div>
+<div style="margin:0 16px;border-radius:18px;background:#FFFFFF;padding:6px 14px">
+<span style="display:block;font:700 16px 'Outfit';padding:10px 0 4px">Cashback rates</span>
+<sc-for list="{{ storeRates }}" as="r" hint-placeholder-count="5"><div style="display:flex;justify-content:space-between;padding:11px 0;border-top:1px solid #EEF1F7;font-size:13.5px"><span style="font-weight:600">{{ r.l }}</span><span style="font-weight:800;color:#0E9F55">{{ r.v }}</span></div></sc-for>
+</div>
+<sc-if value="{{ storeHasCoupons }}" hint-placeholder-val="{{ false }}">
+<div style="margin:0 16px;border-radius:18px;background:#FFFFFF;padding:14px;display:flex;flex-direction:column;gap:8px"><span style="font:700 16px 'Outfit'">Coupons</span>
+<sc-for list="{{ storeCoupons }}" as="c" hint-placeholder-count="1"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;border:1.5px dashed #C3CDEB;background:#F4F6FB"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700">{{ c.title }}</span><span style="font:700 12px 'Outfit';letter-spacing:.08em;color:#1F5BFF">{{ c.code }}</span></div><span onClick="{{ c.copy }}" style="font-size:12px;font-weight:800;padding:7px 12px;border-radius:8px;background:{{ c.bbg }};color:#fff;cursor:pointer">{{ c.blabel }}</span></div></sc-for>
+</div>
+</sc-if>
+<div style="margin:0 16px;border-radius:18px;background:#FFFFFF;padding:14px;display:flex;flex-direction:column;gap:12px"><span style="font:700 16px 'Outfit'">How it works</span>
+<div style="display:flex;gap:10px;align-items:center"><span style="width:28px;height:28px;flex:none;border-radius:999px;background:#EAF0FF;color:#1F5BFF;display:flex;align-items:center;justify-content:center;font:700 13px 'Outfit'">1</span><span style="font-size:13px">Tap <b>Shop now</b> to open {{ storeD.name }} via Britto</span></div>
+<div style="display:flex;gap:10px;align-items:center"><span style="width:28px;height:28px;flex:none;border-radius:999px;background:#EAF0FF;color:#1F5BFF;display:flex;align-items:center;justify-content:center;font:700 13px 'Outfit'">2</span><span style="font-size:13px">Shop as usual and complete payment</span></div>
+<div style="display:flex;gap:10px;align-items:center"><span style="width:28px;height:28px;flex:none;border-radius:999px;background:#EAF0FF;color:#1F5BFF;display:flex;align-items:center;justify-content:center;font:700 13px 'Outfit'">3</span><span style="font-size:13px">Cashback shows as pending in your wallet</span></div>
+</div>
+<div style="margin:0 16px;padding:12px 14px;border-radius:14px;background:#FFF7D6;display:flex;flex-direction:column;gap:6px;font-size:12px;color:#7A5A00;line-height:1.45"><b>Important</b><span>• Don't visit other coupon or cashback sites after clicking.</span><span>• Cashback isn't paid on gift cards or cancelled/returned items.</span><span>• Complete your purchase in the same session.</span></div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:22px;padding:10px 16px;background:#FFFFFF;box-shadow:0 -4px 16px rgba(20,30,80,.08);z-index:3"><div onClick="{{ shopStore }}" style="height:54px;border-radius:14px;background:#1F5BFF;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;cursor:pointer;background:#FF7A1A"><span>Shop now on {{ storeD.name }}</span></div></div>
+</sc-if>
+
+<sc-if value="{{ is.redirect }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;background:#FFFFFF;text-align:center">
+<div style="display:flex;align-items:center;gap:14px"><div style="width:64px;height:64px;border-radius:20px;background:#1F5BFF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 30px 'Outfit'">b</div><div style="display:flex;gap:5px"><span style="width:7px;height:7px;border-radius:9px;background:#C3CDEB"></span><span style="width:7px;height:7px;border-radius:9px;background:#8FA6F5"></span><span style="width:7px;height:7px;border-radius:9px;background:#1F5BFF"></span></div><div style="width:64px;height:64px;border-radius:999px;background:{{ rd.col }};color:#fff;display:flex;align-items:center;justify-content:center;font:800 22px 'Outfit'">{{ rd.mono }}</div></div>
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font:700 24px 'Outfit'">Taking you to {{ rd.store }}</span><span style="font-size:14px;color:#6B7390">Hold on, we're activating your cashback</span></div>
+<div style="width:220px;height:8px;border-radius:9px;background:#EAF0FF;overflow:hidden"><div style="height:100%;border-radius:9px;background:#1F5BFF;width:{{ rProgW }};transition:width 2.3s ease"></div></div>
+<div style="padding:12px 18px;border-radius:14px;background:#E5F7EE;display:flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:999px;background:#0E9F55;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px">✓</span><span style="font-size:14px;font-weight:800;color:#0B7A41">{{ rd.cb }} activated</span></div>
+<div style="max-width:270px;font-size:12px;color:#6B7390;line-height:1.5">Don't open other coupon or cashback apps before you pay, or your cashback may not track.</div>
+<span onClick="{{ back }}" style="font-size:13px;font-weight:700;color:#6B7390;cursor:pointer;padding:8px">Cancel</span>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.overlay }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100%;background:#FFFFFF;position:relative">
+<div style="background:{{ rd.col }};color:#FFFFFF;padding:10px 14px;display:flex;align-items:center;gap:10px"><div onClick="{{ back }}" style="cursor:pointer;display:flex"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div><div style="flex:1;height:36px;border-radius:8px;background:#FFFFFF;color:#9AA1B8;display:flex;align-items:center;padding:0 10px;font-size:12.5px"><span>Search on {{ rd.store }}</span></div><span style="font-size:11px;font-weight:800;opacity:.85">{{ rd.store }} app</span></div>
+<sc-if value="{{ ovProduct }}" hint-placeholder-val="{{ true }}">
+<div style="padding:14px;display:flex;flex-direction:column;gap:8px">
+<div style="height:220px;border-radius:6px;background:#F2F2F2;display:flex;align-items:center;justify-content:center;color:#B5B5B5;font-size:12px">product photo</div>
+<span style="font-size:14px;line-height:1.4">Apple iPhone 15 (128 GB) – Black</span>
+<span style="font-size:12px;color:#2D8A4E">★★★★☆ 48,210 ratings</span>
+<div style="display:flex;gap:8px;align-items:baseline"><span style="font-size:13px;color:#C7372F">−{{ ov.off }}%</span><span style="font-size:24px;font-weight:600">{{ ov.price }}</span></div>
+<span style="font-size:12px;color:#888">M.R.P. <s>₹69,900</s> · Inclusive of all taxes</span>
+<div style="height:44px;border-radius:22px;background:#FFD814;display:flex;align-items:center;justify-content:center;font-size:14px;margin-top:6px">Add to Cart</div>
+<div style="height:44px;border-radius:22px;background:#FFA41C;display:flex;align-items:center;justify-content:center;font-size:14px">Buy Now</div>
+</div>
+</sc-if>
+<sc-if value="{{ ovHome }}" hint-placeholder-val="{{ false }}">
+<div style="padding:14px;display:flex;flex-direction:column;gap:10px"><div style="height:140px;border-radius:8px;background:#F2F2F2;display:flex;align-items:center;justify-content:center;color:#B5B5B5;font-size:12px"><span>{{ rd.store }} home banner</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div style="height:120px;border-radius:8px;background:#F2F2F2"></div><div style="height:120px;border-radius:8px;background:#F2F2F2"></div><div style="height:120px;border-radius:8px;background:#F2F2F2"></div><div style="height:120px;border-radius:8px;background:#F2F2F2"></div></div></div>
+</sc-if>
+<div onClick="{{ toggleBubble }}" style="position:absolute;right:10px;top:300px;display:flex;align-items:center;gap:8px;padding:6px 12px 6px 6px;border-radius:999px;background:#1F5BFF;color:#FFFFFF;box-shadow:0 8px 24px rgba(31,91,255,.45);cursor:pointer;z-index:4"><span style="width:34px;height:34px;border-radius:999px;background:#FFFFFF;color:#1F5BFF;display:flex;align-items:center;justify-content:center;font:800 18px 'Outfit'">b</span><div style="display:flex;flex-direction:column;line-height:1.15"><span style="font-size:10px;font-weight:700;opacity:.85">{{ ov.kicker }}</span><span style="font:800 13.5px 'Outfit'">{{ ov.headline }}</span></div></div>
+<sc-if value="{{ bubbleOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ toggleBubble }}" style="position:absolute;inset:0;background:rgba(20,27,52,.45);z-index:5"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;z-index:6;background:#F4F6FB;border-radius:24px 24px 0 0;padding:10px 16px 20px;display:flex;flex-direction:column;gap:10px">
+<div style="width:40px;height:4px;border-radius:9px;background:#C3CDEB;align-self:center"></div>
+<div style="display:flex;align-items:center;gap:8px"><span style="width:28px;height:28px;border-radius:9px;background:#1F5BFF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 15px 'Outfit'">b</span><span style="font:700 16px 'Outfit'">Britto price check</span><span style="margin-left:auto;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:6px;background:#E5F7EE;color:#0E9F55">GENUINE PRICE</span></div>
+<div style="border-radius:18px;background:#FFFFFF;padding:4px 12px">
+<sc-for list="{{ ovOffers }}" as="o" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #EEF1F7"><span style="width:28px;height:28px;border-radius:999px;background:{{ o.mbg }};color:#fff;display:flex;align-items:center;justify-content:center;font:700 10.5px 'Outfit'">{{ o.mono }}</span><span style="flex:1;font-size:13px;font-weight:700">{{ o.store }}</span><span style="font:700 14px 'Outfit'">{{ o.price }}</span><span onClick="{{ o.go }}" style="font-size:11px;font-weight:800;padding:5px 10px;border-radius:7px;background:#EAF0FF;color:#1F5BFF;cursor:pointer">Go</span></div></sc-for>
+</div>
+<div style="display:flex;gap:8px"><div onClick="{{ ovTrack }}" style="flex:1;height:46px;border-radius:12px;background:#FFFFFF;color:#1F5BFF;display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:800;cursor:pointer">🔔 Track price</div><div onClick="{{ ovHistory }}" style="flex:1;height:46px;border-radius:12px;background:#1F5BFF;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:800;cursor:pointer">Price history</div></div>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.filters }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100%;display:flex;flex-direction:column;gap:16px;padding:4px 16px 24px">
+<div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;align-items:center;gap:6px"><div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-8px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div><span style="font:700 20px 'Outfit'">Filters</span></div><span onClick="{{ clearFilters }}" style="font-size:13px;font-weight:700;color:#E23B3B;cursor:pointer">Clear all</span></div>
+<div style="border-radius:18px;background:#FFFFFF;padding:14px;display:flex;flex-direction:column;gap:10px"><span style="font:700 15px 'Outfit'">Price range</span><div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ priceOpts }}" as="c" hint-placeholder-count="4"><span onClick="{{ c.on }}" style="flex:none;font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1.5px solid {{ c.bd }}">{{ c.label }}</span></sc-for></div></div>
+<div style="border-radius:18px;background:#FFFFFF;padding:14px;display:flex;flex-direction:column;gap:10px"><span style="font:700 15px 'Outfit'">Stores</span><div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ fStores }}" as="c" hint-placeholder-count="4"><span onClick="{{ c.on }}" style="flex:none;font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1.5px solid {{ c.bd }}">{{ c.label }}</span></sc-for></div></div>
+<div style="border-radius:18px;background:#FFFFFF;padding:14px;display:flex;flex-direction:column;gap:10px"><span style="font:700 15px 'Outfit'">Discount</span><div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ discOpts }}" as="c" hint-placeholder-count="4"><span onClick="{{ c.on }}" style="flex:none;font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1.5px solid {{ c.bd }}">{{ c.label }}</span></sc-for></div></div>
+<div style="border-radius:18px;background:#FFFFFF;padding:4px 14px">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #EEF1F7"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:700">4★ &amp; above</span><span style="font-size:11.5px;color:#6B7390">Hide low-rated products</span></div><div onClick="{{ fRating.on }}" style="width:46px;height:26px;flex:none;border-radius:999px;background:{{ fRating.bg }};padding:3px;cursor:pointer;transition:background .2s"><div style="width:20px;height:20px;border-radius:999px;background:#FFFFFF;transform:translateX({{ fRating.x }}px);transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div></div></div>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:700">Only genuine deals</span><span style="font-size:11.5px;color:#6B7390">Hide prices raised before a sale</span></div><div onClick="{{ fGenuine.on }}" style="width:46px;height:26px;flex:none;border-radius:999px;background:{{ fGenuine.bg }};padding:3px;cursor:pointer;transition:background .2s"><div style="width:20px;height:20px;border-radius:999px;background:#FFFFFF;transform:translateX({{ fGenuine.x }}px);transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div></div></div>
+</div>
+<div style="margin-top:auto"><div onClick="{{ applyFilters }}" style="height:54px;border-radius:14px;background:#1F5BFF;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;cursor:pointer;">Show results</div></div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.cashbackDetail }}" hint-placeholder-val="{{ false }}">
+<div style="padding:4px 16px 24px;display:flex;flex-direction:column;gap:14px"><div style="display:flex;align-items:center;gap:6px"><div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-8px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div><span style="font:700 20px 'Outfit'">Cashback details</span></div>
+<div style="border-radius:18px;background:#FFFFFF;padding:18px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
+<div style="width:52px;height:52px;border-radius:999px;background:{{ txD.col }};color:#fff;display:flex;align-items:center;justify-content:center;font:800 17px 'Outfit'">{{ txD.mono }}</div>
+<span style="font:800 32px 'Outfit';color:{{ txD.acol }}">{{ txD.amt }}</span>
+<span style="font-size:13.5px;font-weight:600">{{ txD.item }}</span>
+<span style="font-size:11.5px;font-weight:800;padding:4px 10px;border-radius:7px;background:{{ txD.bg }};color:{{ txD.fg }}">{{ txD.status }}</span>
+</div>
+<div style="border-radius:18px;background:#FFFFFF;padding:16px;display:flex;flex-direction:column">
+<span style="font:700 16px 'Outfit';margin-bottom:12px">Status</span>
+<sc-for list="{{ txSteps }}" as="t" hint-placeholder-count="5">
+<div style="display:flex;gap:12px">
+<div style="display:flex;flex-direction:column;align-items:center"><div style="width:20px;height:20px;border-radius:999px;background:{{ t.dot }};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px">{{ t.mark }}</div><div style="width:2px;flex:1;min-height:22px;background:{{ t.line }};opacity:{{ t.lineO }}"></div></div>
+<div style="display:flex;flex-direction:column;gap:2px;padding-bottom:14px"><span style="font-size:13.5px;font-weight:700;color:{{ t.fg }}">{{ t.label }}</span><span style="font-size:11.5px;color:#6B7390">{{ t.sub }}</span></div>
+</div>
+</sc-for>
+</div>
+<div style="border-radius:18px;background:#FFFFFF;padding:4px 14px">
+<div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #EEF1F7;font-size:13px"><span style="color:#6B7390">Store</span><span style="font-weight:700">{{ txD.store }}</span></div>
+<div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #EEF1F7;font-size:13px"><span style="color:#6B7390">Date</span><span style="font-weight:700">{{ txD.date }}</span></div>
+<div style="display:flex;justify-content:space-between;padding:12px 0;font-size:13px"><span style="color:#6B7390">Reference ID</span><span style="font-weight:700">{{ txD.ref }}</span></div>
+</div>
+<div onClick="{{ go.claim }}" style="padding:14px 16px;border-radius:16px;background:#FFFFFF;display:flex;justify-content:space-between;align-items:center;cursor:pointer"><span style="font-size:13.5px;font-weight:600">Something wrong?</span><span style="font-size:13px;font-weight:800;color:#1F5BFF">Raise a claim →</span></div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.claim }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100%;padding:4px 16px 24px;display:flex;flex-direction:column;gap:14px"><div style="display:flex;align-items:center;gap:6px"><div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-8px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div><span style="font:700 20px 'Outfit'">Missing cashback</span></div>
+<sc-if value="{{ claimForm }}" hint-placeholder-val="{{ true }}">
+<div style="padding:12px;border-radius:12px;background:#EAF0FF;font-size:12.5px;color:#1F3B8F;line-height:1.45">Claims can be raised 3–30 days after your order. We usually reply within 72 hours.</div>
+<div style="border-radius:18px;background:#FFFFFF;padding:14px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;flex-direction:column;gap:8px"><label style="font-size:12.5px;font-weight:700">Store</label><div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ claimStores }}" as="c" hint-placeholder-count="4"><span onClick="{{ c.on }}" style="flex:none;font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1.5px solid {{ c.bd }}">{{ c.label }}</span></sc-for></div></div>
+<div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:12.5px;font-weight:700">Order ID</label><input value="{{ claimOrder }}" onChange="{{ onClaimOrder }}" placeholder="e.g. 408-1234567-8901234" style="height:48px;padding:0 12px;border-radius:12px;background:#F4F6FB;border:1.5px solid #E3E7F2;outline:none;font:600 14px 'Manrope';color:#141B34"></input></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:12.5px;font-weight:700">Order date</label><div style="height:48px;padding:0 12px;border-radius:12px;background:#F4F6FB;border:1.5px solid #E3E7F2;display:flex;align-items:center;font-size:14px;font-weight:600">21 Oct 2026</div></div>
+<div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:12.5px;font-weight:700">Order amount</label><input value="{{ claimAmt }}" onChange="{{ onClaimAmt }}" inputmode="numeric" placeholder="₹" style="height:48px;padding:0 12px;border-radius:12px;background:#F4F6FB;border:1.5px solid #E3E7F2;outline:none;font:600 14px 'Manrope';color:#141B34;width:100%"></input></div>
+</div>
+<div onClick="{{ attachInvoice }}" style="padding:16px;border-radius:12px;border:2px dashed {{ claimFileBd }};background:{{ claimFileBg }};display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer"><span style="font-size:22px">{{ claimFileIcon }}</span><span style="font-size:13px;font-weight:700">{{ claimFileLabel }}</span><span style="font-size:11px;color:#6B7390">Order screenshot or invoice · PDF, JPG</span></div>
+</div>
+<div style="margin-top:auto;opacity:{{ claimOk }}"><div onClick="{{ submitClaim }}" style="height:54px;border-radius:14px;background:#1F5BFF;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;cursor:pointer;">Submit claim</div></div>
+</sc-if>
+<sc-if value="{{ claimDone }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding-bottom:40px">
+<div style="width:80px;height:80px;border-radius:999px;background:#EAF0FF;display:flex;align-items:center;justify-content:center;font-size:36px">📨</div>
+<span style="font:700 24px 'Outfit'">Claim submitted</span>
+<span style="font-size:14px;color:#6B7390;line-height:1.5;max-width:260px">Ticket <b style="color:#141B34">BR-CL-20481</b>. We'll update you by notification within 72 hours.</span>
+<div onClick="{{ tab.wallet }}" style="margin-top:16px;height:52px;width:100%;border-radius:14px;background:#EAF0FF;color:#1F5BFF;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;cursor:pointer">Back to wallet</div>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.payout }}" hint-placeholder-val="{{ false }}">
+<div style="padding:4px 16px 24px;display:flex;flex-direction:column;gap:14px"><div style="display:flex;align-items:center;gap:6px"><div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-8px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div><span style="font:700 20px 'Outfit'">Payout methods</span></div>
+<span style="font:700 15px 'Outfit'">UPI IDs</span>
+<div style="border-radius:18px;background:#FFFFFF;padding:4px 14px">
+<sc-for list="{{ upis }}" as="u" hint-placeholder-count="1"><div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #EEF1F7"><div style="width:40px;height:40px;flex:none;border-radius:12px;background:#E5F7EE;color:#0E9F55;display:flex;align-items:center;justify-content:center;font:800 12px 'Outfit'">UPI</div><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:700">{{ u.id }}</span><span style="font-size:11.5px;color:#0E9F55;font-weight:600">✓ Verified · Instant transfer</span></div><span onClick="{{ u.on }}" style="font-size:11px;font-weight:800;padding:5px 9px;border-radius:7px;background:{{ u.bg }};color:{{ u.fg }};cursor:pointer">{{ u.label }}</span></div></sc-for>
+<div style="display:flex;gap:8px;padding:12px 0"><input value="{{ upiInput }}" onChange="{{ onUpi }}" placeholder="Add UPI ID e.g. name@okaxis" style="flex:1;height:44px;padding:0 12px;border-radius:10px;background:#F4F6FB;border:1.5px solid #E3E7F2;outline:none;font:600 13.5px 'Manrope';color:#141B34;min-width:0"></input><div onClick="{{ addUpi }}" style="height:44px;padding:0 14px;border-radius:10px;background:#1F5BFF;color:#fff;display:flex;align-items:center;font-size:13px;font-weight:800;cursor:pointer">Verify</div></div>
+</div>
+<span style="font:700 15px 'Outfit'">Bank account</span>
+<div style="border-radius:18px;background:#FFFFFF;padding:14px;display:flex;align-items:center;gap:12px"><div style="width:40px;height:40px;flex:none;border-radius:12px;background:#EAF0FF;color:#1F5BFF;display:flex;align-items:center;justify-content:center;font-size:18px">🏦</div><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:700">HDFC Bank ••4821</span><span style="font-size:11.5px;color:#6B7390">Aarav Mehta · IFSC HDFC0001234</span></div><span style="font-size:12px;font-weight:800;color:#E23B3B;cursor:pointer">Remove</span></div>
+<span style="font:700 15px 'Outfit'">Gift cards</span>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<div style="border-radius:18px;background:#FFFFFF;padding:14px;display:flex;flex-direction:column;gap:6px"><span style="width:34px;height:34px;border-radius:999px;background:#232F3E;color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px 'Outfit'">Am</span><span style="font-size:13px;font-weight:700">Amazon Pay</span><span style="font-size:11px;font-weight:800;color:#0E9F55">+5% bonus</span></div>
+<div style="border-radius:18px;background:#FFFFFF;padding:14px;display:flex;flex-direction:column;gap:6px"><span style="width:34px;height:34px;border-radius:999px;background:#2874F0;color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px 'Outfit'">Fk</span><span style="font-size:13px;font-weight:700">Flipkart</span><span style="font-size:11px;font-weight:800;color:#0E9F55">+5% bonus</span></div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.editProfile }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100%;padding:4px 16px 24px;display:flex;flex-direction:column;gap:14px"><div style="display:flex;align-items:center;gap:6px"><div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-8px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div><span style="font:700 20px 'Outfit'">Edit profile</span></div>
+<div style="align-self:center;position:relative"><div style="width:88px;height:88px;border-radius:999px;background:#1F5BFF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 36px 'Outfit'">{{ pInitial }}</div><div style="position:absolute;right:0;bottom:0;width:30px;height:30px;border-radius:999px;background:#FFFFFF;box-shadow:0 2px 8px rgba(0,0,0,.15);display:flex;align-items:center;justify-content:center;font-size:14px">📷</div></div>
+<div style="border-radius:18px;background:#FFFFFF;padding:14px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:12.5px;font-weight:700">Full name</label><input value="{{ pname }}" onChange="{{ onPname }}" style="height:48px;padding:0 12px;border-radius:12px;background:#F4F6FB;border:1.5px solid #E3E7F2;outline:none;font:600 14px 'Manrope';color:#141B34"></input></div>
+<div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:12.5px;font-weight:700">Email</label><input value="{{ email }}" onChange="{{ onEmail }}" style="height:48px;padding:0 12px;border-radius:12px;background:#F4F6FB;border:1.5px solid #E3E7F2;outline:none;font:600 14px 'Manrope';color:#141B34"></input></div>
+<div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:12.5px;font-weight:700">Mobile</label><div style="height:48px;padding:0 12px;border-radius:12px;background:#EEF1F7;display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:600;color:#6B7390"><span>+91 98765 43210</span><span style="font-size:11px;font-weight:800;color:#0E9F55">VERIFIED</span></div></div>
+<div style="display:flex;flex-direction:column;gap:8px"><label style="font-size:12.5px;font-weight:700">Gender</label><div style="display:flex;gap:6px"><sc-for list="{{ genders }}" as="c" hint-placeholder-count="4"><span onClick="{{ c.on }}" style="flex:none;font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1.5px solid {{ c.bd }}">{{ c.label }}</span></sc-for></div></div>
+</div>
+<div style="margin-top:auto"><div onClick="{{ saveProfile }}" style="height:54px;border-radius:14px;background:#1F5BFF;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;cursor:pointer;">Save changes</div></div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.help }}" hint-placeholder-val="{{ false }}">
+<div style="padding:4px 16px 24px;display:flex;flex-direction:column;gap:14px"><div style="display:flex;align-items:center;gap:6px"><div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-8px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div><span style="font:700 20px 'Outfit'">Help &amp; support</span></div>
+<div style="padding:16px;border-radius:18px;background:linear-gradient(120deg,#1F5BFF,#7B4DFF);color:#fff;display:flex;flex-direction:column;gap:10px"><span style="font:700 18px 'Outfit'">Hi {{ pFirst }}, how can we help?</span><div style="height:44px;border-radius:12px;background:#fff;display:flex;align-items:center;gap:8px;padding:0 12px;color:#9AA1B8;font-size:13px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7390" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>Search help articles</div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<div onClick="{{ go.claim }}" style="border-radius:18px;background:#FFFFFF;padding:14px;display:flex;flex-direction:column;gap:6px;cursor:pointer"><span style="font-size:22px">🧾</span><span style="font-size:13px;font-weight:700">Missing cashback</span></div>
+<div onClick="{{ go.withdraw }}" style="border-radius:18px;background:#FFFFFF;padding:14px;display:flex;flex-direction:column;gap:6px;cursor:pointer"><span style="font-size:22px">💸</span><span style="font-size:13px;font-weight:700">Withdrawal issue</span></div>
+</div>
+<div style="padding:12px 14px;border-radius:14px;background:#FFF1E4;display:flex;justify-content:space-between;align-items:center"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;font-weight:800;color:#B35A00">OPEN TICKET</span><span style="font-size:13px;font-weight:600">BR-CL-19807 · Ajio order</span></div><span style="font-size:11px;font-weight:800;padding:4px 8px;border-radius:6px;background:#FFFFFF;color:#D9730D">In review</span></div>
+<span style="font:700 16px 'Outfit'">Frequently asked</span>
+<div style="border-radius:18px;background:#FFFFFF;padding:2px 14px">
+<sc-for list="{{ faqs }}" as="q" hint-placeholder-count="5">
+<div style="border-bottom:1px solid #EEF1F7">
+<div onClick="{{ q.on }}" style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 0;cursor:pointer"><span style="font-size:13.5px;font-weight:700;line-height:1.35">{{ q.q }}</span><span style="font-size:14px;color:#6B7390;transform:rotate({{ q.rot }}deg);transition:transform .2s">⌄</span></div>
+<sc-if value="{{ q.open }}" hint-placeholder-val="{{ false }}"><div style="padding:0 0 13px;font-size:12.5px;color:#6B7390;line-height:1.5">{{ q.a }}</div></sc-if>
+</div>
+</sc-for>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<div onClick="{{ chatSupport }}" style="height:50px;border-radius:14px;background:#1F5BFF;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;cursor:pointer">💬 Chat with us</div>
+<div onClick="{{ chatSupport }}" style="height:50px;border-radius:14px;background:#FFFFFF;color:#1F5BFF;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;cursor:pointer">✉️ Email</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.language }}" hint-placeholder-val="{{ false }}">
+<div style="padding:4px 16px 24px;display:flex;flex-direction:column;gap:14px"><div style="display:flex;align-items:center;gap:6px"><div onClick="{{ back }}" style="width:40px;height:40px;margin-left:-8px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div><span style="font:700 20px 'Outfit'">App language</span></div>
+<div style="border-radius:18px;background:#FFFFFF;padding:2px 14px">
+<sc-for list="{{ langs }}" as="l" hint-placeholder-count="8">
+<div onClick="{{ l.on }}" style="display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #EEF1F7;cursor:pointer"><div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-size:15px;font-weight:700">{{ l.native }}</span><span style="font-size:11.5px;color:#6B7390">{{ l.en }}</span></div><div style="width:22px;height:22px;border-radius:999px;border:2px solid {{ l.bd }};display:flex;align-items:center;justify-content:center"><div style="width:12px;height:12px;border-radius:999px;background:#1F5BFF;opacity:{{ l.dot }}"></div></div></div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+
+</div>
+
+<sc-if value="{{ is.product }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:0;right:0;bottom:22px;padding:10px 16px;background:#FFFFFF;box-shadow:0 -4px 16px rgba(20,30,80,.08);display:flex;gap:8px;z-index:3">
+<div onClick="{{ openAlert }}" style="flex:1;height:50px;border-radius:14px;background:#EAF0FF;color:#1F5BFF;display:flex;align-items:center;justify-content:center;gap:6px;font-size:14px;font-weight:800;cursor:pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1112 0v5l1.5 2h-15z"></path><path d="M10 20a2 2 0 004 0"></path></svg>{{ alertBtn }}</div>
+<div onClick="{{ buyNow }}" style="flex:1.2;height:50px;border-radius:14px;background:#FF7A1A;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;cursor:pointer">Buy at ₹61,999</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ showNav }}" hint-placeholder-val="{{ true }}">
+<div style="flex:none;height:64px;display:flex;background:#FFFFFF;box-shadow:0 -4px 16px rgba(20,30,80,.06)">
+<div onClick="{{ tab.home }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:{{ nav.home }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9h-5v-6h-6v6H4z"></path></svg><span style="font-size:10.5px;font-weight:700">Home</span></div>
+<div onClick="{{ tab.deals }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:{{ nav.deals }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 12V4h8l10 10-8 8z"></path><circle cx="7.5" cy="7.5" r="1.5"></circle></svg><span style="font-size:10.5px;font-weight:700">Deals</span></div>
+<div onClick="{{ tab.watchlist }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:{{ nav.watchlist }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l5-6 4 3 8-9"></path><path d="M15 6h5v5"></path></svg><span style="font-size:10.5px;font-weight:700">Tracker</span></div>
+<div onClick="{{ tab.wallet }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:{{ nav.wallet }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="6" width="18" height="13" rx="2"></rect><path d="M3 10h18M16 14.5h2"></path></svg><span style="font-size:10.5px;font-weight:700">Wallet</span></div>
+<div onClick="{{ tab.profile }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:{{ nav.profile }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"></path></svg><span style="font-size:10.5px;font-weight:700">Profile</span></div>
+</div>
+</sc-if>
+<div style="flex:none;height:22px;display:flex;align-items:center;justify-content:center;background:#FFFFFF"><div style="width:108px;height:4px;border-radius:9px;background:#141B34;opacity:.8"></div></div>
+
+<sc-if value="{{ alertOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeAlert }}" style="position:absolute;inset:0;background:rgba(20,27,52,.5);z-index:5"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;z-index:6;background:#FFFFFF;border-radius:26px 26px 0 0;padding:10px 20px 34px;display:flex;flex-direction:column;gap:14px">
+<div style="width:40px;height:4px;border-radius:9px;background:#E3E7F2;align-self:center"></div>
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font:700 20px 'Outfit'">Set price alert 🔔</span><span style="font-size:12.5px;color:#6B7390">Current ₹61,999 · Lowest ever {{ statLow }}</span></div>
+<div style="padding:14px;border-radius:14px;background:#EAF0FF;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;font-weight:700;color:#1F5BFF">Alert me below</span><span style="font:800 30px 'Outfit';color:#1F5BFF">{{ targetLabel }}</span></div>
+<input type="range" min="52000" max="61999" step="500" value="{{ target }}" onChange="{{ onTarget }}" style="width:100%"></input>
+<div style="display:flex;gap:6px"><sc-for list="{{ targetChips }}" as="c" hint-placeholder-count="3"><span onClick="{{ c.on }}" style="font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;background:#F4F6FB;cursor:pointer">{{ c.label }}</span></sc-for></div>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:12.5px;font-weight:700;color:#6B7390">Notify me via</span>
+<div style="display:flex;gap:6px"><sc-for list="{{ channels }}" as="c" hint-placeholder-count="3"><span onClick="{{ c.on }}" style="font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1.5px solid {{ c.bd }}">{{ c.label }}</span></sc-for></div>
+</div>
+<div onClick="{{ saveAlert }}" style="height:54px;border-radius:14px;background:#1F5BFF;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;cursor:pointer">Save alert</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:16px;right:16px;bottom:100px;z-index:8;padding:13px 16px;border-radius:14px;background:#141B34;color:#FFFFFF;font-size:13.5px;font-weight:600;line-height:1.4;box-shadow:0 10px 30px -10px rgba(0,0,0,.5)">{{ toast }}</div>
+</sc-if>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;onboarding&quot;,&quot;login&quot;,&quot;otp&quot;,&quot;permissions&quot;,&quot;interests&quot;,&quot;home&quot;,&quot;categories&quot;,&quot;allStores&quot;,&quot;store&quot;,&quot;search&quot;,&quot;filters&quot;,&quot;product&quot;,&quot;redirect&quot;,&quot;overlay&quot;,&quot;watchlist&quot;,&quot;paste&quot;,&quot;fakesale&quot;,&quot;deals&quot;,&quot;notifications&quot;,&quot;wallet&quot;,&quot;cashbackDetail&quot;,&quot;claim&quot;,&quot;withdraw&quot;,&quot;payout&quot;,&quot;rewards&quot;,&quot;refer&quot;,&quot;flights&quot;,&quot;flightResults&quot;,&quot;profile&quot;,&quot;editProfile&quot;,&quot;language&quot;,&quot;help&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;alertOpen&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const INK='#141B34',PAPER='#FFFFFF',MUTED='#6B7390',LINE='#E3E7F2',GREEN='#0E9F55',RED='#E23B3B',GOLD='#D9730D',BLUE='#1F5BFF';
+const TINTS=['#EAF0FF','#FFF1E4','#E7F7EF','#F3EBFF','#FFEAF0'];
+const SC={Amazon:'#232F3E',Flipkart:'#2874F0',Myntra:'#E72E77',Ajio:'#2C4152',Croma:'#0BA89A','Reliance Digital':'#E42529','Tata CLiQ':'#9B1C55',Nykaa:'#FC2779',Meesho:'#8E3D8E',JioMart:'#0A57A5','Vijay Sales':'#E5242C',Snapdeal:'#E40046',Shopsy:'#7B3FE4',FirstCry:'#F7941D',Lenskart:'#0B9FA5',Pepperfry:'#F16521',BigBasket:'#84C225',Bewakoof:'#F7C600'};
+const TONE={good:{bg:'#E5F7EE',fg:GREEN},bad:{bg:'#FDEBEB',fg:RED},neutral:{bg:'#EEF1F7',fg:MUTED},gold:{bg:'#FFF1DF',fg:GOLD}};
+const inr=n=>'₹'+Math.round(n).toLocaleString('en-IN');
+const chip=a=>({bg:a?BLUE:'#FFFFFF',fg:a?'#FFFFFF':INK,bd:a?BLUE:LINE});
+const seg=a=>({bg:a?'#FFFFFF':'transparent',fg:a?BLUE:MUTED});
+const STORES=[['Amazon','Am','6%'],['Flipkart','Fk','7%'],['Myntra','My','8%'],['Ajio','Aj','10%'],['Croma','Cr','4%'],['Reliance Digital','RD','3%'],['Tata CLiQ','TC','6%'],['Nykaa','Ny','9%'],['Meesho','Me','5%'],['JioMart','JM','4%'],['Vijay Sales','VS','3%'],['Snapdeal','Sd','8%'],['Shopsy','Sh','6%'],['FirstCry','FC','7%'],['Lenskart','Lk','12%'],['Pepperfry','Pf','9%'],['BigBasket','BB','3%'],['Bewakoof','Bw','11%']];
+const MONO=Object.fromEntries(STORES.map(s=>[s[0],s[1]]));
+const CATS=[['Mobiles','📱','2.4k'],['Electronics','💻','3.1k'],['Fashion','👕','8.7k'],['Beauty','💄','1.9k'],['Home & Kitchen','🍳','4.2k'],['Appliances','🧺','1.3k'],['Grocery','🛒','2.0k'],['Travel','✈️','640'],['Kids','🧸','1.1k'],['Books','📚','900'],['Sports','🏏','760'],['Furniture','🛋️','520']];
+const STORECAT={Amazon:'Everything store',Flipkart:'Everything store',Myntra:'Fashion & lifestyle',Ajio:'Fashion',Croma:'Electronics',['Reliance Digital']:'Electronics',['Tata CLiQ']:'Fashion & electronics',Nykaa:'Beauty & personal care',Meesho:'Fashion & home',JioMart:'Grocery',['Vijay Sales']:'Electronics',Snapdeal:'Everything store',Shopsy:'Fashion',FirstCry:'Kids & baby',Lenskart:'Eyewear',Pepperfry:'Furniture',BigBasket:'Grocery',Bewakoof:'Fashion'};
+const FAQ=[['When will my cashback be confirmed?','Stores confirm orders after the return window closes, usually 30–60 days after delivery. You will get a notification when it moves to Confirmed.'],['Why is my cashback not tracked?','Cashback may not track if you used another coupon site, had an ad blocker on, or didn\'t finish the purchase in the same session. Raise a claim within 30 days.'],['How does the fake-sale detector work?','We record prices for each product several times a day. If a price was raised shortly before a sale and then "discounted", we flag it.'],['How do I withdraw money?','Once you have ₹100 or more confirmed, go to Wallet → Withdraw and pick UPI, bank transfer or a gift card.'],['Is the price bubble safe?','It only reads product pages in supported shopping apps to show prices. It never reads messages, passwords or payment screens.']];
+const LANGS=[['English','English'],['हिन्दी','Hindi'],['தமிழ்','Tamil'],['తెలుగు','Telugu'],['বাংলা','Bengali'],['मराठी','Marathi'],['ಕನ್ನಡ','Kannada'],['ગુજરાતી','Gujarati']];
+const TABS=['home','deals','watchlist','wallet','profile'];
+const SCREENS=['permissions','interests','categories','allStores','store','redirect','overlay','filters','cashbackDetail','claim','payout','editProfile','help','language','onboarding','login','otp','home','search','product','watchlist','deals','fakesale','paste','wallet','withdraw','rewards','refer','flights','flightResults','notifications','profile'];
+const TODAY=new Date(2026,9,27);
+const fmtD=d=>{const x=new Date(TODAY);x.setDate(x.getDate()-d);return x.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+(d>300?' '+String(x.getFullYear()).slice(2):'');};
+const priceAt=d=>{if(d===0)return 61999;let v=61999+d*8+Math.sin(d/9)*900+(d>=18&&d<=30?2600:0)-(d>=55&&d<=62?3800:0);return Math.min(69900,Math.round(v/100)*100-1);};
+const RANGES={'1M':[30,30],'3M':[45,90],'6M':[60,180],'1Y':[73,365],'All':[97,730]};
+const hist=r=>{const[n,days]=RANGES[r];return Array.from({length:n},(_,i)=>{const d=Math.round((1-i/(n-1))*days);return{d,v:priceAt(d)};});};
+const ALL=hist('All');const LOW=Math.min(...ALL.map(p=>p.v)),HIGH=Math.max(...ALL.map(p=>p.v));
+const W=280,H=140,P=12;
+const spark=(a,w=64,h=28)=>{const mn=Math.min(...a),mx=Math.max(...a);return a.map((v,i)=>(i?'L':'M')+(i/(a.length-1)*w).toFixed(1)+' '+(3+(mx-v)/((mx-mn)||1)*(h-6)).toFixed(1)).join(' ');};
+const OFFERS=[['Flipkart',61999,620,'Delivery tomorrow'],['Amazon',63499,380,'Delivery tomorrow'],['Vijay Sales',63990,190,'In 2 days'],['Reliance Digital',64900,320,'Pickup today'],['Croma',64990,260,'In 2 days'],['Tata CLiQ',65200,390,'In 3 days']];
+const WATCH=[{id:1,name:'Apple iPhone 15 (128 GB) – Black',store:'Flipkart',price:61999,target:60000,status:'Dropped ₹3,000',tone:'good',flag:'dropped',s:[65,64.9,65,64.5,64.9,63.9,62]},{id:2,name:'Sony WH-1000XM5 Wireless Headphones',store:'Amazon',price:24990,target:25000,status:'Target hit',tone:'good',flag:'hit',s:[29.9,29.9,28.5,29,27.9,26,24.99]},{id:3,name:'Nike Air Zoom Pegasus 41',store:'Myntra',price:9897,target:8500,status:'No change',tone:'neutral',flag:'',s:[9.9,9.9,9.6,9.9,9.9,9.9,9.9]},{id:4,name:'Samsung 7 kg Front Load Washing Machine',store:'Croma',price:31490,target:28000,status:'Up ₹500',tone:'bad',flag:'',s:[30.5,30.9,30.99,30.7,30.99,31.2,31.49]}];
+const DROPS=[['Amazon','Sony WH-1000XM5 Wireless Headphones',24990,29990],['Flipkart','OnePlus Nord CE4 5G (8/128)',22999,24999],['Myntra',"Levi's 511 Slim Fit Jeans",1679,2999],['Amazon','Prestige Iris 750W Mixer Grinder',2399,3299],['Croma','boAt Airdopes 141 ANC',1099,1799]];
+const RESULTS=[{name:'Apple iPhone 15 (128 GB) – Black',price:61999,store:'Flipkart',stores:6,rating:4.6,trend:'Near lowest ever',tone:'good',drop:11},{name:'Apple iPhone 15 (256 GB) – Blue',price:71999,store:'Amazon',stores:5,rating:4.6,trend:'Price up ₹2,000',tone:'bad',drop:4},{name:'Apple iPhone 15 Plus (128 GB) – Pink',price:70999,store:'Croma',stores:5,rating:4.5,trend:'Usual price',tone:'neutral',drop:6},{name:'Apple iPhone 15 Pro (128 GB) – Natural Titanium',price:119900,store:'Tata CLiQ',stores:4,rating:4.7,trend:'Usual price',tone:'neutral',drop:0},{name:'Apple iPhone 15 Silicone Case with MagSafe',price:3999,store:'Amazon',stores:3,rating:4.4,trend:'Dropped 18%',tone:'good',drop:18}];
+const DEALS=[['Amazon','Sony WH-1000XM5 Wireless Headphones',24990,29990,'Lowest in 90 days','35m'],['Myntra',"Levi's 511 Slim Fit Jeans",1679,2999,'Verified low','1h'],['Flipkart','Samsung Galaxy Tab S9 FE (6/128)',26999,36999,'Lowest ever','3h'],['Ajio','Puma Smash v2 Sneakers',1799,3999,'Verified low','4h'],['Croma','LG 1.5 Ton 5 Star Split AC',38990,49990,'Lowest in 6 months','5h'],['Nykaa','Minimalist 10% Niacinamide Serum',479,599,'Verified low','6h']];
+const COUPONS=[['Myntra','Flat ₹300 off on orders above ₹1,499','MYNTRA300','Ends tonight','94%'],['Ajio','Extra 15% off on fashion','AJIO15','Ends 31 Oct','88%'],['Nykaa','Free gift on orders above ₹999','NYKGIFT','Ends 2 Nov','81%'],['Lenskart','Buy 1 get 1 free on eyeglasses','BOGOLK','Ends 15 Nov','90%'],['Croma','₹1,000 off on ACs above ₹30,000','CRAC1000','Ends 5 Nov','76%'],['Flipkart','₹500 off on first Shopsy order','SHOPSY500','Ends 30 Oct','69%']];
+const FS=[{name:'Samsung Galaxy S24 FE (8/128)',store:'Flipkart',sale:36999,verdict:'Inflated',tone:'bad',s:[36,36,35.9,36,41.9,41.9,41.9,37],msg:'Raised to ₹41,999 on 12 Oct, then "discounted" to ₹36,999. It sold for ₹35,999 in September.'},{name:'Noise ColorFit Pro 5 Smartwatch',store:'Flipkart',sale:2499,verdict:'Genuine',tone:'good',s:[3.5,3.4,3.5,3.3,3.4,3.3,3.2,2.5],msg:'₹2,499 is the lowest price in 6 months.'},{name:'LG 1.5 Ton 5 Star Split AC',store:'Flipkart',sale:42990,verdict:'Same as usual',tone:'neutral',s:[43,43.5,42.99,43,43.2,42.99,43,42.99],msg:'Sold at around ₹42,990 for most of the last 90 days.'},{name:'HP Victus Gaming Laptop (i5, RTX 3050)',store:'Flipkart',sale:57990,verdict:'Inflated',tone:'bad',s:[55,54.9,55,62,63,62.9,63,58],msg:'List price raised 14% two weeks before the sale.'}];
+const TXS=[['Flipkart','boAt Airdopes 141',60,'21 Oct','Pending'],['Myntra',"Levi's 511 Slim Fit Jeans",134,'14 Oct','Pending'],['Amazon','Prestige Iris Mixer Grinder',186,'2 Oct','Pending'],['Ajio','Puma Smash v2 Sneakers',242,'3 Sep','Confirmed'],['Britto','Referral bonus · Riya',50,'28 Aug','Confirmed'],['Britto','Withdrawn to UPI',-500,'20 Aug','Paid'],['Britto','Daily spin reward',10,'18 Aug','Confirmed']];
+const FLIGHTS=[{air:'IndiGo',no:'6E 2135',dep:'06:10',arr:'08:20',dur:'2h 10m',stops:'Non-stop',min:130,p:[['Ixigo',4812],['MakeMyTrip',4899],['Goibibo',4905],['Cleartrip',4950],['IndiGo',5010]]},{air:'Akasa Air',no:'QP 1103',dep:'09:45',arr:'11:55',dur:'2h 10m',stops:'Non-stop',min:130,p:[['EaseMyTrip',4960],['Cleartrip',5020],['Akasa Air',5104]]},{air:'Air India',no:'AI 805',dep:'08:00',arr:'10:15',dur:'2h 15m',stops:'Non-stop',min:135,p:[['MakeMyTrip',5390],['Air India',5420],['Ixigo',5455],['Goibibo',5480]]},{air:'SpiceJet',no:'SG 8169',dep:'13:20',arr:'17:05',dur:'3h 45m',stops:'1 stop · JAI',min:225,p:[['Goibibo',4390],['Ixigo',4425],['SpiceJet',4520]]},{air:'Air India Express',no:'IX 1192',dep:'19:30',arr:'21:45',dur:'2h 15m',stops:'Non-stop',min:135,p:[['Cleartrip',5120],['Air India Express',5199]]}];
+const NOTIFS=[{k:'drop',kind:'Price drop',time:'12m',title:'Apple iPhone 15 dropped ₹3,000',body:'Now ₹61,999 on Flipkart. ₹1,999 above your target.',to:'product'},{k:'drop',kind:'Target hit',time:'2h',title:'Sony WH-1000XM5 is ₹24,990',body:'Below your ₹25,000 target on Amazon.',to:'product'},{k:'cash',kind:'Cashback',time:'5h',title:'₹60 cashback tracked',body:'Flipkart order for boAt Airdopes 141 is pending.',to:'wallet'},{k:'deal',kind:'Sale watch',time:'Yesterday',title:'Big Billion Days is live',body:'We flagged 3,870 inflated prices. Check before you buy.',to:'fakesale'},{k:'cash',kind:'Cashback',time:'2 days',title:'₹242 confirmed',body:'Your Ajio cashback is ready to withdraw.',to:'wallet'},{k:'deal',kind:'Coupon',time:'3 days',title:'MYNTRA300 works on your wishlist',body:'Flat ₹300 off on orders above ₹1,499.',to:'deals'}];
+const ONB=[['Every price, every store.','Britto compares 18 stores, from Amazon and Flipkart to Croma and Nykaa, so you see the lowest price first.'],['A sale price is only a number.','See the full price history and know whether a discount is real or was raised before the sale.'],['Set a price. We\'ll watch it.','Pick a target. We alert you on push or WhatsApp the moment it drops.']];
+const WHEEL=[['10 coins',10,0],['₹5',0,5],['50 coins',50,0],['Try again',0,0],['₹10',0,10],['25 coins',25,0],['₹2',0,2],['100 coins',100,0]];
+const SORTS=['Relevance','Lowest price','Biggest drop','Rating'];
+
+class Component extends DCLogic {
+  state={screen:'home',stack:[],onb:0,phone:'',otp:'',query:'iphone 15',sort:'Relevance',range:'6M',hover:null,fav:false,alertOpen:false,target:60000,channels:{Push:true,WhatsApp:true,Email:false},alertSet:false,watch:WATCH,watchF:'All',dealTab:'Deals',dealStore:'All',copied:null,fsF:'All',link:'',analyzing:false,step:0,toggles:{drop:true,wa:true,cash:true,sale:false,bubble:true},balance:1240.5,txF:'All',method:'upi',wdAmt:'500',wdDone:false,wdSent:0,coins:2350,deg:0,spinning:false,spinsLeft:1,spinMsg:'',refCopied:false,trip:'One way',swap:false,dateIdx:2,fSort:'Cheapest',openFlight:0,notifF:'All',read:false,toast:'',perms:{notif:true,overlay:true,access:false},interests:['Mobiles','Electronics','Fashion'],pname:'Aarav Mehta',email:'aarav.mehta@gmail.com',gender:'Male',store:'Amazon',storeQ:'',rStore:'Flipkart',rCb:620,rProg:0,bubbleOpen:false,filt:{price:'Any',stores:['Amazon','Flipkart','Croma'],disc:'Any',rating:true,genuine:false},txSel:0,claimStore:'Flipkart',claimOrder:'',claimAmt:'',claimFile:false,claimDone:false,upis:[{id:'aarav@okhdfc',def:true}],upiInput:'',faqOpen:0,lang:'English'};
+  redirect(st,cb){this.timers=this.timers||[];this.setState({rStore:st,rCb:cb,rProg:0,bubbleOpen:false});this.go('redirect');this.timers.push(setTimeout(()=>this.setState({rProg:100}),80));this.timers.push(setTimeout(()=>{if(this.state.screen==='redirect')this.setState({screen:'overlay'});},2600));}
+  componentDidMount(){this.applyProp();}
+  componentDidUpdate(p){if(p.screen!==this.props.screen)this.applyProp();}
+  componentWillUnmount(){clearTimeout(this.tt);(this.timers||[]).forEach(clearTimeout);}
+  applyProp(){const s=this.props.screen;if(s&&SCREENS.includes(s))this.setState({screen:s,stack:s==='home'?[]:['home'],alertOpen:!!this.props.alertOpen});}
+  go(s){this.setState(st=>({stack:[...st.stack,st.screen],screen:s,alertOpen:false,wdDone:false,hover:null}));}
+  tab(s){this.setState({screen:s,stack:[],alertOpen:false});}
+  back(){this.setState(st=>{const k=[...st.stack];const s=k.pop()||'home';return{screen:s,stack:k,analyzing:false,step:0};});}
+  toastMsg(t){clearTimeout(this.tt);this.setState({toast:t});this.tt=setTimeout(()=>this.setState({toast:''}),2400);}
+  extraVals(s,set,tg,chip){
+    const SD=STORES.find(x=>x[0]===s.store)||STORES[0],cbN=parseInt(SD[2]);
+    const RS=STORES.find(x=>x[0]===s.rStore);const op=OFFERS.find(o=>o[0]===s.rStore);
+    const tx=TXS[s.txSel]||TXS[0];const cur=tx[4]==='Pending'?2:tx[4]==='Confirmed'?3:4;const ttone=tx[4]==='Pending'?TONE.gold:tx[4]==='Paid'?TONE.neutral:TONE.good;
+    const setF=o=>this.setState(st=>({filt:{...st.filt,...o}}));
+    const fcount=(s.filt.price!=='Any')+(s.filt.disc!=='Any')+s.filt.rating+s.filt.genuine+(s.filt.stores.length?1:0);
+    const catV=(c,i)=>({name:c[0],icon:c[1],count:c[2],tint:TINTS[i%5],open:()=>{this.setState({query:c[0].toLowerCase()});this.go('search');}});
+    const claimOk=s.claimOrder.length>=5&&s.claimAmt.length>0;
+    return {
+      perms:[['notif','🔔','Notifications','Price-drop and cashback alerts','Required'],['overlay','🫧','Display over other apps','Shows the price bubble inside store apps','Recommended'],['access','👁️','Accessibility access','Reads product pages to compare prices automatically','Optional']].map(([k,icon,l,sub,tag])=>({icon,label:l,sub,tag,tbg:tag==='Required'?'#FDEBEB':tag==='Recommended'?'#EAF0FF':'#EEF1F7',tfg:tag==='Required'?RED:tag==='Recommended'?BLUE:MUTED,...tg(s.perms[k]),on:()=>this.setState(st=>({perms:{...st.perms,[k]:!st.perms[k]}}))})),
+      permsNext:()=>this.go('interests'),
+      pname:s.pname,onPname:e=>set({pname:e.target.value}),pFirst:s.pname.split(' ')[0]||'there',pInitial:(s.pname[0]||'A').toUpperCase(),
+      interests:CATS.map(c=>{const on=s.interests.includes(c[0]);return{label:c[0],icon:c[1],tbg:on?'#EAF0FF':'#F4F6FB',bd:on?BLUE:'transparent',on1:on?1:0,on:()=>this.setState(st=>({interests:on?st.interests.filter(x=>x!==c[0]):[...st.interests,c[0]]}))};}),
+      interestCount:s.interests.length,
+      finishSetup:()=>{this.tab('home');this.toastMsg('Welcome to Britto, '+(s.pname.split(' ')[0]||'there')+'! ₹50 bonus added');},
+      cats:CATS.map(catV),homeCats:CATS.slice(0,7).map(catV),
+      storeQ:s.storeQ,onStoreQ:e=>set({storeQ:e.target.value}),
+      allStores:STORES.filter(x=>x[0].toLowerCase().includes(s.storeQ.toLowerCase())).map(x=>({name:x[0],mono:x[1],cb:x[2],col:SC[x[0]],cat:STORECAT[x[0]],open:()=>{this.setState({store:x[0]});this.go('store');}})),
+      storeD:{name:SD[0],mono:SD[1],cb:SD[2],col:SC[SD[0]],cat:STORECAT[SD[0]]},
+      storeRates:[['New users',(cbN+2)+'%'],['Fashion & accessories',cbN+'%'],['Home & kitchen',Math.max(1,cbN-2)+'%'],['Electronics',Math.max(1,Math.round(cbN/2))+'%'],['Mobiles & tablets','Flat ₹'+(cbN*25)]].map(r=>({l:r[0],v:r[1]})),
+      storeCoupons:COUPONS.filter(c=>c[0]===SD[0]).map(c=>({title:c[1],code:c[2],blabel:s.copied===c[2]?'Copied':'Copy',bbg:s.copied===c[2]?GREEN:BLUE,copy:()=>{set({copied:c[2]});this.toastMsg(c[2]+' copied');}})),
+      storeHasCoupons:COUPONS.some(c=>c[0]===SD[0]),
+      shopStore:()=>this.redirect(SD[0],0),
+      rd:{store:s.rStore,col:SC[s.rStore]||BLUE,mono:MONO[s.rStore]||'Br',cb:s.rCb>0?inr(s.rCb)+' cashback':RS?'Up to '+RS[2]+' cashback':'Best fare'},
+      rProgW:s.rProg+'%',
+      ovProduct:!!op,ovHome:!op,
+      ov:op?{price:inr(op[1]),off:Math.round((1-op[1]/69900)*100),kicker:op[1]>61999?'Cheaper elsewhere':'Lowest price ✓',headline:op[1]>61999?'Save '+inr(op[1]-61999)+' on Flipkart':inr(op[2])+' cashback active'}:{price:'',off:0,kicker:'Britto',headline:(RS?RS[2]:'')+' cashback active'},
+      bubbleOpen:s.bubbleOpen,toggleBubble:()=>set({bubbleOpen:!s.bubbleOpen}),
+      ovOffers:OFFERS.slice(0,4).map(o=>({store:o[0],mono:MONO[o[0]],mbg:SC[o[0]]||BLUE,price:inr(o[1]),go:()=>this.redirect(o[0],o[2])})),
+      ovTrack:()=>{set({bubbleOpen:false});this.toastMsg('Added to your Price Tracker');},
+      ovHistory:()=>{this.setState({bubbleOpen:false});this.go('product');},
+      demoBubble:()=>{this.setState({rStore:'Amazon',rCb:380,bubbleOpen:false});this.go('overlay');},
+      filterCount:fcount,
+      priceOpts:['Any','Under ₹10k','₹10k–30k','₹30k–60k','₹60k+'].map(l=>({label:l,...chip(s.filt.price===l),on:()=>setF({price:l})})),
+      fStores:STORES.slice(0,10).map(x=>({label:x[0],...chip(s.filt.stores.includes(x[0])),on:()=>setF({stores:s.filt.stores.includes(x[0])?s.filt.stores.filter(y=>y!==x[0]):[...s.filt.stores,x[0]]})})),
+      discOpts:['Any','10%+','25%+','50%+'].map(l=>({label:l,...chip(s.filt.disc===l),on:()=>setF({disc:l})})),
+      fRating:{...tg(s.filt.rating),on:()=>setF({rating:!s.filt.rating})},fGenuine:{...tg(s.filt.genuine),on:()=>setF({genuine:!s.filt.genuine})},
+      clearFilters:()=>set({filt:{price:'Any',stores:[],disc:'Any',rating:false,genuine:false}}),
+      applyFilters:()=>{this.back();this.toastMsg('Filters applied');},
+      txD:{item:tx[1],store:tx[0],amt:(tx[2]<0?'−':'+')+inr(Math.abs(tx[2])),acol:tx[2]<0?MUTED:GREEN,date:tx[3]+' 2026',status:tx[4],mono:MONO[tx[0]]||'Br',col:SC[tx[0]]||BLUE,bg:ttone.bg,fg:ttone.fg,ref:'BRT'+(482910+s.txSel*1379)},
+      txSteps:['Visited store via Britto','Order tracked','Cashback pending','Cashback confirmed','Added to wallet'].map((l,i)=>({label:l,sub:i<=cur?(i===2&&cur===2?'Expected to confirm by 5 Dec':tx[3]+(i?', +'+i*2+' days':'')):'Waiting',dot:i<=cur?GREEN:LINE,mark:i<=cur?'✓':'',fg:i<=cur?INK:MUTED,line:i<cur?GREEN:LINE,lineO:i===4?0:1})),
+      claimForm:!s.claimDone,claimDone:s.claimDone,
+      claimStores:['Amazon','Flipkart','Myntra','Ajio','Croma','Nykaa'].map(l=>({label:l,...chip(s.claimStore===l),on:()=>set({claimStore:l})})),
+      claimOrder:s.claimOrder,onClaimOrder:e=>set({claimOrder:e.target.value}),claimAmt:s.claimAmt,onClaimAmt:e=>set({claimAmt:e.target.value.replace(/\D/g,'')}),
+      attachInvoice:()=>set({claimFile:true}),claimFileBd:s.claimFile?GREEN:'#C3CDEB',claimFileBg:s.claimFile?'#E5F7EE':'#F4F6FB',claimFileIcon:s.claimFile?'✅':'📎',claimFileLabel:s.claimFile?'invoice_OD4821.pdf attached':'Upload invoice',
+      claimOk:claimOk?1:.4,submitClaim:()=>{if(claimOk)set({claimDone:true});else this.toastMsg('Add your order ID and amount');},
+      upis:s.upis.map((u,i)=>({id:u.id,label:u.def?'Default':'Set default',bg:u.def?'#E5F7EE':'#EAF0FF',fg:u.def?GREEN:BLUE,on:()=>this.setState(st=>({upis:st.upis.map((x,j)=>({...x,def:j===i}))}))})),
+      upiInput:s.upiInput,onUpi:e=>set({upiInput:e.target.value.trim()}),
+      addUpi:()=>{if(/^[\w.-]+@[\w]+$/.test(s.upiInput)){this.setState(st=>({upis:[...st.upis,{id:st.upiInput,def:false}],upiInput:''}));this.toastMsg('UPI ID verified and added');}else this.toastMsg('Enter a valid UPI ID, like name@okaxis');},
+      email:s.email,onEmail:e=>set({email:e.target.value}),
+      genders:['Male','Female','Other'].map(l=>({label:l,...chip(s.gender===l),on:()=>set({gender:l})})),
+      saveProfile:()=>{this.back();this.toastMsg('Profile updated');},
+      faqs:FAQ.map((q,i)=>({q:q[0],a:q[1],open:s.faqOpen===i,rot:s.faqOpen===i?180:0,on:()=>set({faqOpen:s.faqOpen===i?-1:i})})),
+      chatSupport:()=>this.toastMsg('Connecting you to Britto support…'),
+      lang:s.lang,langs:LANGS.map(l=>({native:l[0],en:l[1],bd:s.lang===l[1]?BLUE:LINE,dot:s.lang===l[1]?1:0,on:()=>{set({lang:l[1]});this.toastMsg('Language set to '+l[1]);}}))
+    };
+  }
+  renderVals(){
+    const s=this.state,set=o=>this.setState(o);
+    const is=Object.fromEntries(SCREENS.map(k=>[k,s.screen===k]));
+    const go=Object.fromEntries(SCREENS.map(k=>[k,()=>this.go(k)]));
+    const tab=Object.fromEntries(TABS.map(k=>[k,()=>this.tab(k)]));
+    const nav=Object.fromEntries(TABS.map(k=>[k,s.screen===k?BLUE:'#9AA1B8']));
+    const openProduct=()=>this.go('product');
+    // chart
+    const h=hist(s.range),vs=h.map(p=>p.v),mn=Math.min(...vs),mx=Math.max(...vs);
+    const X=i=>i/(h.length-1)*W,Y=v=>P+(mx-v)/((mx-mn)||1)*(H-2*P);
+    const line=h.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(p.v).toFixed(1)).join(' ');
+    const hi=s.hover==null?h.length-1:s.hover;const hp=h[hi];
+    const toggle=k=>()=>this.setState(st=>({toggles:{...st.toggles,[k]:!st.toggles[k]}}));
+    const tg=v=>({bg:v?BLUE:'#D5DAE6',x:v?18:0});
+    // watch
+    const wl=s.watch.filter(w=>s.watchF==='All'||(s.watchF==='Dropped'?w.flag==='dropped'||w.flag==='hit':w.flag==='hit'));
+    // wallet
+    const txs=TXS.filter(t=>s.txF==='All'||(s.txF==='Pending'?t[4]==='Pending':t[4]!=='Pending'));
+    const amt=parseInt(s.wdAmt||'0',10)||0;const methods=[['upi','UPI','aarav@okhdfc · instant',''],['bank','Bank transfer','HDFC ••4821 · 1–2 days',''],['amazon','Amazon Pay gift card','Delivered by email','+5% bonus'],['flipkart','Flipkart gift card','Delivered by email','+5% bonus']];
+    const bonus=s.method==='amazon'||s.method==='flipkart';const wdOk=amt>=100&&amt<=s.balance;
+    const spinNow=()=>{if(s.spinning)return;if(s.spinsLeft<1){this.toastMsg('No spins left today. Come back tomorrow, or earn one by tracking a product.');return;}const i=Math.floor(Math.random()*8);const base=Math.ceil(s.deg/360)*360;const deg=base+1800+(360-(i*45+22.5));this.setState({deg,spinning:true,spinMsg:''});(this.timers=this.timers||[]).push(setTimeout(()=>{const w=WHEEL[i];this.setState(st=>({spinning:false,spinsLeft:st.spinsLeft-1,coins:st.coins+w[1],balance:st.balance+w[2],spinMsg:w[1]?`You won ${w[1]} coins`:w[2]?`₹${w[2]} added to your wallet`:'No luck this time'}));},4200));};
+    const analyze=()=>{if(!s.link)return;this.setState({analyzing:true,step:0});this.timers=this.timers||[];[1,2,3,4].forEach(n=>this.timers.push(setTimeout(()=>this.setState({step:n}),n*650)));this.timers.push(setTimeout(()=>{this.setState({analyzing:false,step:0});this.go('product');},3000));};
+    const fs=FS.filter(f=>s.fsF==='All'||f.verdict===s.fsF);
+    const fl=[...FLIGHTS].map((f,i)=>({...f,i,best:f.p[0][0],price:f.p[0][1]})).sort((a,b)=>s.fSort==='Cheapest'?a.price-b.price:s.fSort==='Fastest'?a.min-b.min:a.dep.localeCompare(b.dep));
+    const cities=[{code:'DEL',city:'Delhi'},{code:'BOM',city:'Mumbai'}];const from=s.swap?cities[1]:cities[0],to=s.swap?cities[0]:cities[1];
+    const nk={All:null,'Price drops':'drop',Cashback:'cash',Deals:'deal'};
+    const resSorted=[...RESULTS].sort((a,b)=>s.sort==='Lowest price'?a.price-b.price:s.sort==='Biggest drop'?b.drop-a.drop:s.sort==='Rating'?b.rating-a.rating:0);
+    return {
+      is,go,tab,nav,back:()=>this.back(),showNav:TABS.includes(s.screen),
+      onb0:s.onb===0,onb1:s.onb===1,onb2:s.onb===2,onbTitle:ONB[s.onb][0],onbBody:ONB[s.onb][1],onbCta:s.onb===2?'Get started':'Next',
+      onbDots:[0,1,2].map(i=>({w:i===s.onb?22:6,o:i===s.onb?1:.25})),
+      onbNext:()=>s.onb<2?set({onb:s.onb+1}):this.go('login'),toLogin:()=>this.go('login'),toHome:()=>this.tab('home'),
+      phone:s.phone,onPhone:e=>set({phone:e.target.value.replace(/\D/g,'').slice(0,10)}),phoneOk:s.phone.length===10?1:.35,
+      sendOtp:()=>{if(s.phone.length===10)this.go('otp');else this.toastMsg('Enter a 10-digit mobile number');},
+      phoneShown:s.phone?s.phone.slice(0,5)+' '+s.phone.slice(5):'98765 43210',
+      otp:s.otp,onOtp:e=>set({otp:e.target.value.replace(/\D/g,'').slice(0,6)}),
+      otpBoxes:Array.from({length:6},(_,i)=>({v:s.otp[i]||'',bd:i===s.otp.length?BLUE:LINE})),otpOk:s.otp.length===6?1:.35,
+      verifyOtp:()=>{if(s.otp.length===6)this.go('permissions');},
+      drops:DROPS.map((d,i)=>({tint:TINTS[i%5],store:d[0],name:d[1],price:inr(d[2]),was:inr(d[3]),off:Math.round((1-d[2]/d[3])*100),open:openProduct})),
+      stores:STORES.slice(0,8).map(x=>({col:SC[x[0]],name:x[0],mono:x[1],cb:x[2],open:()=>{this.setState({store:x[0]});this.go('store');}})),
+      query:s.query,onQuery:e=>set({query:e.target.value}),
+      recent:['iphone 15','air fryer','running shoes'].map(q=>({q,pick:()=>set({query:q})})),
+      sortChips:SORTS.map(l=>({label:l,...chip(s.sort===l),on:()=>set({sort:l})})),
+      results:resSorted.map((r,i)=>({...r,tint:TINTS[i%5],price:inr(r.price),tbg:TONE[r.tone].bg,tfg:TONE[r.tone].fg})),resultsCount:'214',
+      open:{product:openProduct},
+      favColor:s.fav?RED:INK,favFill:s.fav?RED:'none',
+      toggleFav:()=>{set({fav:!s.fav});this.toastMsg(s.fav?'Removed from wishlist':'Saved to wishlist');},
+      shareProduct:()=>this.toastMsg('Link copied with price history card'),
+      statLow:inr(LOW),statHigh:inr(HIGH),
+      ranges:Object.keys(RANGES).map(r=>({label:r,...seg(s.range===r),on:()=>set({range:r,hover:null})})),
+      chartLine:line,chartArea:line+` L${W} ${H} L0 ${H} Z`,lowY:Y(mn).toFixed(1),
+      tipX:X(hi).toFixed(1),tipY:Y(hp.v).toFixed(1),tipPrice:inr(hp.v),tipDate:hp.d===0?'Today':fmtD(hp.d),
+      chartStart:fmtD(h[0].d),rLow:inr(mn),rHigh:inr(mx),rAvg:inr(vs.reduce((a,b)=>a+b,0)/vs.length),
+      onChartMove:e=>{const r=e.currentTarget.getBoundingClientRect();const i=Math.max(0,Math.min(h.length-1,Math.round((e.clientX-r.left)/r.width*(h.length-1))));if(i!==s.hover)set({hover:i});},
+      onChartLeave:()=>set({hover:null}),
+      offers:OFFERS.map((o,i)=>({store:o[0],mono:MONO[o[0]],price:inr(o[1]),cb:inr(o[2]),del:o[3],diff:i?'+'+inr(o[1]-OFFERS[0][1]):'Lowest',dcol:i?MUTED:GREEN,mbg:SC[o[0]]||BLUE,mfg:'#FFFFFF',go:()=>this.redirect(o[0],o[2])})),
+      alertBtn:s.alertSet?'Alert on':'Price alert',openAlert:()=>set({alertOpen:true}),closeAlert:()=>set({alertOpen:false}),alertOpen:s.alertOpen,
+      buyNow:()=>this.redirect('Flipkart',620),
+      target:s.target,targetLabel:inr(s.target),onTarget:e=>set({target:+e.target.value}),
+      targetChips:[['−5%',58899],['−10%',55799],['Lowest ever',LOW]].map(([l,v])=>({label:l,on:()=>set({target:Math.round(v/500)*500})})),
+      channels:Object.keys(s.channels).map(k=>({label:k,...chip(s.channels[k]),on:()=>this.setState(st=>({channels:{...st.channels,[k]:!st.channels[k]}}))})),
+      saveAlert:()=>{this.setState(st=>({alertOpen:false,alertSet:true,watch:st.watch.map(w=>w.id===1?{...w,target:st.target}:w)}));this.toastMsg(`We'll alert you when it hits ${inr(s.target)}`);},
+      watchCount:s.watch.length,watchEmpty:wl.length===0,
+      watchFilters:['All','Dropped','Target hit'].map(l=>({label:l,...chip(s.watchF===l),on:()=>set({watchF:l})})),
+      watch:wl.map((w,i)=>({...w,tint:TINTS[i%5],price:inr(w.price),target:inr(w.target),spark:spark(w.s),sc:TONE[w.tone].fg,bg:TONE[w.tone].bg,fg:TONE[w.tone].fg,remove:()=>{this.setState(st=>({watch:st.watch.filter(x=>x.id!==w.id)}));this.toastMsg('Stopped tracking');}})),
+      dealTabs:['Deals','Coupons'].map(l=>({label:l,fg:s.dealTab===l?INK:MUTED,bd:s.dealTab===l?INK:'transparent',on:()=>set({dealTab:l,dealStore:'All'})})),
+      showDeals:s.dealTab==='Deals',showCoupons:s.dealTab==='Coupons',
+      storeChips:['All','Amazon','Flipkart','Myntra','Ajio','Croma','Nykaa','Lenskart'].map(l=>({label:l,...chip(s.dealStore===l),on:()=>set({dealStore:l})})),
+      deals:DEALS.filter(d=>s.dealStore==='All'||d[0]===s.dealStore).map((d,i)=>({tint:TINTS[(i+2)%5],store:d[0],name:d[1],price:inr(d[2]),was:inr(d[3]),off:Math.round((1-d[2]/d[3])*100),tag:d[4],ago:d[5]+' ago'})),
+      coupons:COUPONS.filter(c=>s.dealStore==='All'||c[0]===s.dealStore).map(c=>({store:c[0],title:c[1],code:c[2],exp:c[3],rate:c[4],ecol:c[3]==='Ends tonight'?RED:MUTED,blabel:s.copied===c[2]?'Copied':'Copy code',bbg:s.copied===c[2]?GREEN:BLUE,bfg:PAPER,copy:()=>{set({copied:c[2]});this.toastMsg(`${c[2]} copied. Opening ${c[0]}…`);}})),
+      fsFilters:['All','Inflated','Genuine','Same as usual'].map(l=>({label:l,...chip(s.fsF===l),on:()=>set({fsF:l})})),
+      fsItems:fs.map((f,i)=>({...f,tint:TINTS[i%5],sale:inr(f.sale),bg:TONE[f.tone].bg,fg:TONE[f.tone].fg,path:spark(f.s,280,40)})),
+      linkText:s.link||'https://www.flipkart.com/apple-iphone-15-black-128-gb/p/…',linkColor:s.link?INK:'#9AA1B8',linkBorder:s.link?BLUE:LINE,linkOk:s.link?1:.35,
+      pasteLink:()=>set({link:'https://www.flipkart.com/apple-iphone-15-black-128-gb/p/itm6ac6485515ae4'}),analyze,
+      analyzing:s.analyzing,notAnalyzing:!s.analyzing,
+      steps:['Reading product page','Fetching 2 years of prices','Comparing 18 stores','Running fake-sale check'].map((l,i)=>({label:l,o:s.step>=i?1:.4,bg:s.step>i?GREEN:'transparent'})),
+      tg:{bubble:toggle('bubble')},t:{bubble:tg(s.toggles.bubble)},
+      balance:inr(s.balance)+'.'+String(Math.round((s.balance%1)*100)).padStart(2,'0'),
+      txFilters:['All','Pending','Confirmed'].map(l=>({label:l,...chip(s.txF===l),on:()=>set({txF:l})})),
+      txs:txs.map(t=>{const tone=t[4]==='Pending'?TONE.gold:t[4]==='Paid'?TONE.neutral:TONE.good;return{open:()=>{this.setState({txSel:TXS.indexOf(t)});this.go('cashbackDetail');},store:t[0],item:t[1],mono:MONO[t[0]]||'Br',col:SC[t[0]]||BLUE,amt:(t[2]<0?'−':'+')+inr(Math.abs(t[2])),acol:t[2]<0?MUTED:INK,date:t[3],status:t[4],bg:tone.bg,fg:tone.fg};}),
+      methods:methods.map(m=>({label:m[1],sub:m[2],bonus:m[3],bd:s.method===m[0]?BLUE:LINE,dot:s.method===m[0]?1:0,on:()=>set({method:m[0]})})),
+      wdAmt:s.wdAmt,onWdAmt:e=>set({wdAmt:e.target.value.replace(/\D/g,'').slice(0,5)}),
+      amtChips:[['₹100',100],['₹500',500],['All',Math.floor(s.balance)]].map(([l,v])=>({label:l,on:()=>set({wdAmt:String(v)})})),
+      wdHint:amt<100?'Minimum ₹100':amt>s.balance?'More than your balance':bonus?`You'll get ${inr(amt*1.05)} with the 5% bonus`:'No fees',
+      wdHintCol:amt<100||amt>s.balance?RED:MUTED,wdOk:wdOk?1:.35,wdLabel:inr(s.wdDone?s.wdSent:amt),
+      wdForm:!s.wdDone,wdDone:s.wdDone,
+      wdDoneMsg:s.method==='upi'?'Sent to aarav@okhdfc. UPI transfers usually land within a few minutes.':s.method==='bank'?'Bank transfers arrive in 1–2 working days.':'Your gift card code will arrive by email within an hour.',
+      doWithdraw:()=>{if(wdOk)this.setState(st=>({wdDone:true,wdSent:amt,balance:st.balance-amt}));},
+      coins:s.coins.toLocaleString('en-IN'),spin:spinNow,wheelDeg:s.deg,wheelTr:s.spinning?'transform 4s cubic-bezier(.17,.67,.2,1)':'none',
+      spinMsg:s.spinning?'Spinning…':s.spinMsg,spinsLeftLabel:s.spinsLeft?`${s.spinsLeft} free spin today`:'No spins left today',
+      streak:[5,5,10,10,15,20,50].map((c,i)=>{const done=i<3,today=i===3;return{c,d:i+1,bg:done?GREEN:today?BLUE:'#FFFFFF',fg:done||today?'#FFFFFF':INK,bd:done?GREEN:today?BLUE:LINE};}),
+      tasks:[{t:'Track 3 new products',p:'1 of 3 done',c:50},{t:'Shop once via Britto this week',p:'Any store',c:200},{t:'Turn on WhatsApp alerts',p:'Takes 10 seconds',c:25}],
+      copyRef:()=>{set({refCopied:true});this.toastMsg('Referral code copied');},refCopyLabel:s.refCopied?'Copied':'Copy',
+      shareRef:()=>this.toastMsg('Opening share sheet…'),
+      friends:[['R','Riya Sharma','₹50 earned','good'],['K','Kabir Singh','₹50 earned','good'],['N','Neha Iyer','Order pending','gold'],['V','Vikram Rao','Joined','neutral']].map(f=>({i:f[0],n:f[1],s:f[2],bg:TONE[f[3]].bg,fg:TONE[f[3]].fg})),
+      tripTypes:['One way','Round trip'].map(l=>({label:l,...seg(s.trip===l),on:()=>set({trip:l})})),
+      retOpacity:s.trip==='One way'?.45:1,retLabel:s.trip==='One way'?'Add return':'Sun, 8 Nov',
+      from,to,swapDeg:s.swap?180:0,swapCities:()=>set({swap:!s.swap}),
+      dateStrip:[['Mon 2',5240],['Tue 3',4990],['Wed 4',4390],['Thu 5',4780],['Fri 6',5610],['Sat 7',6020]].map((d,i)=>({day:d[0],price:inr(d[1]),...chip(s.dateIdx===i),on:()=>set({dateIdx:i})})),
+      flightSorts:['Cheapest','Fastest','Earliest'].map(l=>({label:l,...chip(s.fSort===l),on:()=>set({fSort:l})})),
+      flightsList:fl.map(f=>({...f,price:inr(f.price),nsites:f.p.length,open:s.openFlight===f.i,toggle:()=>set({openFlight:s.openFlight===f.i?-1:f.i}),providers:f.p.map(p=>({n:p[0],p:inr(p[1]),go:()=>this.redirect(p[0],0)}))})),
+      notifFilters:Object.keys(nk).map(l=>({label:l,...chip(s.notifF===l),on:()=>set({notifF:l})})),
+      notifs:NOTIFS.filter(n=>!nk[s.notifF]||n.k===nk[s.notifF]).map((n,i)=>({...n,unread:!s.read&&i<3?1:0,col:n.k==='drop'?GREEN:n.k==='cash'?GOLD:RED,open:()=>n.to==='wallet'||n.to==='deals'?this.tab(n.to):this.go(n.to)})),
+      markRead:()=>set({read:true}),
+      toggles:[['drop','Price-drop alerts','Push notification when a tracked item drops'],['wa','WhatsApp alerts','Target-hit messages on +91 98765 43210'],['cash','Cashback updates','Tracked, confirmed and paid'],['sale','Sale-watch digest','One summary per big sale']].map(([k,l,sub])=>({label:l,sub,...tg(s.toggles[k]),on:toggle(k)})),
+      logout:()=>this.setState({screen:'onboarding',stack:[],onb:0,phone:'',otp:''}),
+      ...this.extraVals(s,set,tg,chip),hasToast:!!s.toast,toast:s.toast,sbBg:s.screen==='home'?BLUE:'#F4F6FB',sbFg:s.screen==='home'?'#FFFFFF':INK
+    };
+  }
+}
+</script>
+</body>
+</html>
