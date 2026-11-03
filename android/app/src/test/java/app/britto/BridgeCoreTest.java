@@ -64,7 +64,7 @@ public class BridgeCoreTest {
         JSONObject first = ask("{\"type\":\"getReaderConfig\",\"store\":\"amazon\",\"device\":\"mobile\"}");
         assertTrue(first.getBoolean("ok"));
         assertEquals("amazon.desktop.r1.abc", first.getJSONObject("body").getString("version"));
-        assertEquals("GET /api/config/reader?store=amazon&device=mobile&v=app-0.1.0", server.calls.get(0));
+        assertEquals("GET /api/config/reader?store=amazon&device=mobile&v=" + BridgeCore.READER_VERSION + "", server.calls.get(0));
 
         now += BridgeCore.CONFIG_TTL_MS - 1;
         ask("{\"type\":\"getReaderConfig\",\"store\":\"amazon\",\"device\":\"mobile\"}");
@@ -73,7 +73,7 @@ public class BridgeCoreTest {
         now += 2;
         server.next = new Api.Response(304, "", "\"amazon.desktop.r1.abc\"");
         JSONObject revalidated = ask("{\"type\":\"getReaderConfig\",\"store\":\"amazon\",\"device\":\"mobile\"}");
-        assertEquals("GET /api/config/reader?store=amazon&device=mobile&v=app-0.1.0 If-None-Match \"amazon.desktop.r1.abc\"", server.calls.get(1));
+        assertEquals("GET /api/config/reader?store=amazon&device=mobile&v=" + BridgeCore.READER_VERSION + " If-None-Match \"amazon.desktop.r1.abc\"", server.calls.get(1));
         assertEquals("a 304 keeps the cached config", "amazon.desktop.r1.abc", revalidated.getJSONObject("body").getString("version"));
 
         now += BridgeCore.CONFIG_TTL_MS;
@@ -93,7 +93,7 @@ public class BridgeCoreTest {
         assertEquals("https://www.amazon.in/dp/B09X5DK382", sent.getString("url"));
         assertEquals(26500, sent.getJSONObject("observed").getInt("price"));
         assertEquals("amazon.desktop.r1.abc", sent.getString("configVersion"));
-        assertEquals("app-0.1.0", sent.getString("readerVersion"));
+        assertEquals(BridgeCore.READER_VERSION, sent.getString("readerVersion"));
         assertEquals("app", sent.getString("client"));
         assertEquals(5, sent.length());
     }
@@ -115,7 +115,7 @@ public class BridgeCoreTest {
         assertTrue(reply.getBoolean("ok"));
         JSONObject sent = new JSONObject(server.bodies.get(0));
         assertEquals("POST /api/telemetry", server.calls.get(0));
-        assertEquals("{\"feature\":\"read\",\"store\":\"flipkart\",\"outcome\":\"unrecognised\",\"configVersion\":\"flipkart.desktop.r1.x\",\"readerVersion\":\"app-0.1.0\",\"client\":\"app\"}", sent.toString());
+        assertEquals("{\"feature\":\"read\",\"store\":\"flipkart\",\"outcome\":\"unrecognised\",\"configVersion\":\"flipkart.desktop.r1.x\",\"readerVersion\":\"" + BridgeCore.READER_VERSION + "\",\"client\":\"app\"}", sent.toString());
     }
 
     @Test
