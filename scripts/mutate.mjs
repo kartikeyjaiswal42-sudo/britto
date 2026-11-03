@@ -415,6 +415,23 @@ export const MUTANTS = [
     file: 'api/db.ts', find: "'SELECT * FROM products WHERE title IS NOT NULL AND last_checked_at IS NOT NULL ORDER BY created_at DESC LIMIT ?'", replace: "'SELECT * FROM products WHERE title IS NOT NULL ORDER BY created_at DESC LIMIT ?'",
     run: PROVE, expect: [/stay off the lists until their own page is read/],
   },
+  // ---- alerts as app notifications (2026-11-04)
+  {
+    name: 'app shows an alert that fired before it started watching',
+    file: 'android/app/src/main/java/app/britto/AlertWatch.java', find: 'if (id.isEmpty() || at <= since) continue;', replace: 'if (id.isEmpty()) continue;',
+    // Before watching begins nothing is news either: the same rule, so that test reddens too.
+    run: GRADLE_TEST, expect: [/onlyFiringsAfterWatchingBeganAndNotShownBefore/, /wrongShapesYieldNothing/],
+  },
+  {
+    name: 'app shows the same firing twice',
+    file: 'android/app/src/main/java/app/britto/AlertWatch.java', find: 'if (seen != null && at <= seen.optLong(id, 0)) continue;', replace: '',
+    run: GRADLE_TEST, expect: [/onlyFiringsAfterWatchingBeganAndNotShownBefore/],
+  },
+  {
+    name: 'the site bridge takes any text as an alert token',
+    file: 'android/app/src/main/java/app/britto/AlertWatch.java', find: 'if (token == null || !TOKEN.matcher(token).matches()) return false;', replace: 'if (token == null) return false;',
+    run: GRADLE_TEST, expect: [/tokenRules/, /siteBridgeHandsOverTheTokenAndSaysTheStatus/],
+  },
 ];
 
 const only = process.argv[2];

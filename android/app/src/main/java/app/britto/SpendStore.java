@@ -21,6 +21,29 @@ final class SpendStore {
         String read();
 
         void write(String text);
+
+        /** A file in the app's private files directory (the app is not backed up: allowBackup=false). */
+        static Disk file(File file) {
+            return new Disk() {
+                @Override
+                public String read() {
+                    try {
+                        return file.exists() ? new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8) : null;
+                    } catch (IOException e) {
+                        return null;
+                    }
+                }
+
+                @Override
+                public void write(String text) {
+                    try {
+                        Files.write(file.toPath(), text.getBytes(StandardCharsets.UTF_8));
+                    } catch (IOException e) {
+                        // Nothing to fall back to: the text simply is not kept this time.
+                    }
+                }
+            };
+        }
     }
 
     private final Disk disk;
@@ -59,27 +82,7 @@ final class SpendStore {
         disk.write("[]");
     }
 
-    /** A file in the app's private files directory (the app is not backed up: allowBackup=false). */
     static SpendStore inDirectory(File dir) {
-        File file = new File(dir, "spend-orders.json");
-        return new SpendStore(new Disk() {
-            @Override
-            public String read() {
-                try {
-                    return file.exists() ? new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8) : null;
-                } catch (IOException e) {
-                    return null;
-                }
-            }
-
-            @Override
-            public void write(String text) {
-                try {
-                    Files.write(file.toPath(), text.getBytes(StandardCharsets.UTF_8));
-                } catch (IOException e) {
-                    // Nothing to fall back to: the orders simply are not kept this time.
-                }
-            }
-        });
+        return new SpendStore(Disk.file(new File(dir, "spend-orders.json")));
     }
 }

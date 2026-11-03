@@ -35,8 +35,14 @@ final class Api {
     private Api() {}
 
     static Response request(String method, String path, String jsonBody, String ifNoneMatch) throws IOException {
+        return request(method, path, jsonBody, ifNoneMatch, null);
+    }
+
+    /** As this phone's alert owner: {@code bearer} is the device token the Britto site handed over. */
+    static Response request(String method, String path, String jsonBody, String ifNoneMatch, String bearer) throws IOException {
         HttpURLConnection c = (HttpURLConnection) new URL(BuildConfig.SITE + path).openConnection();
         try {
+            if (bearer != null) c.setRequestProperty("Authorization", "Bearer " + bearer);
             c.setRequestMethod(method);
             c.setConnectTimeout(10_000);
             c.setReadTimeout(20_000);

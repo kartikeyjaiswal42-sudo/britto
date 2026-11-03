@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Britto</string>
+    <string name="alerts_channel">Price alerts</string>
+    <string name="alerts_title">Price alert</string>
 </resources>

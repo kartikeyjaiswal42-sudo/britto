@@ -1,7 +1,7 @@
 // Working UI for Britto until the Claude Design screens replace it. Every string from a
 // store (titles, image URLs) goes in via textContent / setAttribute — never innerHTML.
 import {
-  ago, connectTelegram, date, deletePush, disconnectTelegram, getConfig, getDeals, getDrops, getMe, getPopular, getProduct, getRecent, getStores,
+  ago, connectTelegram, date, deletePush, deviceToken, disconnectTelegram, getConfig, getDeals, getDrops, getMe, getPopular, getProduct, getRecent, getStores,
   pct, removeAlert, rupees, savePush, searchProducts, sendTest, setAlert, storeSearch, toPaise, trackProduct, getGroceryPlatforms, getSimilar, voteCoupon,
 } from './api.js';
 import { drawChart } from './chart.js';
@@ -547,13 +547,13 @@ async function appPage() {
     inApp ? h('p', { class: 'notice' }, `You are using the app${info ? `; the newest version is ${info.version}` : ''}.`)
       : info ? h('div', { class: 'download' },
         h('a', { class: 'button warn big', href: '/download/britto.apk', download: 'Britto.apk' }, `Download Britto ${info.version} (${Math.round(info.bytes / 1024)} KB)`),
-        h('p', { class: 'muted small' }, `Android 8 or newer. Built ${date(info.builtAt)}. SHA-256 ${info.sha256}`))
+        h('p', { class: 'muted small' }, `Android 10 or newer. Built ${date(info.builtAt)}. SHA-256 ${info.sha256}`))
         : h('p', { class: 'notice' }, 'The app is not published here yet.'),
     h('h2', {}, 'What it does'),
     h('ul', { class: 'features' },
       feature('Super Browse.', 'Open a store from Shop, log in with your own number as you would in its app, and every product page shows Britto’s price panel. You log in on the store’s own page: Britto keeps no password and no login of yours.'),
       feature('Search.', 'Search Amazon from Britto, or open the same search on Flipkart, Myntra and the rest.'),
-      feature('Price alerts.', 'Set an alert on any product. In Chrome on your phone or laptop they arrive as notifications; in the app, from the next version.'),
+      feature('Price alerts.', 'Set an alert on any product: the app shows it as a notification (it checks every 15 minutes, and when you open it). In Chrome on a laptop, alerts arrive as browser notifications.'),
       feature('Share to Britto.', 'In any store’s app, tap Share on a product and choose Britto to see its history.'),
       feature('Rides, flights and hotels.', 'Uber, Cleartrip and Booking.com open inside the app, so you log in once.'),
       feature('Spend Lens.', 'What you spent across stores, from your own order pages, worked out on your phone and never uploaded.')),
@@ -607,6 +607,20 @@ async function browsePage() {
  * The app's bridge on the Britto site (MainActivity, this origin only): Spend Lens orders kept on
  * this phone. Absent in a browser, in which case Spend Lens says where it works.
  */
+/**
+ * Inside the app: hand it this browser's alert token, so it can show the alerts as phone
+ * notifications (it asks the server which fired; android AlertJob). -> { watching, notifications } | null
+ */
+async function appWatchesAlerts() {
+  const ask = inApp ? siteBridge() : null;
+  const token = deviceToken();
+  if (!ask || !token) return null;
+  try {
+    await ask({ type: 'watchAlerts', token });
+    return await ask({ type: 'alertStatus' });
+  } catch { return null; }
+}
+
 function siteBridge() {
   const bridge = window.BrittoBridge;
   if (!bridge) return null;
@@ -728,11 +742,19 @@ function alertBox(view) {
       h('button', { type: 'button', class: 'link', onclick: async () => {
         try { show((await removeAlert(a.id)).me); status.textContent = 'Alert removed.'; } catch (err) { status.textContent = err.message; }
       } }, 'Remove'))));
-    if (here.length) channelHint(channels, me);
+    if (here.length) (inApp ? appAlertHint(channels) : channelHint(channels, me));
   }
   box.append(mine, form, status, channels);
   getMe().then(show).catch(() => {});
   return box;
+}
+
+/** Inside the app, alerts reach the phone as the app's own notifications (android AlertJob). */
+async function appAlertHint(host) {
+  const st = await appWatchesAlerts();
+  put(host, st?.notifications
+    ? h('p', { class: 'small ok' }, 'Phone notifications are on: the app checks your alerts every 15 minutes and whenever you open it.')
+    : h('p', { class: 'small' }, st ? 'Allow notifications for Britto in your phone’s settings, and the app will tell you when an alert fires.' : 'This version of the app cannot show notifications: update it from the Get the app page.'));
 }
 
 /** "Where should we tell you?": Telegram and this browser's notifications. */
@@ -847,7 +869,7 @@ async function alertsPage() {
   const testStatus = h('span', { class: 'small', role: 'status' });
   put(app, 
     h('h1', {}, 'Price Tracker'),
-    h('p', { class: 'muted' }, 'No account and no password: your alerts belong to this browser. Connect Telegram to get them on your phone too.'),
+    h('p', { class: 'muted' }, inApp ? 'No account and no password: your alerts belong to this phone.' : 'No account and no password: your alerts belong to this browser. Connect Telegram to get them on your phone too.'),
     cfg?.telegram ? h('p', { class: 'notice' }, 'On your phone? Send any product link to ', botLink(cfg.telegram.bot), ' on Telegram. It replies with the price history and sets alerts with one tap.') : null,
     h('section', { class: 'alert-box' }, h('h2', {}, 'Where alerts go'), channels,
       me ? h('p', {}, h('button', { type: 'button', class: 'secondary', onclick: async () => {
@@ -869,7 +891,8 @@ async function alertsPage() {
         try { await removeAlert(a.id); alertsPage(); } catch (err) { alert(err.message); }
       } }, 'Remove'))))
       : h('p', { class: 'muted' }, 'Open any product and press "Set alert" under its price history.'));
-  if (me) channelHint(channels, me);
+  if (me && inApp) await appAlertHint(channels);
+  else if (me) channelHint(channels, me);
   else put(channels, h('p', { class: 'small muted' }, 'Set your first alert on a product page, then choose where it reaches you.'));
 }
 
