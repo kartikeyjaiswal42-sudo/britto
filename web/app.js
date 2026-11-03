@@ -553,7 +553,7 @@ async function appPage() {
     h('ul', { class: 'features' },
       feature('Super Browse.', 'Open a store from Shop, log in with your own number as you would in its app, and every product page shows Britto’s price panel. You log in on the store’s own page: Britto keeps no password and no login of yours.'),
       feature('Search.', 'Search Amazon from Britto, or open the same search on Flipkart, Myntra and the rest.'),
-      feature('Price alerts.', 'Set an alert on any product; the app tells you when it drops.'),
+      feature('Price alerts.', 'Set an alert on any product. In Chrome on your phone or laptop they arrive as notifications; in the app, from the next version.'),
       feature('Share to Britto.', 'In any store’s app, tap Share on a product and choose Britto to see its history.'),
       feature('Rides, flights and hotels.', 'Uber, Cleartrip and Booking.com open inside the app, so you log in once.'),
       feature('Spend Lens.', 'What you spent across stores, from your own order pages, worked out on your phone and never uploaded.')),
