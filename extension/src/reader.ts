@@ -26,6 +26,30 @@ const send = <T>(msg: Request) => host.send(msg) as Promise<T>;
 const WAITS = [600, 900, 1500, 3000];
 
 let handledUrl = '';
+/** The address this document was loaded with (set when the reader starts). */
+let loadedUrl = '';
+const RELOADED = 'britto.reloaded';
+
+/**
+ * Flipkart and Myntra open a product from their search pages WITHOUT loading it: the address
+ * changes, but the page keeps the data it was loaded with (measured 2026-11-04 in the app: a
+ * Flipkart product reached from search carried the search page's ItemList, no Product data, so
+ * nothing could be read; the same address loaded directly read ₹1,849). So a product page that
+ * cannot be read after such a change is loaded once, for real. Once per PRODUCT per tab
+ * (sessionStorage): keyed by the address, a store that rewrites its address on every load
+ * would be reloaded in a loop. Without storage, never.
+ */
+function reloadOnce(url: string, key: string): boolean {
+  if (url === loadedUrl) return false;
+  try {
+    if (sessionStorage.getItem(RELOADED) === key) return false;
+    sessionStorage.setItem(RELOADED, key);
+  } catch {
+    return false;
+  }
+  location.reload();
+  return true;
+}
 
 async function readThisPage(config: ReaderConfig, pid: string): Promise<Extracted> {
   let last: Extracted | null = null;
@@ -90,6 +114,8 @@ async function run(): Promise<void> {
   if (ex.status === 'priced' || ex.status === 'unavailable') {
     const observed: ObservedPayload = { status: ex.status, title: ex.title, image: ex.image, price: ex.price, mrp: ex.mrp };
     panel.show(await send<Reply>({ type: 'postObservation', url, observed, configVersion: reader.version }), ex, null);
+  } else if (ex.status === 'unrecognised' && reloadOnce(url, key)) {
+    panel.loading();
   } else {
     // Not read: count it for reader health (store, outcome, config version: nothing from the
     // page), show whatever history exists, say so plainly, and offer to save the page so a
@@ -103,6 +129,7 @@ async function run(): Promise<void> {
 /** Start once per page. Flipkart and Myntra change product without a page load: watch the address. */
 export function startReader(h: ReaderHost): void {
   host = h;
+  loadedUrl = location.href;
   run();
   setInterval(() => { if (location.href !== handledUrl) run(); }, 1000);
 }

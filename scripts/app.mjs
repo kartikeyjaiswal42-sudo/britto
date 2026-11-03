@@ -103,6 +103,10 @@ createInterface({ input: java.stdout }).on('line', (line) => {
 });
 
 // Store pages are the SAVED fixtures at their real addresses; nothing reaches a real store.
+const SPA_SEARCH = (href) => `<!doctype html><html><head><script type="application/ld+json">{"@context":"https://schema.org","@type":"ItemList","itemListElement":[]}</script></head><body><h1>Search results</h1><a id="go" href="${href}">A product</a>
+<script>document.getElementById('go').addEventListener('click', function (e) { e.preventDefault(); history.pushState({}, '', this.getAttribute('href')); document.querySelector('h1').textContent = 'Product (rendered in place)'; });</script></body></html>`;
+const FK_GRIPPER = 'https://www.flipkart.com/cello-gripper-30-ball-pen/p/itm3e08c54dc1313?pid=PENF2JRHZ5XBG9FH';
+const FK_NEVER = 'https://www.flipkart.com/never-readable/p/itm0000000000002';
 const FLIPKART_SYNTH = '<!doctype html><html><head><title>Phone</title><meta name="viewport" content="width=device-width, initial-scale=1"><script type="application/ld+json">{"@type":"Product","name":"Test Phone","offers":{"price":"9999","availability":"https://schema.org/InStock"}}</script></head><body><h1>Test Phone</h1></body></html>';
 const PAGES = new Map([
   // Amazon pages as a phone gets them (saved with the app's own "Save page" on Android).
@@ -114,7 +118,17 @@ const PAGES = new Map([
   ['https://www.flipkart.com/test-phone/p/itm0000000000001', FLIPKART_SYNTH],
   ['https://www.flipkart.com/apple-iphone-15-black-128-gb/p/itm6ac6485515ae4', fx('flipkart-blocked-e002.html')],
   ['https://pay.example/checkout', '<!doctype html><html><body><h1>Pay</h1></body></html>'],
+  // A Flipkart search page that opens a product the way Flipkart's does on a phone (measured
+  // 2026-11-04): the address changes with pushState, the page keeps its search data (ItemList).
+  ['https://www.flipkart.com/search?q=cello', SPA_SEARCH('/cello-gripper-30-ball-pen/p/itm3e08c54dc1313?pid=PENF2JRHZ5XBG9FH')],
+  [FK_GRIPPER, fx('flipkart-mobile-cello-gripper30.html')],
+  ['https://www.flipkart.com/search?q=never', SPA_SEARCH('/never-readable/p/itm0000000000002')],
 ]);
+// Unreadable however it loads, and it rewrites its own address on every load (as stores add
+// tracking values): only a guard keyed by the product stops a reload loop here.
+// The rewrite comes 1.5 s after load (after the reader has started), as a store's own scripts do.
+const FK_NEVER_PAGE = '<!doctype html><html><body><h1>Nothing to read here</h1><script>setTimeout(function () { history.replaceState({}, "", location.pathname + "?t=" + Math.random().toString(36).slice(2)); }, 1500);</script></body></html>';
+const hits = new Map();
 const ORIGINS = STORE_IDS.flatMap((id) => STORES[id].hosts.map((h) => `https://${h}`));
 
 let browser;
@@ -123,7 +137,9 @@ try {
   browser = await chromium.launch({ channel: 'chrome', headless: true }).catch(() => chromium.launch({ headless: true }));
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   await context.route('**/*', (route) => {
-    const page = PAGES.get(route.request().url());
+    const url = route.request().url();
+    const page = PAGES.get(url) ?? (url.startsWith(FK_NEVER) ? FK_NEVER_PAGE : undefined);
+    if (page) hits.set(url.startsWith(FK_NEVER) ? FK_NEVER : url, (hits.get(url.startsWith(FK_NEVER) ? FK_NEVER : url) ?? 0) + 1);
     if (page) return route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: page });
     aborted++;
     return route.abort();
@@ -224,6 +240,18 @@ try {
   check('Flipkart error page: "did not load properly"', /did not load properly/.test(t), t.slice(0, 160));
   await recordParity('https://www.flipkart.com/apple-iphone-15-black-128-gb/p/itm6ac6485515ae4');
   for (const p of parity) check(`parity: the app reads ${p.url.slice(12, 60)} exactly as Node does`, p.diffs.length === 0, p.diffs.join('; '));
+
+  // Search -> product WITHOUT a page load (Flipkart, Myntra): the page still carries the search
+  // data, so the product is loaded once for real and then read.
+  await page.goto('https://www.flipkart.com/search?q=cello');
+  await page.click('#go');
+  t = await waitPanel(/₹225/, 30_000);
+  check('Flipkart product opened from search in place (no page load): loaded once for real, then read (₹225)', /₹225/.test(t) && hits.get(FK_GRIPPER) === 1, `${t.slice(0, 120)} | loads ${hits.get(FK_GRIPPER)}`);
+  await page.goto('https://www.flipkart.com/search?q=never');
+  await page.click('#go');
+  t = await waitPanel(/cannot read the price/, 30_000);
+  await page.waitForTimeout(12_000);
+  check('…a product unreadable however it loads (and rewriting its address each time) is loaded once, never in a loop', /cannot read the price/.test(t) && hits.get(FK_NEVER) === 1, `${t.slice(0, 120)} | loads ${hits.get(FK_NEVER)}`);
 
   // The page's own scripts can reach BrittoBridge too: it answers only the reader's messages.
   const before = dropped;

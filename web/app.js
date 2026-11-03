@@ -72,6 +72,8 @@ document.getElementById('search-form').addEventListener('submit', (e) => {
   e.preventDefault();
   const q = new FormData(e.target).get('q')?.toString().trim();
   if (!q) return;
+  // Measured in the app: after searching, the phone keyboard stayed up over the results.
+  e.target.querySelector('input')?.blur();
   if (/^(https?:\/\/)?([a-z0-9-]+\.)+[a-z]{2,}\//i.test(q)) addByLink(q);
   else go(`/search?q=${encodeURIComponent(q)}`);
 });

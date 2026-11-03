@@ -432,6 +432,18 @@ export const MUTANTS = [
     file: 'android/app/src/main/java/app/britto/AlertWatch.java', find: 'if (token == null || !TOKEN.matcher(token).matches()) return false;', replace: 'if (token == null) return false;',
     run: GRADLE_TEST, expect: [/tokenRules/, /siteBridgeHandsOverTheTokenAndSaysTheStatus/],
   },
+  // ---- a product opened in place from a search page (Flipkart, Myntra): loaded once for real
+  {
+    name: 'reader never reloads a product opened in place',
+    file: 'extension/src/reader.ts', find: "  } else if (ex.status === 'unrecognised' && reloadOnce(url, key)) {\n    panel.loading();\n", replace: '',
+    // The loop check counts exactly one load, so with no reload at all it reddens too.
+    run: APP, expect: [/opened from search in place/, /never in a loop/],
+  },
+  {
+    name: 'reader reloads an unreadable product in a loop',
+    file: 'extension/src/reader.ts', find: '    if (sessionStorage.getItem(RELOADED) === key) return false;\n', replace: '',
+    run: APP, expect: [/never in a loop/],
+  },
 ];
 
 const only = process.argv[2];
