@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Britto: price history and real discounts",
   "short_name": "Britto",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "See a product's price history and whether its discount is real, on Amazon.in, Flipkart, Myntra, Vijay Sales, Reliance Digital, Nykaa and ShopClues product pages.",
   "icons": { "16": "icons/16.png", "48": "icons/48.png", "128": "icons/128.png" },
   "action": { "default_popup": "popup.html", "default_icon": { "16": "icons/16.png", "48": "icons/48.png" } },

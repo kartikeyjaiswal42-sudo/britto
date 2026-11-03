@@ -49,8 +49,8 @@
       hosts: ["reliancedigital.in", "www.reliancedigital.in"],
       shortHosts: [],
       home: "https://www.reliancedigital.in/",
-      serverFetch: "yes",
-      measured: `2026-10-26: 14 product pages fetched with an honest bot User-Agent (from a cloud computer in the USA, not yet from Cloudflare) all returned the price box, e.g. \u20B9999 (M.R.P. \u20B92,999). Its search-engine data says "in stock" even for items it will not sell; Britto reads the page's own "sellable" flag instead.`
+      serverFetch: "refused",
+      measured: `2026-10-27: refuses our server on Cloudflare (HTTP 403, twice, live), though the same honest bot User-Agent got full product pages from a cloud computer in the USA (14 pages, 2026-10-26) and from India. Prices come from shoppers' own pages (the extension and the app). Its search-engine data says "in stock" even for items it will not sell; Britto reads the page's own "sellable" flag instead.`
     },
     nykaa: {
       id: "nykaa",
@@ -75,6 +75,14 @@
   };
   var STORE_IDS = Object.keys(STORES);
   var ASIN = /^[A-Z0-9]{10}$/;
+  function storeOfPage(url) {
+    try {
+      const hit = storeForHost(new URL(url).hostname.toLowerCase());
+      return hit && !hit.short ? hit.store : null;
+    } catch {
+      return null;
+    }
+  }
   function storeForHost(host2) {
     for (const s of Object.values(STORES)) {
       if (s.hosts.includes(host2)) return { store: s.id, short: false };
@@ -438,6 +446,26 @@ a.go { display: inline-block; background: var(--accent); color: var(--on-accent)
         body.append(row);
       }
     };
+  }
+  function renderNotice(text) {
+    document.querySelector("britto-panel")?.remove();
+    const host2 = document.createElement("britto-panel");
+    const root = host2.attachShadow({ mode: "closed" });
+    const style = el2("style");
+    style.textContent = CSS;
+    const box = el2("div", "box");
+    box.setAttribute("role", "status");
+    const head = el2("div", "head");
+    const logo = el2("span", "logo", "Brit");
+    logo.append(el2("span", "", "to"));
+    const close = el2("button", "", "\xD7");
+    close.title = "Hide";
+    close.addEventListener("click", () => host2.remove());
+    head.append(logo, el2("span", "mini", text), close);
+    box.append(head);
+    root.append(style, box);
+    document.documentElement.append(host2);
+    if (false) host2.dataset["notice"] = text;
   }
   function savePageAsFile(store) {
     const blob = new Blob(["<!-- saved by the Britto extension from ", location.href.replace(/--/g, ""), " -->\n", document.documentElement.outerHTML], { type: "text/html" });
@@ -824,6 +852,22 @@ a.go { display: inline-block; background: var(--accent); color: var(--on-accent)
     return v == null || typeof v === "object" ? null : String(v);
   }
 
+  // web/spend.js
+  var MONTHS2 = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+  function parseOrderDate(text) {
+    if (!text) return null;
+    const s = text.replace(/,/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
+    let d, m, y;
+    let hit = /\b(\d{1,2}) ([a-z]{3,9})\.? (\d{4})\b/.exec(s);
+    if (hit) [d, m, y] = [Number(hit[1]), MONTHS2.indexOf(hit[2].slice(0, 3)) + 1, Number(hit[3])];
+    else if (hit = /\b([a-z]{3,9})\.? (\d{1,2}) (\d{4})\b/.exec(s)) [m, d, y] = [MONTHS2.indexOf(hit[1].slice(0, 3)) + 1, Number(hit[2]), Number(hit[3])];
+    else if (hit = /\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/.exec(s)) [d, m, y] = [Number(hit[1]), Number(hit[2]), Number(hit[3])];
+    if (!d || !m || !y || m < 1 || m > 12) return null;
+    const day = new Date(Date.UTC(y, m - 1, d));
+    if (day.getUTCFullYear() !== y || day.getUTCMonth() !== m - 1 || day.getUTCDate() !== d) return null;
+    return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  }
+
   // core/interpret.ts
   var MIN_PRICE = 100;
   var once = (ctx, key, make) => {
@@ -951,6 +995,24 @@ a.go { display: inline-block; background: var(--accent); color: var(--on-accent)
     }
     return out;
   }
+  function readOrders(cfg, html, url) {
+    const rule = cfg.domRecipe.orderHistory;
+    if (!rule || rule.verified == null || !new RegExp(rule.page).test(url)) return null;
+    const out = [];
+    const seen = /* @__PURE__ */ new Set();
+    for (const el3 of selectAll(html, rule.items, rule.max ?? 50)) {
+      const part = outerOf(html, el3);
+      if (part == null) continue;
+      const orderId = fieldValue(rule.orderId, part);
+      const date2 = parseOrderDate(fieldValue(rule.date, part));
+      const total = parseRupees(fieldValue(rule.total, part));
+      if (!orderId || !date2 || total == null || seen.has(orderId)) continue;
+      seen.add(orderId);
+      const titles = rule.titles ? fieldValue(rule.titles, part) : null;
+      out.push({ store: cfg.store, orderId: orderId.slice(0, 64), date: date2, total, items: titles ? [titles.slice(0, 200)] : [] });
+    }
+    return out;
+  }
   function readPage(cfg, html, url = "") {
     const rule = (why) => `${cfg.store}:${why}`;
     const d = cfg.domRecipe;
@@ -994,12 +1056,32 @@ a.go { display: inline-block; background: var(--accent); color: var(--on-accent)
     }
     return last;
   }
+  async function readOrderPage(url) {
+    const store = storeOfPage(url);
+    if (!store) return;
+    const reader = await send({ type: "getReaderConfig", store, device: host.device });
+    const rule = reader?.ok ? reader.config.domRecipe.orderHistory : void 0;
+    if (!reader?.ok || !rule?.verified || !new RegExp(rule.page).test(url)) return;
+    for (const wait of WAITS) {
+      await new Promise((r) => setTimeout(r, wait));
+      if (location.href !== url) return;
+      const orders = readOrders(reader.config, document.documentElement.outerHTML, url);
+      if (orders?.length) {
+        const kept = await send({ type: "saveOrders", store, orders });
+        if (kept?.ok) renderNotice(`${orders.length} order${orders.length === 1 ? "" : "s"} kept for Spend Lens on this device. Nothing was uploaded.`);
+        return;
+      }
+    }
+  }
   async function run() {
     const url = location.href;
     if (url === handledUrl) return;
     handledUrl = url;
     const parsed = parseProductLink(url);
-    if (!parsed.ok) return;
+    if (!parsed.ok) {
+      await readOrderPage(url);
+      return;
+    }
     const { store, pid, key } = parsed.link;
     const panel = renderPanel(store, host.savePage);
     panel.loading();

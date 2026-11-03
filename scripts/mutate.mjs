@@ -318,6 +318,12 @@ export const MUTANTS = [
     run: GRADLE_TEST, expect: [/BridgeCoreTest > aStorePageCannotReadOrdersBackOrWriteOddOnes/],
   },
   {
+    name: 'extension: Spend Lens orders are also uploaded when saved (rule 5 broken)',
+    file: 'extension/src/background.ts', find: '  await chrome.storage.local.set({ [SPEND_KEY]: merged });',
+    replace: "  await chrome.storage.local.set({ [SPEND_KEY]: merged });\n  await call('/api/spend/orders', { method: 'POST', body: JSON.stringify(orders) });",
+    run: EXTENSION, expect: [/nothing about them went to Britto/],
+  },
+  {
     name: 'prove: Reliance Digital (refuses Cloudflare) is server-fetched again',
     file: 'core/stores.ts', find: "    serverFetch: 'refused',\n    measured:\n      '2026-10-27: refuses our server on Cloudflare", replace: "    serverFetch: 'yes',\n    measured:\n      '2026-10-27: refuses our server on Cloudflare",
     run: PROVE, expect: [/reliancedigital: tracked, never fetched by our server/],

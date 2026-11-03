@@ -115,8 +115,8 @@
       hosts: ["reliancedigital.in", "www.reliancedigital.in"],
       shortHosts: [],
       home: "https://www.reliancedigital.in/",
-      serverFetch: "yes",
-      measured: `2026-10-26: 14 product pages fetched with an honest bot User-Agent (from a cloud computer in the USA, not yet from Cloudflare) all returned the price box, e.g. \u20B9999 (M.R.P. \u20B92,999). Its search-engine data says "in stock" even for items it will not sell; Britto reads the page's own "sellable" flag instead.`
+      serverFetch: "refused",
+      measured: `2026-10-27: refuses our server on Cloudflare (HTTP 403, twice, live), though the same honest bot User-Agent got full product pages from a cloud computer in the USA (14 pages, 2026-10-26) and from India. Prices come from shoppers' own pages (the extension and the app). Its search-engine data says "in stock" even for items it will not sell; Britto reads the page's own "sellable" flag instead.`
     },
     nykaa: {
       id: "nykaa",
@@ -245,7 +245,8 @@
     "categoryPath",
     "seller",
     "pincodeFromStorageKeys",
-    "offers"
+    "offers",
+    "orderHistory"
   ]);
   var AVAIL_KEYS = /* @__PURE__ */ new Set(["selectors", "outOfStockText", "fields"]);
   var API_KEYS = /* @__PURE__ */ new Set(["url", "method", "headers", "bodyTemplate", "parse", "imageTemplateReplacements"]);
@@ -383,6 +384,19 @@
           if (of["max"] !== void 0 && !(Number.isInteger(of["max"]) && of["max"] >= 1 && of["max"] <= 20)) errors.push("domRecipe.offers.max: 1 to 20");
         }
       }
+      const oh = d["orderHistory"];
+      if (oh !== void 0) {
+        if (!isObj(oh)) errors.push("domRecipe.orderHistory: must be an object");
+        else {
+          unknownKeys(oh, /* @__PURE__ */ new Set(["verified", "page", "items", "orderId", "date", "total", "titles", "max"]), "domRecipe.orderHistory", errors);
+          if (!(oh["verified"] === null || typeof oh["verified"] === "string" && /^\d{4}-\d{2}-\d{2}$/.test(oh["verified"]))) errors.push("domRecipe.orderHistory.verified: a YYYY-MM-DD day or null");
+          checkRegex(oh["page"], "domRecipe.orderHistory.page", errors);
+          checkSelector(oh["items"], "domRecipe.orderHistory.items", errors);
+          for (const k of ["orderId", "date", "total"]) checkField(oh[k], `domRecipe.orderHistory.${k}`, errors);
+          if (oh["titles"] !== void 0) checkField(oh["titles"], "domRecipe.orderHistory.titles", errors);
+          if (oh["max"] !== void 0 && !(Number.isInteger(oh["max"]) && oh["max"] >= 1 && oh["max"] <= 100)) errors.push("domRecipe.orderHistory.max: 1 to 100");
+        }
+      }
       const av = d["availability"];
       if (!isObj(av)) errors.push("domRecipe.availability: must be an object");
       else {
@@ -446,6 +460,36 @@
     return { ok: true, config: v.config, version, deviceFallback: isObj(features) && features["deviceFallback"] === true };
   }
 
+  // web/spend.js
+  var MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+  function parseOrderDate(text2) {
+    if (!text2) return null;
+    const s = text2.replace(/,/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
+    let d, m, y;
+    let hit = /\b(\d{1,2}) ([a-z]{3,9})\.? (\d{4})\b/.exec(s);
+    if (hit) [d, m, y] = [Number(hit[1]), MONTHS.indexOf(hit[2].slice(0, 3)) + 1, Number(hit[3])];
+    else if (hit = /\b([a-z]{3,9})\.? (\d{1,2}) (\d{4})\b/.exec(s)) [m, d, y] = [MONTHS.indexOf(hit[1].slice(0, 3)) + 1, Number(hit[2]), Number(hit[3])];
+    else if (hit = /\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/.exec(s)) [d, m, y] = [Number(hit[1]), Number(hit[2]), Number(hit[3])];
+    if (!d || !m || !y || m < 1 || m > 12) return null;
+    const day = new Date(Date.UTC(y, m - 1, d));
+    if (day.getUTCFullYear() !== y || day.getUTCMonth() !== m - 1 || day.getUTCDate() !== d) return null;
+    return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  }
+  function mergeOrders(kept, read) {
+    const byKey = /* @__PURE__ */ new Map();
+    for (const o of [...kept, ...read]) byKey.set(`${o.store}:${o.orderId}`, o);
+    return [...byKey.values()].sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : a.orderId.localeCompare(b.orderId));
+  }
+
+  // core/spend.ts
+  var mergeOrders2 = (kept, read) => mergeOrders(kept, read);
+  var isDay = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s) && parseOrderDate(`${s.slice(8)}/${s.slice(5, 7)}/${s.slice(0, 4)}`) === s;
+  function isOrder(o) {
+    if (!o || typeof o !== "object") return false;
+    const x = o;
+    return STORE_IDS.includes(x["store"]) && typeof x["orderId"] === "string" && x["orderId"].length > 0 && x["orderId"].length <= 64 && typeof x["date"] === "string" && isDay(x["date"]) && Number.isSafeInteger(x["total"]) && x["total"] >= 0 && Array.isArray(x["items"]) && x["items"].length <= 50 && x["items"].every((i) => typeof i === "string" && i.length <= 200);
+  }
+
   // extension/src/messages.ts
   var STORES2 = new Set(STORE_IDS);
   var isObj2 = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -466,6 +510,8 @@
         return text(m["key"], 120);
       case "reportTelemetry":
         return STORES2.has(String(m["store"])) && (m["outcome"] === "blocked" || m["outcome"] === "unrecognised") && typeof m["configVersion"] === "string" && VERSION.test(m["configVersion"]);
+      case "saveOrders":
+        return STORES2.has(String(m["store"])) && Array.isArray(m["orders"]) && m["orders"].length <= 100 && m["orders"].every((o) => isOrder(o) && o.store === m["store"]);
       default:
         return false;
     }
@@ -523,6 +569,13 @@
       return cached ? use(cached.body) : { ok: false, code: "network", message: `Could not reach Britto (${String(e)})` };
     }
   }
+  var SPEND_KEY = "spend:orders";
+  async function keepOrders(orders) {
+    const kept = (await chrome.storage.local.get(SPEND_KEY))[SPEND_KEY] ?? [];
+    const merged = mergeOrders2(kept.filter(isOrder), orders);
+    await chrome.storage.local.set({ [SPEND_KEY]: merged });
+    return { ok: true, kept: merged.length };
+  }
   async function handle(msg) {
     switch (msg.type) {
       case "getReaderConfig": {
@@ -539,6 +592,8 @@
       case "reportTelemetry":
         await call("/api/telemetry", { method: "POST", body: JSON.stringify({ feature: "read", store: msg.store, outcome: msg.outcome, configVersion: msg.configVersion, readerVersion: READER_VERSION, client: "extension" }) });
         return { ok: true };
+      case "saveOrders":
+        return keepOrders(msg.orders);
       case "postObservation": {
         const parsed = parseProductLink(msg.url);
         if (!parsed.ok) return { ok: false, code: "not_a_product", message: "Not a product page." };

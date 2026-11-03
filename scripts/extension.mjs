@@ -36,6 +36,7 @@ const check = (name, ok, detail = '') => {
 const port = await new Promise((res) => { const s = createServer(); s.listen(0, '127.0.0.1', () => { const { port } = s.address(); s.close(() => res(port)); }); });
 const API = `http://127.0.0.1:${port}`;
 const state = mkdtempSync(join(tmpdir(), 'britto-ext-'));
+const EXT_VERSION = JSON.parse(readFileSync(join(ROOT, 'extension/static/manifest.json'), 'utf8')).version;
 const extDir = join(state, 'ext');
 const profile = join(state, 'profile');
 execFileSync(WRANGLER, ['d1', 'execute', 'britto', '--local', '--persist-to', join(state, 'd1'), '--file', 'api/schema.sql'], { cwd: ROOT, stdio: 'ignore' });
@@ -91,9 +92,14 @@ try {
     args: [`--disable-extensions-except=${extDir}`, `--load-extension=${extDir}`],
     acceptDownloads: true,
   });
+  const apiCalls = [];
   await context.route('**/*', (route) => {
     const url = route.request().url();
-    if (url.startsWith(API) || url.startsWith('chrome-extension://')) return route.continue();
+    if (url.startsWith(API)) {
+      apiCalls.push(`${route.request().method()} ${url}`);
+      return route.continue();
+    }
+    if (url.startsWith('chrome-extension://')) return route.continue();
     const page = PAGES.get(url);
     if (page) return route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: page });
     aborted++;
@@ -131,7 +137,7 @@ try {
     && (await panel().locator('.offers .small').count()) === 3, t.slice(0, 600));
   check('…which stay on the shopper\'s screen: nothing stored, nothing shown to others', d1(`SELECT COUNT(*) AS n FROM product_offers`)[0].n === 0 && v.body?.product?.offers === null, JSON.stringify(v.body?.product?.offers));
   const used = d1(`SELECT source, config_version, reader_version, outcome, n FROM reader_health WHERE store = 'amazon'`);
-  check('…read with the config the server served (reader health: extension, bundled version, 0.3.0)', used.some((r) => r.source === 'extension' && r.config_version === AMAZON.version && r.reader_version === '0.3.0' && r.outcome === 'priced'), JSON.stringify(used));
+  check(`…read with the config the server served (reader health: extension, bundled version, ${EXT_VERSION})`, used.some((r) => r.source === 'extension' && r.config_version === AMAZON.version && r.reader_version === EXT_VERSION && r.outcome === 'priced'), JSON.stringify(used));
   const shots = arg('--shots', null);
   if (shots) {
     await panel().locator('.box').screenshot({ path: join(shots, 'panel-amazon-light.png') });
@@ -220,6 +226,24 @@ try {
   const popupText = await popup.locator('body').innerText();
   check('popup says exactly what is sent', /What Britto sends/.test(popupText) && /Never your cookies/.test(popupText));
   check('popup links to the Britto site', (await popup.locator('#site').getAttribute('href')) === API);
+
+  // 10. Spend Lens (BLUEPRINT §13): orders are kept in this browser only. The calls the service
+  // worker made for the product pages above must have been seen here, or "none" would prove nothing.
+  check('the service worker\'s calls to Britto are visible to this test', apiCalls.length > 0, String(apiCalls.length));
+  const MADE_UP = [
+    { store: 'amazon', orderId: 'TEST-403-111', date: '2026-10-29', total: 176327, items: ['made-up order'] },
+    { store: 'amazon', orderId: 'TEST-403-222', date: '2026-10-03', total: 26500, items: [] },
+  ];
+  const callsBefore = apiCalls.length;
+  const saved = await popup.evaluate((orders) => chrome.runtime.sendMessage({ type: 'saveOrders', store: 'amazon', orders }), MADE_UP);
+  check('saveOrders keeps made-up orders in this browser', saved?.ok === true && saved.kept === 2, JSON.stringify(saved));
+  check('…and nothing about them went to Britto', apiCalls.length === callsBefore, apiCalls.slice(callsBefore).join(' | '));
+  const odd = await popup.evaluate(() => chrome.runtime.sendMessage({ type: 'saveOrders', store: 'flipkart', orders: [{ store: 'amazon', orderId: 'X', date: '2026-10-01', total: 1, items: [] }] }).catch(() => 'dropped'));
+  check('…an order for another store is dropped without an answer', odd === undefined || odd === 'dropped', JSON.stringify(odd));
+  await popup.reload();
+  check('the popup sums them on this computer', /₹2,028\.27 on 2 orders/.test(await popup.locator('#spend').innerText()), await popup.locator('#spend').innerText());
+  await popup.click('#spend-clear');
+  check('…and "Delete" removes them', /Deleted/.test(await popup.locator('#spend').innerText()) && (await popup.evaluate(() => chrome.storage.local.get('spend:orders')))['spend:orders'] === undefined);
 
   check('store assets were blocked, not fetched (the test never contacts a store)', aborted > 0, String(aborted));
 } finally {

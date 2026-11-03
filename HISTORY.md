@@ -17,7 +17,7 @@ to this list and removes what is done.
 1. **Reload the Britto extension** (P3 is on `main` since 2026-10-27): open `chrome://extensions` (or
    `brave://extensions`), find Britto, press the round reload arrow. Then open any Amazon.in
    product: the panel should appear as before. The version under the popup's "Open Britto"
-   link should say v0.3.0. (Your old copy keeps working until you do this.)
+   link should say v0.4.0 (Spend Lens added 2026-11-03). (Your old copy keeps working until you do this.)
 2. **Switch on the Telegram bot** (from S3, about 3 minutes): README "Switch on the Telegram
    bot". Then tell the next session "bot token is set" so it runs one live Telegram check.
 3. **Save one real Flipkart product page** (from S2): open any Flipkart product in Chrome with
