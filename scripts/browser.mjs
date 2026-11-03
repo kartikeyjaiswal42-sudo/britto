@@ -38,6 +38,9 @@ try {
 
     await page.goto(base + '/', { waitUntil: 'networkidle' });
     check('home renders its headline', (await page.locator('h1').first().innerText()).includes('real price'));
+    // Measured 23 px once: flex: 1 in the stacked phone layout overrode the box's height.
+    const boxH = (await page.locator('.track input').boundingBox())?.height ?? 0;
+    check('the link box is a full-size tap target (≥ 44 px tall)', boxH >= 44, String(boxH));
     check('recently tracked shows the product card', await page.locator('.card .title', { hasText: 'Cello' }).count() > 0);
 
     // Paste the link the way a shopper would.

@@ -91,7 +91,7 @@ button:disabled { opacity: .6; cursor: progress; }
 .paste-head b { display: block; font-size: 14.5px; }
 .paste-head span { font-size: 12px; color: var(--muted); }
 .track { display: flex; gap: 8px; }
-.track input { flex: 1; min-width: 0; height: 46px; padding: 0 14px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--ink); font: inherit; }
+.track input { flex: 1 1 auto; min-width: 0; height: 46px; padding: 0 14px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--ink); font: inherit; }
 .track button { background: var(--warn); color: #FFFFFF; height: 46px; line-height: 46px; }
 .tip-row { display: flex; flex-direction: column; gap: 4px; }
 .tip-row p { margin: 0; }
