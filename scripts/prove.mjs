@@ -103,7 +103,11 @@ try {
   if (amazonPriced) {
     check('title came from the page', /Cello/i.test(p.title ?? ''), p.title);
     check('one price point recorded', p.points.length >= 1 && p.points.at(-1).source === 'server');
-    check('a brand-new product is "too early", never a confident call', p.verdict.kind === 'too_early' && p.sale.status === 'too_early');
+    // "Brand-new" only on a fresh database or in a product's first week: live, this product has been
+    // watched since 2026-10-26, and after 7 days a real verdict is the right answer.
+    const watchedDays = (Date.now() - p.points[0].at) / 86_400_000;
+    if (watchedDays < 7) check('a brand-new product is "too early", never a confident call', p.verdict.kind === 'too_early' && p.sale.status === 'too_early');
+    else check('a product watched 7+ days gets a verdict with its reasons', p.verdict.kind !== 'too_early' && p.verdict.reasons?.length > 0, JSON.stringify(p.verdict));
     console.log(`       read: ${p.title?.slice(0, 50)}… ₹${p.stats.current / 100} (M.R.P. ₹${(p.stats.currentMrp ?? 0) / 100})`);
     checkStoredOffers('amazon', KEY, p);
   } else {
