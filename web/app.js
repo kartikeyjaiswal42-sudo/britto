@@ -49,6 +49,14 @@ function h(tag, attrs = {}, ...children) {
   return n;
 }
 
+/**
+ * Replace a node's children, skipping null/false like h() does. The DOM's own replaceChildren
+ * turns a null into the text "null" (it did: /alerts showed "null" whenever Telegram was off).
+ */
+function put(node, ...kids) {
+  node?.replaceChildren(...kids.flat().filter((k) => k != null && k !== false));
+}
+
 function go(path) {
   history.pushState(null, '', path);
   route();
@@ -118,7 +126,7 @@ function shortcut(label, href, iconName, tint, onclick) {
 }
 
 async function home() {
-  app.replaceChildren(
+  put(app, 
     h('section', { class: 'hero' },
       h('h1', {}, 'Know the real price before you buy.'),
       h('p', { class: 'lede' }, 'Price history, honest discount checks and price-drop alerts for Indian stores.')),
@@ -146,11 +154,11 @@ async function home() {
       h('p', { class: 'section-note' }, 'Judged against each product’s own usual price, not its M.R.P.'), h('div', { id: 'deals' }, h('p', { class: 'muted' }, 'Loading…'))),
     h('section', {}, h('div', { class: 'section-head' }, h('h2', {}, 'Recently tracked')), h('div', { id: 'recent' }, h('p', { class: 'muted' }, 'Loading…'))));
   config().then((cfg) => {
-    if (cfg?.telegram) document.getElementById('bot-tip')?.replaceChildren('On your phone? Send any product link to ', botLink(cfg.telegram.bot), ' on Telegram. No app or extension needed.');
+    if (cfg?.telegram) put(document.getElementById('bot-tip'), 'On your phone? Send any product link to ', botLink(cfg.telegram.bot), ' on Telegram. No app or extension needed.');
   });
   const [d, r] = await Promise.allSettled([getDeals(), getRecent()]);
-  document.getElementById('deals')?.replaceChildren(d.status === 'fulfilled' ? row(d.value.results, 'No confirmed drops yet. A drop is only confirmed after 7 days of watching a product.') : h('p', { class: 'error' }, d.reason.message));
-  document.getElementById('recent')?.replaceChildren(r.status === 'fulfilled' ? grid(r.value.results, 'Nothing tracked yet. Paste a link above.') : h('p', { class: 'error' }, r.reason.message));
+  put(document.getElementById('deals'), d.status === 'fulfilled' ? row(d.value.results, 'No confirmed drops yet. A drop is only confirmed after 7 days of watching a product.') : h('p', { class: 'error' }, d.reason.message));
+  put(document.getElementById('recent'), r.status === 'fulfilled' ? grid(r.value.results, 'Nothing tracked yet. Paste a link above.') : h('p', { class: 'error' }, r.reason.message));
 }
 
 const VERDICT_CLASS = { buy: 'good', fair: 'neutral', wait: 'bad', too_early: 'neutral', unavailable: 'neutral' };
@@ -164,7 +172,7 @@ const SALE_TITLE = {
 const SALE_CLASS = { real_drop: 'good', hike_then_drop: 'bad', no_real_drop: 'neutral', too_early: 'neutral', unavailable: 'neutral' };
 
 async function productPage(key) {
-  app.replaceChildren(h('p', { class: 'muted' }, 'Loading…'));
+  put(app, h('p', { class: 'muted' }, 'Loading…'));
   let view;
   try {
     view = (await getProduct(key)).product;
@@ -172,7 +180,7 @@ async function productPage(key) {
     if (e.code === 'not_tracked' && new URLSearchParams(location.search).has('add')) {
       return addByLink(keyToLink(key) ?? '', null);
     }
-    app.replaceChildren(h('section', {}, h('h1', {}, 'Not tracked yet'), h('p', {}, e.message), linkForm()));
+    put(app, h('section', {}, h('h1', {}, 'Not tracked yet'), h('p', {}, e.message), linkForm()));
     return;
   }
   const s = view.stats;
@@ -185,7 +193,7 @@ async function productPage(key) {
       onclick: (e) => { range = days; rangeBar.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b === e.target))); drawChart(chartHost, view, range); },
     }, label)));
 
-  app.replaceChildren(
+  put(app, 
     h('article', { class: 'product' },
       h('div', { class: 'product-head' },
         h('div', { class: 'product-img' }, view.image ? h('img', { src: view.image, alt: '', referrerpolicy: 'no-referrer' }) : null),
@@ -222,7 +230,7 @@ async function productPage(key) {
   // Look-alikes (BLUEPRINT §10.3): shown only when there are some, and labelled for what they are.
   getSimilar(key).then(({ results, basis }) => {
     if (!results.length) return;
-    document.getElementById('similar')?.replaceChildren(h('h2', {}, 'Similar, and cheaper'), h('p', { class: 'muted small' }, basis), grid(results, ''));
+    put(document.getElementById('similar'), h('h2', {}, 'Similar, and cheaper'), h('p', { class: 'muted small' }, basis), grid(results, ''));
   }).catch(() => {});
   if (location.hash === '#alert') document.getElementById('alert')?.scrollIntoView();
 }
@@ -282,7 +290,7 @@ const addDaysISO = (iso, n) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86_
 const airportCode = (v) => (/^\s*([A-Za-z]{3})\b/.exec(v)?.[1] ?? '').toUpperCase();
 
 async function travelPage() {
-  app.replaceChildren(h('p', { class: 'muted' }, 'Loading…'));
+  put(app, h('p', { class: 'muted' }, 'Loading…'));
   const [data, rides] = await Promise.all([fetch('/airports.json').then((r) => r.json()), fetch('/rides.json').then((r) => r.json())]);
   const airports = airportIndex(data.airports);
   const today = todayIST();
@@ -290,7 +298,7 @@ async function travelPage() {
   const list = h('datalist', { id: 'airport-list' }, data.airports.map(([iata, name, city, country]) => h('option', { value: `${iata} · ${city || name}` }, country === 'IN' ? name : `${name}, ${country}`)));
   const field = (label, input) => h('label', { class: 'field' }, h('span', {}, label), input);
   const out = (id) => h('div', { class: 'travel-out', id, 'aria-live': 'polite' });
-  const show = (box, r, extra = null) => box.replaceChildren(...(r.ok ? [travelLinks(r.links), extra] : [h('p', { class: 'error' }, r.reason)]));
+  const show = (box, r, extra = null) => put(box, ...(r.ok ? [travelLinks(r.links), extra] : [h('p', { class: 'error' }, r.reason)]));
 
   // Flights
   const from = h('input', { name: 'from', list: 'airport-list', placeholder: 'DEL · New Delhi', autocomplete: 'off', required: true });
@@ -329,19 +337,19 @@ async function travelPage() {
     const code = airportCode(rideTo.value);
     if (!airports.has(code)) return show(rideOut, rideSearch({ to: code }, airports, rides.uber));
     // The Britto app asks for the internet only, so its pages cannot have your location.
-    if (inApp) return rideOut.replaceChildren(h('p', { class: 'notice' }, `The Britto app does not ask for your location, so ride links work in your phone\u2019s browser: open ${location.host}/travel there.`));
-    if (!navigator.geolocation) return rideOut.replaceChildren(h('p', { class: 'error' }, 'This browser cannot share your location.'));
-    rideOut.replaceChildren(h('p', { class: 'muted small' }, 'Asking for your location…'));
+    if (inApp) return put(rideOut, h('p', { class: 'notice' }, `The Britto app does not ask for your location, so ride links work in your phone\u2019s browser: open ${location.host}/travel there.`));
+    if (!navigator.geolocation) return put(rideOut, h('p', { class: 'error' }, 'This browser cannot share your location.'));
+    put(rideOut, h('p', { class: 'muted small' }, 'Asking for your location…'));
     navigator.geolocation.getCurrentPosition(
       (pos) => show(rideOut, rideSearch({ to: code, pickup: { lat: pos.coords.latitude, lng: pos.coords.longitude } }, airports, rides.uber)),
-      () => rideOut.replaceChildren(h('p', { class: 'error' }, 'Location not shared, so no ride link can start from where you are.')),
+      () => put(rideOut, h('p', { class: 'error' }, 'Location not shared, so no ride link can start from where you are.')),
       { timeout: 15_000, maximumAge: 300_000 });
   } },
   h('div', { class: 'fields' }, field('Airport', rideTo)),
   h('p', { class: 'small muted' }, 'Your location goes only into the ride link, on this device. Britto never receives it.'),
   h('button', { type: 'submit' }, 'Use my location'), rideOut);
 
-  app.replaceChildren(h('h1', {}, 'Travel'),
+  put(app, h('h1', {}, 'Travel'),
     h('p', { class: 'muted' }, 'Enter your trip once and open the same search on each site. Britto shows no fares here: no travel site lets us read them for free, so compare on their pages. Every link says whether we checked it.'),
     list,
     h('section', {}, h('h2', {}, 'Flights'), flights),
@@ -366,13 +374,13 @@ function keyToLink(key) {
 }
 
 async function searchPage(q) {
-  app.replaceChildren(h('h1', {}, `Results for “${q}”`), h('p', { class: 'muted' }, 'Searching…'));
+  put(app, h('h1', {}, `Results for “${q}”`), h('p', { class: 'muted' }, 'Searching…'));
   try {
     const { results } = await searchProducts(q);
-    app.replaceChildren(h('h1', {}, `Results for “${q}”`),
+    put(app, h('h1', {}, `Results for “${q}”`),
       grid(results, 'Nothing we track matches that. Paste the product’s link to start tracking it.'), linkForm());
   } catch (e) {
-    app.replaceChildren(h('h1', {}, 'Search failed'), h('p', { class: 'error' }, e.message));
+    put(app, h('h1', {}, 'Search failed'), h('p', { class: 'error' }, e.message));
   }
 }
 
@@ -400,7 +408,7 @@ function sparkline(points) {
 async function dealsPage() {
   const params = new URLSearchParams(location.search);
   const filter = { store: params.get('store') ?? '', min: Number(params.get('min')) || 0 };
-  app.replaceChildren(h('h1', {}, 'Real price drops'), h('p', { class: 'muted' }, 'Loading…'));
+  put(app, h('h1', {}, 'Real price drops'), h('p', { class: 'muted' }, 'Loading…'));
   const [{ stores }, d, p] = await Promise.all([getStores(), getDeals(filter), getPopular()]);
   const apply = (next) => go(`/deals?${new URLSearchParams(Object.entries({ ...filter, ...next }).filter(([, v]) => v)).toString()}`);
   const storeSelect = h('select', { 'aria-label': 'Store', onchange: (e) => apply({ store: e.target.value }) },
@@ -413,7 +421,7 @@ async function dealsPage() {
     if (spark) card.querySelector('.card-body')?.append(spark);
     return card;
   });
-  app.replaceChildren(
+  put(app, 
     h('h1', {}, 'Real price drops'),
     h('p', { class: 'muted' }, 'Only products at least 5% below their own usual price (90-day time-weighted median, M.R.P. ignored), and not raised just before the “sale”. The line under each shows its last 90 days.'),
     h('div', { class: 'filters' }, storeSelect, minSelect),
@@ -424,7 +432,7 @@ async function dealsPage() {
 async function storesPage() {
   const { stores } = await getStores();
   const label = { yes: 'Our server reads it', refused: 'Refuses our server', no_answer: 'Does not answer our server', untested: 'Not tested yet' };
-  app.replaceChildren(h('h1', {}, 'Stores'),
+  put(app, h('h1', {}, 'Stores'),
     h('p', { class: 'muted' }, 'Our server identifies itself honestly and never works around a store’s bot defences. Stores that refuse it are read by the browser extension, from pages you are already viewing.'),
     h('table', { class: 'stores' },
       h('thead', {}, h('tr', {}, h('th', {}, 'Store'), h('th', {}, 'Server'), h('th', {}, 'What we measured'))),
@@ -453,7 +461,7 @@ async function browsePage() {
       h('span', { class: 'store-name' }, s.name),
       h('span', { class: 'small muted' }, inApp ? `Log in with your number on ${s.name}\u2019s own page; it stays on this phone.` : `Opens ${s.name}.`))))] : [];
   };
-  app.replaceChildren(h('h1', {}, 'Super Browse'),
+  put(app, h('h1', {}, 'Super Browse'),
     h('p', { class: 'muted' }, inApp
       ? 'Open a store and shop as usual. On every product page Britto shows its price history and reads the price from the page you are looking at.'
       : 'Open a store and shop as usual. With the Britto extension (or the Britto Android app) you see the price history on every product page.'),
@@ -498,7 +506,7 @@ async function spendPage() {
   const ask = siteBridge();
   const intro = h('p', { class: 'muted' }, 'Your spending across stores, from your own order pages. It is worked out on this phone; your orders are never uploaded to Britto.');
   if (!ask) {
-    app.replaceChildren(h('h1', {}, 'Spend Lens'), intro,
+    put(app, h('h1', {}, 'Spend Lens'), intro,
       h('p', {}, 'Spend Lens works in the Britto Android app: open a store from Shop, log in, and open your orders page. Britto keeps the orders it reads there on your phone, and this page adds them up.'));
     return;
   }
@@ -510,7 +518,7 @@ async function spendPage() {
   const monthName = (m) => new Date(`${m}-01T00:00:00Z`).toLocaleDateString('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' });
   const clear = h('button', { class: 'secondary', type: 'button' }, 'Delete Spend Lens data from this phone');
   clear.addEventListener('click', async () => { await ask({ type: 'clearSpend' }); spendPage(); });
-  app.replaceChildren(h('h1', {}, 'Spend Lens'), intro,
+  put(app, h('h1', {}, 'Spend Lens'), intro,
     ...(s.orders === 0
       ? [h('p', {}, 'No orders kept yet. Open a store from Shop, log in, and open your orders page: Britto reads the orders shown there (for stores whose order page it has learned).')]
       : [
@@ -528,7 +536,7 @@ async function spendPage() {
  */
 async function groceryPage() {
   const { platforms } = await getGroceryPlatforms();
-  app.replaceChildren(h('h1', {}, 'Grocery compare'),
+  put(app, h('h1', {}, 'Grocery compare'),
     h('p', { class: 'muted' }, 'Grocery prices and stock depend on your delivery address and change by the hour, so Britto compares them only for one address at a time, says which, and puts the price per 100 g, 100 ml or piece beside each pack.'),
     h('p', { class: 'notice' }, 'Not working yet. Every grocery app below refuses our server, so prices will come from the Britto app on your phone, from the pages you open. Britto does not read any of them yet: each one needs a page saved from a phone first, so Britto can learn to read it.'),
     h('table', { class: 'stores' },
@@ -588,7 +596,7 @@ function alertBox(view) {
 
   function show(me) {
     const here = (me?.alerts ?? []).filter((a) => a.key === view.key);
-    mine.replaceChildren(...here.map((a) => h('li', {},
+    put(mine, ...here.map((a) => h('li', {},
       h('span', {}, `${a.description}`, a.lastFiredAt ? h('span', { class: 'muted small' }, ` · sent ${date(a.lastFiredAt)}`) : null),
       h('button', { type: 'button', class: 'link', onclick: async () => {
         try { show((await removeAlert(a.id)).me); status.textContent = 'Alert removed.'; } catch (err) { status.textContent = err.message; }
@@ -610,7 +618,7 @@ async function channelHint(host, me) {
   if (cfg.telegram) row.append(me.telegram ? h('span', { class: 'ok' }, 'Telegram connected ✓') : telegramButton(host));
   if (cfg.push) row.append(await pushControl(cfg, me, () => getMe().then((m) => m && channelHint(host, m))));
   if (!cfg.telegram && !cfg.push) parts.push(h('p', { class: 'small muted' }, 'Alert messages are not switched on for this site yet. Your alert is saved and shows here.'));
-  host.replaceChildren(...parts, row);
+  put(host, ...parts, row);
 }
 
 function telegramButton(host) {
@@ -705,13 +713,13 @@ async function pushControl(cfg, me, refresh) {
 }
 
 async function alertsPage() {
-  app.replaceChildren(h('h1', {}, 'My alerts'), h('p', { class: 'muted' }, 'Loading…'));
+  put(app, h('h1', {}, 'Price Tracker'), h('p', { class: 'muted' }, 'Loading…'));
   const [cfg, me] = await Promise.all([config(), getMe()]);
   const list = (me?.alerts ?? []);
   const channels = h('div', { class: 'channels' });
   const testStatus = h('span', { class: 'small', role: 'status' });
-  app.replaceChildren(
-    h('h1', {}, 'My alerts'),
+  put(app, 
+    h('h1', {}, 'Price Tracker'),
     h('p', { class: 'muted' }, 'No account and no password: your alerts belong to this browser. Connect Telegram to get them on your phone too.'),
     cfg?.telegram ? h('p', { class: 'notice' }, 'On your phone? Send any product link to ', botLink(cfg.telegram.bot), ' on Telegram. It replies with the price history and sets alerts with one tap.') : null,
     h('section', { class: 'alert-box' }, h('h2', {}, 'Where alerts go'), channels,
@@ -735,7 +743,7 @@ async function alertsPage() {
       } }, 'Remove'))))
       : h('p', { class: 'muted' }, 'Open any product and press "Set alert" under its price history.'));
   if (me) channelHint(channels, me);
-  else channels.replaceChildren(h('p', { class: 'small muted' }, 'Set your first alert on a product page, then choose where it reaches you.'));
+  else put(channels, h('p', { class: 'small muted' }, 'Set your first alert on a product page, then choose where it reaches you.'));
 }
 
 navigator.serviceWorker?.addEventListener('message', (e) => {
@@ -752,7 +760,7 @@ function route() {
     if (a.getAttribute('href') === section) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
   });
-  const done = (p) => p?.catch?.((e) => app.replaceChildren(h('p', { class: 'error' }, e.message)));
+  const done = (p) => p?.catch?.((e) => put(app, h('p', { class: 'error' }, e.message)));
   if (pathname.startsWith('/p/')) return done(productPage(decodeURIComponent(pathname.slice(3))));
   if (pathname === '/search') return done(searchPage(new URLSearchParams(search).get('q') ?? ''));
   if (pathname === '/deals') return done(dealsPage());

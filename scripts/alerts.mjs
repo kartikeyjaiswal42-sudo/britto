@@ -431,7 +431,7 @@ async function browserChecks() {
     }
 
     await page.goto(`${base}/alerts`, { waitUntil: 'networkidle' });
-    check('[chrome] My alerts lists the alert with its rule and price', await page.locator('.alert-row', { hasText: 'at or below ₹250' }).count() === 1);
+    check('[chrome] Price Tracker lists the alert with its rule and price', await page.locator('.alert-row', { hasText: 'at or below ₹250' }).count() === 1);
     check('[chrome] …and shows Telegram connected', await page.locator('.channels .ok', { hasText: 'Telegram connected' }).count() === 1);
     check('[chrome] …and the bot tip for phones', await page.locator('.notice', { hasText: '@BrittoTestBot' }).count() === 1);
     await page.locator('.alert-row button', { hasText: 'Remove' }).first().click();

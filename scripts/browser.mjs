@@ -238,6 +238,15 @@ try {
     check('…no horizontal scroll on Spend Lens', (await spendPage.evaluate(() => window.scrollX)) === 0);
     await spendCtx.close();
 
+    // A null or undefined that reaches the page as text (the DOM's replaceChildren printed "null"
+    // on /alerts whenever Telegram was off).
+    const strays = [];
+    for (const path of ['/', '/alerts', '/deals', '/browse', '/travel', '/spend', '/stores']) {
+      await page.goto(base + path, { waitUntil: 'networkidle' });
+      if (/\b(null|undefined|NaN)\b/.test(await page.locator('#app').innerText())) strays.push(path);
+    }
+    check('no page shows a stray "null", "undefined" or "NaN"', strays.length === 0, strays.join(', '));
+
     check('no console errors', errors.length === 0, errors.join(' | '));
     await ctx.close();
   }
