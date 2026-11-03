@@ -301,10 +301,11 @@
 .box { position: fixed; right: 16px; bottom: 16px; z-index: 2147483647; width: 340px; max-width: calc(100vw - 32px);
   font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--panel);
   border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,.18); overflow: hidden;
-  --bg: #f7f6f2; --panel: #fff; --ink: #17171a; --muted: #5d5d66; --line: #e3e1da; --accent: #0f6b5c; --on-accent: #fff;
-  --good: #11734b; --good-bg: #e6f4ec; --bad: #a33a1c; --bad-bg: #fbece6; --neutral-bg: #f0efe9; --gap: #f1d9cf; }
-@media (prefers-color-scheme: dark) { .box { --bg: #121315; --panel: #1b1c1f; --ink: #ecebe6; --muted: #a2a1a8; --line: #2c2d31;
-  --accent: #4cc3a9; --on-accent: #08201b; --good: #6fd39f; --good-bg: #16291f; --bad: #f08c6c; --bad-bg: #2d1a14; --neutral-bg: #222327; --gap: #3a2620; } }
+  /* The design's palette (design/README.md); system fonts, since store pages may block web fonts. */
+  --bg: #F4F6FB; --panel: #FFFFFF; --ink: #141B34; --muted: #6B7390; --line: #E3E7F2; --accent: #1F5BFF; --on-accent: #FFFFFF;
+  --good: #0E9F55; --good-bg: #E5F7EE; --bad: #E23B3B; --bad-bg: #FDEBEB; --neutral-bg: #EEF1F7; --gap: #FDEBEB; }
+@media (prefers-color-scheme: dark) { .box { --bg: #0F1424; --panel: #171D33; --ink: #EEF1F7; --muted: #A3AAC2; --line: #262E4A;
+  --accent: #5B8CFF; --on-accent: #0B1230; --good: #3FD08A; --good-bg: #12301F; --bad: #FF7676; --bad-bg: #3A1A1D; --neutral-bg: #1D2440; --gap: #3A1A1D; } }
 .head { display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 14px; border-bottom: 1px solid var(--line); }
 .logo { font-weight: 700; } .logo span { color: var(--accent); }
 .mini { flex: 1; min-width: 0; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
