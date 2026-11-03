@@ -295,7 +295,10 @@ try {
   check('search with only punctuation returns nothing, not an error', (await j('/api/search?q=%22%2A%29')).body?.results?.length === 0);
 
   // ---- store search: Amazon's own search page, read by the server (robots.txt allows /s?k=)
-  const ss = await j('/api/store-search?q=cello%20butterflow%20pen', { headers: { 'cf-connecting-ip': '10.0.1.1' } });
+  // A made-up network only locally: Cloudflare refuses a CF-Connecting-IP header from outside
+  // (403 "error code: 1000", measured 2026-11-04 when the first live run sent one).
+  const asNet = (ip) => (live ? {} : { headers: { 'cf-connecting-ip': ip } });
+  const ss = await j('/api/store-search?q=cello%20butterflow%20pen', asNet('10.0.1.1'));
   const amzList = ss.body?.stores?.find((x) => x.store === 'amazon');
   check('store search answers with a link to every store\'s own search', ss.status === 200 && ss.body?.links?.length === STORE_IDS.length
     && ss.body.links.find((l) => l.store === 'flipkart')?.url === 'https://www.flipkart.com/search?q=cello%20butterflow%20pen', ss.text.slice(0, 200));
@@ -307,7 +310,7 @@ try {
     if (amazonPriced) check('…a product Britto tracks is marked as tracked', items.some((i) => i.key === KEY) ? ss.body.tracked.some((c) => c.key === KEY) : true, JSON.stringify(ss.body.tracked?.map((c) => c.key)));
     if (!live) check('…listing a product does not track it or record a price', d1(`SELECT COUNT(*) AS n FROM products WHERE key IN (${items.map((i) => `'${i.key}'`).join(',')}) AND key != '${KEY}'`)[0].n === 0
       && d1(`SELECT COUNT(*) AS n FROM prices WHERE key != '${KEY}' AND key LIKE 'amazon:%'`)[0].n === 0);
-    const again2 = await j('/api/store-search?q=Cello%20%20Butterflow%20PEN', { headers: { 'cf-connecting-ip': '10.0.1.1' } });
+    const again2 = await j('/api/store-search?q=Cello%20%20Butterflow%20PEN', asNet('10.0.1.1'));
     if (!live) check('…the same words again come from the cache (same read time, no new request)', again2.body?.stores?.find((x) => x.store === 'amazon')?.at === amzList.at
       && d1(`SELECT count FROM rate WHERE bucket LIKE 'search:${await netId('10.0.1.1')}:%'`)[0]?.count === 1, again2.text.slice(0, 160));
   }
