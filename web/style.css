@@ -255,6 +255,3 @@ table.spend td.num { text-align: right; font-variant-numeric: tabular-nums; whit
   .alert-row > button { grid-column: 2; justify-self: start; }
   .small-thumb { width: 48px; }
 }
-/* Inside the Android app the native bar already does this job. */
-.in-app .tabbar { display: none !important; }
-.in-app body, body.in-app { padding-bottom: 0; }

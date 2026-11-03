@@ -9,8 +9,6 @@ import { mergeOrders, summarize } from './spend.js';
 import { airportIndex, flightSearch, hotelSearch, MAX_DAYS_AHEAD, rideSearch, todayIST } from './travel.js';
 
 const app = document.getElementById('app');
-// Inside the Android app its own bar does the tab bar's job (style.css .in-app).
-document.documentElement.classList.toggle('in-app', /\bBrittoApp\//.test(navigator.userAgent));
 
 // The design's line icons (design/Britto App v4.dc.html), drawn as SVG (no inline markup: CSP).
 const ICONS = {

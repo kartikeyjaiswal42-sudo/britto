@@ -3,7 +3,6 @@ package app.britto;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.view.Gravity;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -51,13 +50,7 @@ public class MainActivity extends ComponentActivity {
             siteBridge = new Bridge(new SiteBridgeCore(SpendStore.inDirectory(getFilesDir()))::handle);
             WebViewCompat.addWebMessageListener(web, "BrittoBridge", Collections.singleton(siteOrigin()), siteBridge);
         }
-        LinearLayout bar = new LinearLayout(this);
-        bar.setGravity(Gravity.CENTER);
-        LinearLayout.LayoutParams third = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-        bar.addView(Ui.barButton(this, "Home", v -> web.loadUrl(BuildConfig.SITE + "/")), third);
-        bar.addView(Ui.barButton(this, "Shop", v -> web.loadUrl(BuildConfig.SITE + "/browse")), third);
-        bar.addView(Ui.barButton(this, "Alerts", v -> web.loadUrl(BuildConfig.SITE + "/alerts")), third);
-        root.addView(bar);
+        // The site draws the design's tab bar (Home, Deals, Tracker, Shop, Travel) itself.
         Ui.padForSystemBars(root);
         setContentView(root);
         Ui.backGoesBackInWeb(this, web);
