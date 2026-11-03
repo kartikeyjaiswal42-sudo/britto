@@ -103,10 +103,15 @@ export function saleCheck(points: readonly PricePoint[], lastCheckedAt: Millis |
   const claimedPct = last.mrp != null && last.mrp > 0 ? Math.max(0, (last.mrp - current) / last.mrp) : null;
 
   const window = spans(points, end, end - SALE.window, end - SALE.exclude);
-  if (pricedTime(window) < SALE.minPriced) {
+  const have = pricedTime(window);
+  if (have < SALE.minPriced) {
+    // Ready once the window holds minPriced of in-stock prices: the window's end moves with the
+    // clock, so at the earliest (minPriced - have) from now. "Around": a sell-out pushes it back.
     return {
       status: 'too_early', ...none, claimedPct,
-      explanation: `We need ${SALE.minPriced / DAY} days of prices to know its usual price${claimedPct ? `, so the ${formatPct(claimedPct)} off M.R.P. cannot be checked yet` : ''}.`,
+      explanation: `The usual price needs ${SALE.minPriced / DAY} days of prices, not counting the last ${SALE.exclude / DAY} (so a new sale cannot set its own usual price). `
+        + `We have ${days(have / DAY)} so far: ready around ${formatDate(end + SALE.minPriced - have)}`
+        + `${claimedPct ? `. Until then the ${formatPct(claimedPct)} off M.R.P. cannot be checked` : ''}.`,
     };
   }
   const usual = weightedQuantile(window, 0.5)!;

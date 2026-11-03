@@ -15,10 +15,12 @@
 //   DomRecipe.earlyStop            when a server download may stop (CPU budget)
 //   DomRecipe.offers               the offers / coupon codes the page shows (BLUEPRINT §15)
 //   DomRecipe.orderHistory         the shopper's own order list, read on the device (§13)
+//   DomRecipe.search / popular     a store's search results and best-seller lists, read by the
+//                                  server only where robots.txt allows it (each its own verified day)
 //   Field.regex                    alternatives, tried in order (first that matches wins)
 import { compile, SelectorError } from './select.ts';
 import { rupeesToPaise } from './money.ts';
-import { STORE_IDS } from './stores.ts';
+import { STORES, STORE_IDS } from './stores.ts';
 import type { Paise, StoreId } from './types.ts';
 
 export type FieldAttribute = 'innerText' | 'innerHTML' | 'textContent' | 'content' | 'href' | 'alt' | 'URL' | `attr:${string}`;
@@ -68,6 +70,10 @@ export interface DomRecipe {
    * order. It carries its OWN `verified` day: a reader verified on product pages says nothing
    * about order pages, and clients read nothing with an unverified section. */
   orderHistory?: OrderHistoryRule;
+  /** The store's own search results: `url` with {q} replaced by the shopper's words. */
+  search?: SearchRule;
+  /** The store's best-seller lists: the products Britto starts watching on its own. */
+  popular?: PopularRule;
   /** Server early stop: every id in `complete` is a closed element, and then either the page
    * reads as unavailable or every id in `thenUnavailableOr` is closed too. */
   earlyStop?: { complete: string[]; thenUnavailableOr?: string[] };
@@ -127,12 +133,40 @@ export interface OrderHistoryRule {
   max?: number;
 }
 
+/** A page listing many products: every element matching `items` is one product. Its `link` is
+ * the product's own address, parsed by core/stores.ts like a pasted link, so an item that is
+ * not a product page of this store is dropped. It carries its OWN `verified` day: a reader
+ * verified on product pages says nothing about list pages. */
+export interface ListingRule {
+  verified: string | null;
+  /** A regex the list page's address must match. */
+  page: string;
+  items: string;
+  link: Field[];
+  name: Field[];
+  /** Joined in front of the name when the name does not already start with it (Amazon's
+   * results print "Samsung" above "Galaxy S25 Ultra …"). */
+  brand?: Field[];
+  /** Literal text after the last item (the page-number strip): the server stops downloading
+   * there and nothing after it is read (CPU budget, §2). */
+  endsAt?: string;
+  /** Leave out where the list's price is not the price to pay (Amazon's best-seller cards
+   * say "1 offer from ₹18,99900": a lowest offer, with the paise glued on). */
+  price?: Field[];
+  mrp?: Field[];
+  image?: Field[];
+  max?: number;
+}
+export interface SearchRule extends ListingRule { url: string }
+export interface PopularRule extends ListingRule { urls: string[] }
+
 const ATTRS = new Set(['innerText', 'innerHTML', 'textContent', 'content', 'href', 'alt', 'URL']);
 const FIELD_KEYS = new Set(['selector', 'attribute', 'regex', 'match', 'global', 'sub_regex', 'squash', 'json', 'jsonld', 'replace']);
 const TOP_KEYS = new Set(['schema', 'store', 'device', 'revision', 'verified', 'reportsPid', 'toCacheLong', 'domRecipe', 'apiRecipes']);
 const DOM_KEYS = new Set([
   'classSelector', 'name', 'price', 'mrp', 'image', 'pid', 'itm', 'availability', 'discontinuedText', 'blocked', 'earlyStop',
   'rating', 'ratingsCount', 'reviewsCount', 'brand', 'categoryPath', 'seller', 'pincodeFromStorageKeys', 'offers', 'orderHistory',
+  'search', 'popular',
 ]);
 // sellerPageFallback (§6.1) is not implemented: refused, so no recipe can rely on it silently.
 const AVAIL_KEYS = new Set(['selectors', 'outOfStockText', 'fields']);
@@ -228,6 +262,41 @@ function checkApiRecipe(r: unknown, where: string, errors: string[]): void {
   if (itr !== undefined && !(isObj(itr) && Object.values(itr).every((v) => typeof v === 'string'))) errors.push(`${where}.imageTemplateReplacements: must map text to text`);
 }
 
+const LISTING_KEYS = ['verified', 'page', 'items', 'link', 'name', 'brand', 'endsAt', 'price', 'mrp', 'image', 'max'];
+
+/** An https address on the store's own site that the rule's `page` regex accepts. */
+function checkListUrl(u: unknown, page: unknown, store: unknown, where: string, errors: string[]): void {
+  const host = typeof u === 'string' ? /^https:\/\/([a-z0-9.-]+)\//.exec(u)?.[1] : undefined;
+  if (!host) { errors.push(`${where}: must be an https address`); return; }
+  // The server fetches these: a config must not be able to send it to anyone else's site.
+  if (Object.hasOwn(STORES, String(store)) && !STORES[store as StoreId].hosts.includes(host)) errors.push(`${where}: ${host} is not one of this store's own hosts`);
+  try {
+    if (typeof page === 'string' && !new RegExp(page).test((u as string).replace('{q}', 'test'))) errors.push(`${where}: does not match the rule's page pattern`);
+  } catch { /* a bad page regex is reported by checkRegex */ }
+}
+
+function checkListing(v: unknown, kind: 'search' | 'popular', store: unknown, errors: string[]): void {
+  if (v === undefined) return;
+  const where = `domRecipe.${kind}`;
+  if (!isObj(v)) { errors.push(`${where}: must be an object`); return; }
+  unknownKeys(v, new Set([...LISTING_KEYS, kind === 'search' ? 'url' : 'urls']), where, errors);
+  if (!(v['verified'] === null || (typeof v['verified'] === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v['verified'])))) errors.push(`${where}.verified: a YYYY-MM-DD day or null`);
+  checkRegex(v['page'], `${where}.page`, errors);
+  checkSelector(v['items'], `${where}.items`, errors);
+  for (const k of ['link', 'name'] as const) {
+    checkFields(v[k], `${where}.${k}`, errors, true);
+    if (Array.isArray(v[k]) && !(v[k] as unknown[]).length) errors.push(`${where}.${k}: needs at least one field`);
+  }
+  for (const k of ['brand', 'price', 'mrp', 'image'] as const) checkFields(v[k], `${where}.${k}`, errors, false);
+  if (v['endsAt'] !== undefined && !(typeof v['endsAt'] === 'string' && v['endsAt'].length >= 4)) errors.push(`${where}.endsAt: text of 4 or more characters`);
+  if (v['max'] !== undefined && !(Number.isInteger(v['max']) && (v['max'] as number) >= 1 && (v['max'] as number) <= 60)) errors.push(`${where}.max: 1 to 60`);
+  if (kind === 'search') {
+    if (typeof v['url'] !== 'string' || v['url'].split('{q}').length !== 2) errors.push(`${where}.url: must contain {q} exactly once`);
+    else checkListUrl(v['url'], v['page'], store, `${where}.url`, errors);
+  } else if (!Array.isArray(v['urls']) || !v['urls'].length || v['urls'].length > 40) errors.push(`${where}.urls: 1 to 40 addresses`);
+  else (v['urls'] as unknown[]).forEach((u, i) => checkListUrl(u, v['page'], store, `${where}.urls[${i}]`, errors));
+}
+
 /** Accept a config only when every part of it is understood. Unknown = refused, never guessed. */
 export function validateReader(input: unknown): Check {
   const errors: string[] = [];
@@ -277,6 +346,8 @@ export function validateReader(input: unknown): Check {
         if (oh['max'] !== undefined && !(Number.isInteger(oh['max']) && (oh['max'] as number) >= 1 && (oh['max'] as number) <= 100)) errors.push('domRecipe.orderHistory.max: 1 to 100');
       }
     }
+    checkListing(d['search'], 'search', input['store'], errors);
+    checkListing(d['popular'], 'popular', input['store'], errors);
     const av = d['availability'];
     if (!isObj(av)) errors.push('domRecipe.availability: must be an object');
     else {

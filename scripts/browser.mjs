@@ -130,6 +130,30 @@ try {
     await page.goto(base + '/search?q=cello', { waitUntil: 'networkidle' });
     check('search page finds it', await page.locator('.card .title', { hasText: 'Cello' }).count() > 0);
 
+    // ---- store search: Amazon's own results (read by our server), every other store one tap away.
+    // Searches for the product this suite tracks, and opens THAT one: a live run adds nothing.
+    await page.goto(base + '/search?q=cello%20butterflow%20pen', { waitUntil: 'load' });
+    await page.waitForSelector('#live .grid:not(.skeleton) .card, #live .notice', { timeout: 45_000 }).catch(() => {});
+    const liveHrefs = await page.locator('#live .card').evaluateAll((as) => as.map((a) => a.getAttribute('href')));
+    const liveNote = await page.locator('#live .notice').count();
+    check('store search: Amazon\'s own results are listed (or the page says why not)', liveHrefs.length >= 5 || liveNote === 1, `${liveHrefs.length} cards, ${liveNote} notes`);
+    check('…every result opens Britto\'s price history for that product', liveHrefs.every((u) => /^\/p\/amazon%3A[A-Z0-9]{10}(\?add=1)?$/.test(u)), liveHrefs.slice(0, 3).join(' '));
+    const others = await page.locator('#others .store-chip').evaluateAll((as) => as.map((a) => [a.dataset.store, a.getAttribute('href'), a.target]));
+    check('…and buttons search each other store, in a new tab', others.length === STORE_IDS.length - (liveHrefs.length ? 1 : 0)
+      && others.some(([s, u]) => s === 'flipkart' && u === 'https://www.flipkart.com/search?q=cello%20butterflow%20pen') && others.every(([, , t]) => t === '_blank'), JSON.stringify(others.slice(0, 2)));
+    // Found by the product, with or without "?add=1", so a wrong link fails here instead of skipping.
+    const mine = page.locator('#live .card[href^="/p/amazon%3AB09X5DK382"]');
+    if (!(await mine.count())) console.log('SKIP  …a product Britto tracks opens its history  — NOT verified: Amazon did not list it for these words today');
+    else {
+      check('…a product Britto tracks is marked and links straight to its history (no add)', /See price history/.test(await mine.innerText()) && (await mine.getAttribute('href')) === '/p/amazon%3AB09X5DK382', await mine.getAttribute('href'));
+      await mine.click();
+      await page.waitForSelector('.product-title', { timeout: 30_000 });
+      check('…tapping it opens the product page', page.url().endsWith('/p/amazon%3AB09X5DK382') && /Cello/.test(await page.locator('.product-title').innerText()));
+      await page.waitForSelector('#compare .store-chip', { timeout: 15_000 }).catch(() => {});
+      const cmp = await page.locator('#compare .store-chip').evaluateAll((as) => as.map((a) => a.dataset.store));
+      check('product page: "Check other stores" searches every other store', cmp.length === STORE_IDS.length - 1 && !cmp.includes('amazon'), JSON.stringify(cmp));
+    }
+
     // Sale events on the chart, drawn by the site's own chart.js in this browser: a band only
     // when the end date is known, a dashed start marker when it is not (never a guessed band).
     const marks = await page.evaluate(async () => {

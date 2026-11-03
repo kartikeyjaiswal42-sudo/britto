@@ -24,6 +24,13 @@ export const getProduct = (key) => call(`/api/products/${encodeURIComponent(key)
 /** -> { q, results: ProductCard[] } */
 export const searchProducts = (q) => call(`/api/search?q=${encodeURIComponent(q)}`);
 
+/** The stores' own search results, read by our server where allowed, plus a link to every
+ * store's search page. -> { q, stores: [{ store, name, status, items, at }], tracked: ProductCard[], links } */
+export const storeSearch = (q) => call(`/api/store-search?q=${encodeURIComponent(q)}`);
+
+/** Products cheaper now than at our reading before ("was ₹X, now ₹Y"). -> { results: ProductCard[] } */
+export const getDrops = (store) => call(`/api/drops${store ? `?store=${encodeURIComponent(store)}` : ''}`);
+
 /** Real price drops only (judged against the product's usual price). -> { results: ProductCard[] } */
 export const getDeals = (filter = {}) => {
   const q = new URLSearchParams();

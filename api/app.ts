@@ -1,6 +1,6 @@
 import { ALERTS, parseRule, readingMovesAlerts } from '../core/alerts.ts';
 import { pickDue } from '../core/schedule.ts';
-import { STORES, STORE_IDS, parseKey, parseProductLink, storeFromParam } from '../core/stores.ts';
+import { STORES, STORE_IDS, parseKey, parseProductLink, storeFromParam, storeSearchUrl } from '../core/stores.ts';
 import { SERVICES } from '../core/services.ts';
 import { cleanObserved, judgeObservation } from '../core/trust.ts';
 import { GROCERY_PLATFORMS, cleanQuotes, compareBasket, compareItem, type GroceryPlatformId } from '../core/grocery.ts';
@@ -13,10 +13,11 @@ import {
 } from './alerts.ts';
 import { deliver, siteUrl, telegramBot, vapid } from './channels.ts';
 import {
-  clearHeld, couponKnown, couponVotes, deals, getProduct, holdReport, insertProduct, loadHeld, loadPoints, markRecheck, popular,
-  productView, rateLimit, recent, recordObservation, refreshCandidates, search, similarCheaper, sweepRate, voteCoupon,
+  cardsFor, clearHeld, couponKnown, couponVotes, deals, DROPS, getProduct, holdReport, insertProduct, loadHeld, loadPoints, markRecheck, popular,
+  productView, rateLimit, recent, recentDrops, recordObservation, refreshCandidates, search, similarCheaper, sweepRate, voteCoupon,
 } from './db.ts';
 import type { Ctx, D1Database, Env } from './env.ts';
+import { SEARCHES_PER_HOUR, searchWords, searchableStores, seedPopular, storeSearch, sweepSearchCache } from './listing.ts';
 import { countReading, getReader, healthReport, type HealthSource } from './readers.ts';
 import { ADDS_PER_HOUR, addProduct, background, refresh, resolveLink } from './refresh.ts';
 import { handleTelegram } from './telegram.ts';
@@ -25,6 +26,9 @@ import { allowedEndpoint, parseSubscription } from './webpush.ts';
 /** Products re-checked per scheduled run. Kept small: free Workers get 10 ms CPU per run,
  * and one Amazon page costs ~1 ms to read (measured on the fixtures). */
 export const PER_RUN = 4;
+/** The schedule runs every 3 minutes (wrangler.jsonc crons): the first run after the hour turns is the
+ * one with now % hour < CRON_STEP_MS. */
+export const CRON_STEP_MS = 3 * 60_000;
 /** Extension price reports one network may send per hour (a long shopping session is ~100 pages). */
 export const OBSERVATIONS_PER_HOUR = 150;
 /** Browsers one network may register per hour (a college Wi-Fi is one network). */
@@ -417,10 +421,36 @@ async function api(request: Request, env: Env, ctx: Ctx, url: URL): Promise<Resp
     if (minPct !== undefined && !(Number.isFinite(minPct) && minPct >= 0.05 && minPct <= 0.9)) return fail(400, 'bad_min', 'min is a percentage from 5 to 90.');
     return json({ results: await deals(env.DB, { ...(store ? { store: store as StoreId } : {}), ...(minPct !== undefined ? { minPct } : {}) }), computedAt: Date.now() });
   }
+  if (path === '/api/store-search' && method === 'GET') return storeSearchRoute(request, env, url);
+  if (path === '/api/drops' && method === 'GET') {
+    const store = url.searchParams.get('store');
+    if (store && !STORE_IDS.includes(store as never)) return fail(400, 'bad_store', 'Unknown store.');
+    return json({ results: await recentDrops(env.DB, Date.now(), 24, (store || undefined) as StoreId | undefined), rule: DROPS });
+  }
   if (path === '/api/recent' && method === 'GET') return json({ results: await recent(env.DB) });
   if (path === '/api/popular' && method === 'GET') return json({ results: await popular(env.DB) });
 
   return fail(404, 'not_found', 'No such API route.');
+}
+
+/**
+ * Search the stores for words: each server-readable store with a verified search rule is read
+ * (or answered from the 6-hour cache), products Britto already tracks are marked, and every
+ * store's own search page is linked for the shopper to open.
+ */
+async function storeSearchRoute(request: Request, env: Env, url: URL): Promise<Response> {
+  const words = searchWords(url.searchParams.get('q') ?? '');
+  if (!words) return fail(400, 'bad_query', 'Search for 2 to 80 characters.');
+  const now = Date.now();
+  const net = await clientId(request);
+  // One request uses at most one search from the network's hourly allowance, whatever the stores.
+  let allowed: Promise<boolean> | null = null;
+  const allowFetch = () => (allowed ??= rateLimit(env.DB, `search:${net}`, SEARCHES_PER_HOUR, 3_600_000, now));
+  const stores = (await Promise.all(searchableStores().map((s) => storeSearch(env, s, words, allowFetch, now)))).filter((s) => s != null);
+  const keys = [...new Set(stores.flatMap((s) => s.items.map((i) => i.key)))];
+  const tracked = await cardsFor(env.DB, keys);
+  const links = STORE_IDS.map((id) => ({ store: id, name: STORES[id].name, url: storeSearchUrl(id, words), checked: STORES[id].search.checked }));
+  return json({ q: words, stores, tracked, links, searchesPerHour: SEARCHES_PER_HOUR });
 }
 
 /**
@@ -436,10 +466,10 @@ function prefixRedirect(request: Request, url: URL): Response | null {
 }
 
 async function page(request: Request, env: Env, url: URL): Promise<Response> {
-  // The app is one page; /p/<key>, /search, /deals, /stores, /alerts, /browse, /grocery, /travel and /spend are its client routes.
+  // The app is one page; /p/<key>, /search, /deals, /stores, /alerts, /browse, /grocery, /travel, /spend and /app are its client routes.
   // html_handling is "none" (wrangler.jsonc): with the default, a request for /index.html
   // is answered 307 -> "/", which sent every /p/<key> link to the home page.
-  if (/^\/(|p\/[^/]+|search|deals|stores|alerts|browse|grocery|travel|spend)\/?$/.test(url.pathname)) {
+  if (/^\/(|p\/[^/]+|search|deals|stores|alerts|browse|grocery|travel|spend|app)\/?$/.test(url.pathname)) {
     return env.ASSETS.fetch(new Request(new URL('/index.html', url), request));
   }
   if (url.pathname === '/bot') return env.ASSETS.fetch(new Request(new URL('/bot.html', url), request));
@@ -460,15 +490,35 @@ export const handler = {
     }
   },
 
-  async scheduled(_controller: unknown, env: Env, ctx: Ctx): Promise<void> {
-    ctx.waitUntil(runSchedule(env.DB, env));
+  async scheduled(controller: { scheduledTime?: number }, env: Env, ctx: Ctx): Promise<void> {
+    ctx.waitUntil(runSchedule(env.DB, env, controller.scheduledTime));
   },
 };
 
-export async function runSchedule(db: D1Database, env: Env): Promise<{ checked: { key: ProductKey; result: string }[] }> {
-  const now = Date.now();
+/** Say when a store's reader looks broken (once an hour). */
+async function readerHealth(db: D1Database, now: number): Promise<void> {
+  const { warnings } = await healthReport(db, STORE_IDS, now);
+  for (const w of warnings) console.warn('reader health', w.code, w.message);
+}
+
+export async function runSchedule(db: D1Database, env: Env, scheduledTime?: number): Promise<{ checked: { key: ProductKey; result: string }[] }> {
+  // The time Cloudflare scheduled this run for (a test passes ?time= to the local endpoint).
+  const now = scheduledTime ?? Date.now();
   // A new bot token takes effect on the next run without anyone pressing anything.
   await telegramBot(env).catch((e) => console.error('telegram setup', e));
+  const firstOfHour = now % 3_600_000 < CRON_STEP_MS;
+  // Once an hour, one store best-seller page grows the catalogue INSTEAD of product reads (one
+  // ~380 KB list page is this run's CPU budget). Its products are read by later runs.
+  if (firstOfHour) {
+    const seeded = await seedPopular(env, now).catch((e) => { console.error('popular', e); return null; });
+    if (seeded) console.log('popular', JSON.stringify(seeded));
+    await sweepSearchCache(db, now).catch((e) => console.error('search cache sweep', e));
+    if (seeded && seeded.status === 'listed') {
+      await sweepRate(db, now);
+      await readerHealth(db, now);
+      return { checked: [] };
+    }
+  }
   const readable = STORE_IDS.filter((id) => STORES[id].serverFetch === 'yes');
   const due = pickDue(
     (await refreshCandidates(db, readable)).map((r) => ({ ...r, lastAttemptAt: r.last_attempt_at, failCount: r.fail_count })),
@@ -485,10 +535,7 @@ export async function runSchedule(db: D1Database, env: Env): Promise<{ checked: 
   await sweepRate(db, now);
   if (checked.length) console.log('schedule', JSON.stringify(checked));
   // Once an hour (the first run after the hour turns): say when a store's reader looks broken.
-  if (now % 3_600_000 < 5 * 60_000) {
-    const { warnings } = await healthReport(db, STORE_IDS, now);
-    for (const w of warnings) console.warn('reader health', w.code, w.message);
-  }
+  if (firstOfHour) await readerHealth(db, now);
   return { checked };
 }
 

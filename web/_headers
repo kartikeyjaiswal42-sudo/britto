@@ -1,4 +1,11 @@
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://m.media-amazon.com https://assets.myntassets.com https://rukminim1.flixcart.com https://rukminim2.flixcart.com https://vsprod.vijaysales.com https://cdn.jiostore.online https://images-static.nykaa.com https://cdn.shopclues.com https://cdn2.shopclues.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://m.media-amazon.com https://images-eu.ssl-images-amazon.com https://assets.myntassets.com https://rukminim1.flixcart.com https://rukminim2.flixcart.com https://vsprod.vijaysales.com https://cdn.jiostore.online https://images-static.nykaa.com https://cdn.shopclues.com https://cdn2.shopclues.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'
   X-Content-Type-Options: nosniff
   Referrer-Policy: same-origin
+/download/*
+  Content-Type: application/vnd.android.package-archive
+  Content-Disposition: attachment; filename="Britto.apk"
+  Cache-Control: no-cache
+/download/britto.json
+  Content-Type: application/json
+  Content-Disposition: inline

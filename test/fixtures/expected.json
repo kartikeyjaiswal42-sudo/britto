@@ -397,5 +397,116 @@
     "pid": "30925569",
     "title": "MuscleBlaze Men Active Gym",
     "note": "Myntra's own search results listed it as ₹999 struck, ₹699, 30% OFF."
+  },
+  "amazon-search-boat-earbuds.html": {
+    "fetched": "2026-11-03 from India with the BrittoBot/0.1 User-Agent the server sends, saved unmodified",
+    "store": "amazon",
+    "list": "search",
+    "url": "https://www.amazon.in/s?k=boat+earbuds",
+    "count": 16,
+    "items": [
+      {
+        "pid": "B0C3ZYFZ77",
+        "price": 79900,
+        "mrp": 349000,
+        "title": "boAt Airdopes Joy, 35Hrs Battery"
+      },
+      {
+        "pid": "B0F8BVSK21",
+        "price": null,
+        "mrp": null,
+        "title": "boAt Airdopes 141 Gen 2"
+      },
+      {
+        "pid": "B0CF5QFH77",
+        "price": 179900,
+        "mrp": 999000,
+        "title": "boAt Nirvana Ion ANC"
+      }
+    ]
+  },
+  "amazon-search-cello-technotip-paise.html": {
+    "fetched": "2026-11-03 from India with the BrittoBot/0.1 User-Agent the server sends, saved unmodified",
+    "store": "amazon",
+    "list": "search",
+    "url": "https://www.amazon.in/s?k=cello+technotip+pen",
+    "count": 24,
+    "items": [
+      {
+        "pid": "B00IEA1G4M",
+        "price": 176318,
+        "mrp": null,
+        "title": "1 X 10 Cello Technotip Pen"
+      },
+      {
+        "pid": "B07GQQCC9G",
+        "price": 18000,
+        "mrp": 20000,
+        "title": "Cello Signature Carbon Ball Pen"
+      },
+      {
+        "pid": "B09X5DK382",
+        "price": 28000,
+        "mrp": null,
+        "title": "Cello Butterflow Simply Ball Pen Set"
+      }
+    ]
+  },
+  "amazon-search-iphone-15-brands.html": {
+    "fetched": "2026-11-03 from India with the BrittoBot/0.1 User-Agent the server sends, saved unmodified",
+    "store": "amazon",
+    "list": "search",
+    "url": "https://www.amazon.in/s?k=iphone+15",
+    "count": 16,
+    "items": [
+      {
+        "pid": "B0DGJH8RYG",
+        "price": 7699900,
+        "mrp": 8990000,
+        "title": "Apple iPhone 16 128 GB"
+      },
+      {
+        "pid": "B0DSKNQW8F",
+        "price": 9499900,
+        "mrp": 12999900,
+        "title": "Samsung Galaxy S25 Ultra"
+      },
+      {
+        "pid": "B0HLL4CJH1",
+        "price": 1299900,
+        "mrp": 129990000,
+        "title": "Compatible with iPhone 15"
+      }
+    ]
+  },
+  "amazon-bestsellers-electronics.html": {
+    "fetched": "2026-11-03 from India with the BrittoBot/0.1 User-Agent the server sends, saved unmodified",
+    "store": "amazon",
+    "list": "popular",
+    "url": "https://www.amazon.in/gp/bestsellers/electronics",
+    "count": 30,
+    "items": [
+      {
+        "pid": "B0H7S6LT9P",
+        "price": null,
+        "mrp": null,
+        "title": "OnePlus N6x | 4GB+128GB"
+      }
+    ]
+  },
+  "amazon-bestsellers-kitchen.html": {
+    "fetched": "2026-11-03 from India with the BrittoBot/0.1 User-Agent the server sends, saved unmodified",
+    "store": "amazon",
+    "list": "popular",
+    "url": "https://www.amazon.in/gp/bestsellers/kitchen",
+    "count": 30,
+    "items": [
+      {
+        "pid": "B0744P71Y9",
+        "price": null,
+        "mrp": null,
+        "title": "Amazon Brand - Solimo Wax Tealight Candles"
+      }
+    ]
   }
 }
