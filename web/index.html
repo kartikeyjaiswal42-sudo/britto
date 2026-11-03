@@ -2,13 +2,15 @@
 <html lang="en-IN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Britto: price history and real discounts</title>
   <meta name="description" content="Price history, honest discount checks and price-drop alerts for Amazon, Flipkart and Myntra.">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <meta name="theme-color" content="#0f6b5c">
+  <meta name="theme-color" content="#1F5BFF">
+  <link rel="preload" href="/fonts/Outfit.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/Manrope.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/style.css">
   <script type="module" src="/app.js"></script>
 </head>
@@ -24,5 +26,12 @@
   <footer class="foot">
     <p>Prices are read from each store’s own product page; when a store refuses our server, from the shopper’s browser. We record a price only when it changes. <a href="/bot">About our bot</a>.</p>
   </footer>
+  <nav class="tabbar" aria-label="Britto">
+    <a href="/" data-nav><svg viewBox="0 0 24 24"><path d="M4 10.5L12 4l8 6.5V20h-5v-6H9v6H4z"/></svg>Home</a>
+    <a href="/deals" data-nav><svg viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Deals</a>
+    <a href="/alerts" data-nav><svg viewBox="0 0 24 24"><path d="M3 18l5-6 4 3 8-9"/><path d="M15 6h5v5"/></svg>Tracker</a>
+    <a href="/browse" data-nav><svg viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 016 0v2"/></svg>Shop</a>
+    <a href="/travel" data-nav><svg viewBox="0 0 24 24"><path d="M2.5 13.5l19-8-5.5 15-3.5-6.5z"/><path d="M12.5 14l9-8.5"/></svg>Travel</a>
+  </nav>
 </body>
 </html>

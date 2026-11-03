@@ -55,7 +55,7 @@ try {
     check('chart line is visible (has width)', (pathBox?.width ?? 0) > 50, JSON.stringify(pathBox));
     const stroke = await page.locator('svg.chart path.line').evaluate((n) => getComputedStyle(n).stroke);
     check('chart line has a colour', stroke !== 'none' && stroke !== '', stroke);
-    check('"Open on Amazon.in" links to the clean product URL', (await page.locator('a.button').getAttribute('href')) === 'https://www.amazon.in/dp/B09X5DK382');
+    check('the store button ("Buy at … on Amazon.in") links to the clean product URL', (await page.locator('a.button.warn').getAttribute('href')) === 'https://www.amazon.in/dp/B09X5DK382');
 
     // Offers (BLUEPRINT §15) on a view whose offers are MADE UP in this browser only (the real
     // server stores offers only from its own reads of a store page).
@@ -105,7 +105,8 @@ try {
     check('no horizontal scroll', (await page.evaluate(() => window.scrollX)) === 0);
 
     const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-    check(`${scheme} theme background applied`, scheme === 'dark' ? bg === 'rgb(18, 19, 21)' : bg === 'rgb(247, 246, 242)', bg);
+    // The design's background (design/README.md): #F4F6FB, and the dark theme's deep navy #0F1424.
+    check(`${scheme} theme background applied`, scheme === 'dark' ? bg === 'rgb(15, 20, 36)' : bg === 'rgb(244, 246, 251)', bg);
 
     // The prefix trick in a real browser.
     await page.goto(`${base}/https://www.amazon.in/Cello/dp/B09X5DK382/ref=x`, { waitUntil: 'networkidle' });

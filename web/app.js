@@ -9,6 +9,33 @@ import { mergeOrders, summarize } from './spend.js';
 import { airportIndex, flightSearch, hotelSearch, MAX_DAYS_AHEAD, rideSearch, todayIST } from './travel.js';
 
 const app = document.getElementById('app');
+// Inside the Android app its own bar does the tab bar's job (style.css .in-app).
+document.documentElement.classList.toggle('in-app', /\bBrittoApp\//.test(navigator.userAgent));
+
+// The design's line icons (design/Britto App v4.dc.html), drawn as SVG (no inline markup: CSP).
+const ICONS = {
+  link: ['M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1', 'M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1'],
+  shield: ['M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z', 'M9 12l2 2 4-4'],
+  trend: ['M3 18l5-6 4 3 8-9', 'M15 6h5v5'],
+  plane: ['M2.5 13.5l19-8-5.5 15-3.5-6.5z', 'M12.5 14l9-8.5'],
+  tag: ['M3 12V4h8l10 10-8 8z', 'M6 7.5a1.5 1.5 0 103 0 1.5 1.5 0 10-3 0'],
+  bag: ['M5 8h14l-1 12H6z', 'M9 8V6a3 3 0 016 0v2'],
+  wallet: ['M3 6h18v13H3z', 'M3 10h18M16 14.5h2'],
+  store: ['M4 9l1.5-5h13L20 9', 'M4 9h16v11H4z', 'M9 20v-6h6v6'],
+  basket: ['M4 10h16l-1.5 10h-13z', 'M8 10l4-6 4 6'],
+};
+function icon(name) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  for (const d of ICONS[name]) {
+    const p = document.createElementNS(NS, 'path');
+    p.setAttribute('d', d);
+    svg.append(p);
+  }
+  return svg;
+}
 
 function h(tag, attrs = {}, ...children) {
   const n = document.createElement(tag);
@@ -46,19 +73,23 @@ document.getElementById('search-form').addEventListener('submit', (e) => {
 const STORE_NAMES = { amazon: 'Amazon', flipkart: 'Flipkart', myntra: 'Myntra', vijaysales: 'Vijay Sales', reliancedigital: 'Reliance Digital', nykaa: 'Nykaa', shopclues: 'ShopClues' };
 
 function productCard(c) {
-  const badge = c.saleStatus === 'real_drop' && c.realPct != null ? h('span', { class: 'badge good' }, `${pct(c.realPct)} below usual`) : null;
+  const badge = c.saleStatus === 'real_drop' && c.realPct != null ? h('span', { class: 'badge good', title: 'below its own usual price' }, `↓ ${pct(c.realPct)} below usual`) : null;
   return h('a', { class: 'card', href: `/p/${encodeURIComponent(c.key)}`, 'data-nav': true },
-    h('div', { class: 'thumb' }, c.image ? h('img', { src: c.image, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }) : null),
+    h('div', { class: 'thumb' }, c.image ? h('img', { src: c.image, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }) : null, badge),
     h('div', { class: 'card-body' },
       h('span', { class: 'store' }, STORE_NAMES[c.store] ?? c.store),
       h('span', { class: 'title' }, c.title ?? 'Waiting for first price'),
       h('span', { class: 'price' }, c.inStock === false ? 'Out of stock' : rupees(c.price),
-        c.mrp && c.price && c.mrp > c.price ? h('s', { class: 'mrp' }, rupees(c.mrp)) : null),
-      badge));
+        c.mrp && c.price && c.mrp > c.price ? h('s', { class: 'mrp' }, rupees(c.mrp)) : null)));
 }
 
 function grid(cards, empty) {
   return cards.length ? h('div', { class: 'grid' }, cards.map(productCard)) : h('p', { class: 'muted' }, empty);
+}
+
+/** The design's sideways-scrolling row of product cards. */
+function row(cards, empty) {
+  return cards.length ? h('div', { class: 'row' }, cards.map(productCard)) : h('p', { class: 'muted' }, empty);
 }
 
 function linkForm(initial = '') {
@@ -80,21 +111,45 @@ async function addByLink(link, status) {
   }
 }
 
+const focusPaste = (e) => { e.preventDefault(); const input = document.querySelector('.track input'); input?.scrollIntoView({ block: 'center' }); input?.focus(); };
+
+function shortcut(label, href, iconName, tint, onclick) {
+  return h('a', { class: 'shortcut', href, 'data-nav': onclick ? null : true, onclick }, h('i', { class: tint }, icon(iconName)), label);
+}
+
 async function home() {
   app.replaceChildren(
     h('section', { class: 'hero' },
       h('h1', {}, 'Know the real price before you buy.'),
-      h('p', { class: 'lede' }, 'Price history, honest discount checks and price-drop alerts for Indian stores. Paste a product link to start.'),
+      h('p', { class: 'lede' }, 'Price history, honest discount checks and price-drop alerts for Indian stores.')),
+    h('section', { class: 'paste-card', id: 'paste' },
+      h('div', { class: 'paste-head' }, h('span', { class: 'icon' }, icon('link')),
+        h('div', {}, h('b', {}, 'Paste a product link'), h('span', {}, 'Check price history & fake sales'))),
       linkForm(),
-      h('p', { class: 'tip-line' }, 'Tip: put ', h('code', {}, `${location.host}/`), ' in front of any product link.'),
-      h('p', { class: 'tip-line', id: 'bot-tip' })),
-    h('section', {}, h('h2', {}, 'Real price drops'), h('p', { class: 'muted small' }, 'Judged against each product’s own usual price, not its M.R.P.'), h('div', { id: 'deals' }, h('p', { class: 'muted' }, 'Loading…'))),
-    h('section', {}, h('h2', {}, 'Recently tracked'), h('div', { id: 'recent' }, h('p', { class: 'muted' }, 'Loading…'))));
+      h('div', { class: 'tip-row' },
+        h('p', { class: 'tip-line' }, 'Tip: put ', h('code', {}, `${location.host}/`), ' in front of any product link.'),
+        h('p', { class: 'tip-line', id: 'bot-tip' }))),
+    h('div', { class: 'promos' },
+      h('a', { class: 'promo fake', href: '#paste', onclick: focusPaste }, h('span', { class: 'tag' }, 'Fake sale detector'), h('b', {}, 'Is that sale real?'), h('span', {}, 'We check the price against the product’s own usual price, not its M.R.P.')),
+      h('a', { class: 'promo deals', href: '/deals', 'data-nav': true }, h('span', { class: 'tag' }, 'Real drops'), h('b', {}, 'Biggest real price drops'), h('span', {}, 'Only drops below what each product usually costs.')),
+      h('a', { class: 'promo travel', href: '/travel', 'data-nav': true }, h('span', { class: 'tag' }, 'Travel'), h('b', {}, 'One search, every site'), h('span', {}, 'Flights, hotels and rides, filled in on each site.'))),
+    h('nav', { class: 'shortcuts', 'aria-label': 'Britto features' },
+      shortcut('Fake sale', '#paste', 'shield', 'tint-red', focusPaste),
+      shortcut('Price tracker', '/alerts', 'trend', 'tint-blue'),
+      shortcut('Flights', '/travel', 'plane', 'tint-sky'),
+      shortcut('Deals', '/deals', 'tag', 'tint-orange'),
+      shortcut('Shop', '/browse', 'bag', 'tint-green'),
+      shortcut('Spend Lens', '/spend', 'wallet', 'tint-violet'),
+      shortcut('Stores', '/stores', 'store', 'tint-gold'),
+      shortcut('Grocery', '/grocery', 'basket', 'tint-pink')),
+    h('section', {}, h('div', { class: 'section-head' }, h('h2', {}, 'Biggest real price drops'), h('a', { href: '/deals', 'data-nav': true }, 'View all')),
+      h('p', { class: 'section-note' }, 'Judged against each product’s own usual price, not its M.R.P.'), h('div', { id: 'deals' }, h('p', { class: 'muted' }, 'Loading…'))),
+    h('section', {}, h('div', { class: 'section-head' }, h('h2', {}, 'Recently tracked')), h('div', { id: 'recent' }, h('p', { class: 'muted' }, 'Loading…'))));
   config().then((cfg) => {
     if (cfg?.telegram) document.getElementById('bot-tip')?.replaceChildren('On your phone? Send any product link to ', botLink(cfg.telegram.bot), ' on Telegram. No app or extension needed.');
   });
   const [d, r] = await Promise.allSettled([getDeals(), getRecent()]);
-  document.getElementById('deals')?.replaceChildren(d.status === 'fulfilled' ? grid(d.value.results, 'No confirmed drops yet. A drop is only confirmed after 7 days of watching a product.') : h('p', { class: 'error' }, d.reason.message));
+  document.getElementById('deals')?.replaceChildren(d.status === 'fulfilled' ? row(d.value.results, 'No confirmed drops yet. A drop is only confirmed after 7 days of watching a product.') : h('p', { class: 'error' }, d.reason.message));
   document.getElementById('recent')?.replaceChildren(r.status === 'fulfilled' ? grid(r.value.results, 'Nothing tracked yet. Paste a link above.') : h('p', { class: 'error' }, r.reason.message));
 }
 
@@ -141,7 +196,10 @@ async function productPage(key) {
             h('span', { class: 'big-price' }, s.inStock === false ? 'Out of stock' : rupees(s.current)),
             s.currentMrp && s.current && s.currentMrp > s.current ? h('span', { class: 'mrp' }, 'M.R.P. ', h('s', {}, rupees(s.currentMrp))) : null),
           h('p', { class: 'muted small' }, `Checked ${ago(s.lastCheckedAt)} · tracking since ${date(s.trackedSince)}`),
-          h('a', { class: 'button', href: view.url, target: '_blank', rel: 'noopener noreferrer nofollow' }, `Open on ${view.store.name}`))),
+          h('div', { class: 'product-actions' },
+            h('a', { class: 'button warn', href: view.url, target: '_blank', rel: 'noopener noreferrer nofollow', title: `Opens ${view.store.name}` },
+              s.inStock !== false && s.current ? `Buy at ${rupees(s.current)}` : `Open on ${view.store.name}`),
+            h('a', { class: 'button secondary', href: '#alert', onclick: (e) => { e.preventDefault(); document.getElementById('alert')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); } }, 'Price alert')))),
       view.pending ? h('p', { class: 'notice' }, view.pending) : null,
       h('div', { class: 'cards2' },
         h('section', { class: `verdict ${VERDICT_CLASS[view.verdict.kind]}` },
@@ -292,7 +350,7 @@ async function travelPage() {
 }
 
 function stat(label, value, note) {
-  return h('div', {}, h('dt', {}, label), h('dd', {}, value, note ? h('span', { class: 'muted small' }, ` ${note}`) : null));
+  return h('div', {}, h('dt', {}, label), h('dd', {}, value, note ? h('small', {}, note) : null));
 }
 
 function keyToLink(key) {
@@ -382,6 +440,8 @@ const inApp = /\bBrittoApp\//.test(navigator.userAgent);
  * store (the extension reads it there).
  */
 const SECTORS = [['ride', 'Rides'], ['flight', 'Flights'], ['hotel', 'Hotels']];
+/** The design uses letter badges, not store logos: "Amazon.in" -> "A", "Reliance Digital" -> "RD". */
+const monogram = (name) => name.replace(/\.\w+$/, '').split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 
 async function browsePage() {
   const { stores, services = [] } = await getStores();
@@ -389,7 +449,7 @@ async function browsePage() {
   // logs in once on the service's own page; that login stays in the app on their phone.
   const sectionFor = ([sector, title]) => {
     const list = services.filter((s) => s.sector === sector);
-    return list.length ? [h('h2', {}, title), h('div', { class: 'store-grid' }, list.map((s) => h('a', { class: 'store-tile', href: s.home, rel: 'noopener', 'data-service': s.id },
+    return list.length ? [h('h2', {}, title), h('div', { class: 'store-grid' }, list.map((s) => h('a', { class: 'store-tile', href: s.home, rel: 'noopener', 'data-service': s.id, 'data-mono': monogram(s.name) },
       h('span', { class: 'store-name' }, s.name),
       h('span', { class: 'small muted' }, inApp ? `Log in with your number on ${s.name}\u2019s own page; it stays on this phone.` : `Opens ${s.name}.`))))] : [];
   };
@@ -398,7 +458,7 @@ async function browsePage() {
       ? 'Open a store and shop as usual. On every product page Britto shows its price history and reads the price from the page you are looking at.'
       : 'Open a store and shop as usual. With the Britto extension (or the Britto Android app) you see the price history on every product page.'),
     h('h2', {}, 'Shopping'),
-    h('div', { class: 'store-grid' }, stores.map((s) => h('a', { class: 'store-tile', href: s.home, rel: 'noopener', 'data-store': s.id },
+    h('div', { class: 'store-grid' }, stores.map((s) => h('a', { class: 'store-tile', href: s.home, rel: 'noopener', 'data-store': s.id, 'data-mono': monogram(s.name) },
       h('span', { class: 'store-name' }, s.name),
       h('span', { class: 'small muted' }, s.serverFetch === 'yes' ? 'Prices also checked by our server' : 'Prices from shoppers\u2019 own pages')))),
     ...SECTORS.flatMap(sectionFor),
@@ -685,6 +745,13 @@ navigator.serviceWorker?.addEventListener('message', (e) => {
 function route() {
   const { pathname, search } = location;
   window.scrollTo(0, 0);
+  // The tab (and desktop nav link) for this page, by its first path segment.
+  const section = `/${pathname.split('/')[1] ?? ''}`;
+  document.documentElement.classList.toggle('is-home', section === '/');
+  document.querySelectorAll('.tabbar a, .top nav a').forEach((a) => {
+    if (a.getAttribute('href') === section) a.setAttribute('aria-current', 'page');
+    else a.removeAttribute('aria-current');
+  });
   const done = (p) => p?.catch?.((e) => app.replaceChildren(h('p', { class: 'error' }, e.message)));
   if (pathname.startsWith('/p/')) return done(productPage(decodeURIComponent(pathname.slice(3))));
   if (pathname === '/search') return done(searchPage(new URLSearchParams(search).get('q') ?? ''));
