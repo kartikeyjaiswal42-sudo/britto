@@ -270,3 +270,10 @@ table.spend td.num { text-align: right; font-variant-numeric: tabular-nums; whit
   .alert-row > button { grid-column: 2; justify-self: start; }
   .small-thumb { width: 48px; }
 }
+
+/* ---- App download page ---- */
+.lede-dark { font-size: 16px; color: var(--ink); max-width: 60ch; }
+.download { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
+.download .button.big { height: 54px; font-size: 16px; align-self: flex-start; padding: 0 22px; }
+.download p { word-break: break-all; }
+.features, .steps { padding-left: 20px; display: flex; flex-direction: column; gap: 8px; max-width: 70ch; }

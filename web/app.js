@@ -179,7 +179,7 @@ async function home() {
       shortcut('Shop', '/browse', 'bag', 'tint-green'),
       shortcut('Spend Lens', '/spend', 'wallet', 'tint-violet'),
       shortcut('Stores', '/stores', 'store', 'tint-gold'),
-      shortcut('Grocery', '/grocery', 'basket', 'tint-pink')),
+      inApp ? shortcut('Grocery', '/grocery', 'basket', 'tint-pink') : shortcut('Get the app', '/app', 'bag', 'tint-pink')),
     h('section', { class: 'quick' }, h('h2', {}, 'Search Amazon with price history'),
       h('div', { class: 'chips' }, QUICK.map((w) => h('a', { class: 'chip', href: `/search?q=${encodeURIComponent(w)}`, 'data-nav': true }, w)))),
     h('section', { id: 'drops-sec' }, h('div', { class: 'section-head' }, h('h2', {}, 'Price dropped'), h('a', { href: '/deals', 'data-nav': true }, 'View all')),
@@ -534,6 +534,38 @@ async function storesPage() {
       h('tbody', {}, stores.map((s) => h('tr', {}, h('td', {}, s.name), h('td', {}, label[s.serverFetch]), h('td', { class: 'small' }, s.measured))))));
 }
 
+/** The Android app's download page. Its facts (version, size, fingerprint) come from
+ * /download/britto.json, written by scripts/publish-apk.mjs from the APK itself. */
+async function appPage() {
+  put(app, h('h1', {}, 'Britto for Android'), h('p', { class: 'muted' }, 'Loading…'));
+  let info = null;
+  try { info = await (await fetch('/download/britto.json', { cache: 'no-cache' })).json(); } catch { /* no APK published */ }
+  const feature = (title, text) => h('li', {}, h('b', {}, title), ' ', text);
+  put(app,
+    h('h1', {}, 'Britto for Android'),
+    h('p', { class: 'lede-dark' }, 'Shop on Amazon, Flipkart, Myntra and more inside Britto: every product page shows its price history and whether the sale is real.'),
+    inApp ? h('p', { class: 'notice' }, `You are using the app${info ? `; the newest version is ${info.version}` : ''}.`)
+      : info ? h('div', { class: 'download' },
+        h('a', { class: 'button warn big', href: '/download/britto.apk', download: 'Britto.apk' }, `Download Britto ${info.version} (${Math.round(info.bytes / 1024)} KB)`),
+        h('p', { class: 'muted small' }, `Android 8 or newer. Built ${date(info.builtAt)}. SHA-256 ${info.sha256}`))
+        : h('p', { class: 'notice' }, 'The app is not published here yet.'),
+    h('h2', {}, 'What it does'),
+    h('ul', { class: 'features' },
+      feature('Super Browse.', 'Open a store from Shop, log in with your own number as you would in its app, and every product page shows Britto’s price panel. You log in on the store’s own page: Britto keeps no password and no login of yours.'),
+      feature('Search.', 'Search Amazon from Britto, or open the same search on Flipkart, Myntra and the rest.'),
+      feature('Price alerts.', 'Set an alert on any product; the app tells you when it drops.'),
+      feature('Share to Britto.', 'In any store’s app, tap Share on a product and choose Britto to see its history.'),
+      feature('Rides, flights and hotels.', 'Uber, Cleartrip and Booking.com open inside the app, so you log in once.'),
+      feature('Spend Lens.', 'What you spent across stores, from your own order pages, worked out on your phone and never uploaded.')),
+    inApp ? null : h('div', {},
+      h('h2', {}, 'Installing'),
+      h('ol', { class: 'steps' },
+        h('li', {}, 'Tap Download. Chrome may warn that this type of file can harm your device: Britto is not on the Play Store yet, so it says that for every app from outside it.'),
+        h('li', {}, 'Open the downloaded Britto.apk. Android asks once to allow installs from Chrome: allow it, go back, and tap Install.'),
+        h('li', {}, 'Later versions install over this one and keep your alerts.')),
+      h('p', { class: 'muted small' }, 'iPhone: there is no iPhone app. Use this website in Safari, and Add to Home Screen.')));
+}
+
 /** Inside the Britto Android app (it adds "BrittoApp/<version>" to its WebView's User-Agent). */
 const inApp = /\bBrittoApp\//.test(navigator.userAgent);
 
@@ -865,6 +897,7 @@ function route() {
   if (pathname === '/travel') return done(travelPage());
   if (pathname === '/alerts') return done(alertsPage());
   if (pathname === '/spend') return done(spendPage());
+  if (pathname === '/app') return done(appPage());
   return done(home());
 }
 
