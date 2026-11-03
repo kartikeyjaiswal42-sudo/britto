@@ -43,7 +43,12 @@ if (existsSync(APK) && sdk) {
   check('APK: package app.britto, version as in build.gradle.kts', badging.includes(`package: name='app.britto'`) && badging.includes(`versionName='${VERSION}'`), badging.split('\n')[0]);
   check('APK: Android 10+ (minSdk 29), targets Android 16 (36)', /minSdkVersion:'29'/.test(badging) && /targetSdkVersion:'36'/.test(badging));
   const perms = [...badging.matchAll(/uses-permission: name='([^']+)'/g)].map((m) => m[1]);
-  check('APK: asks for the internet and nothing else (plus AndroidX\'s own signature permission)', isDeepStrictEqual(perms.filter((p) => !p.endsWith('.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION')), ['android.permission.INTERNET']), perms.join(', '));
+  // Notifications (price alerts), network state (Android 14 refuses a job that waits for a network
+  // without it: the app crashed on the emulator) and boot (the alert check survives a restart).
+  // No location, contacts, SMS, storage or accessibility: anything new here must be argued for.
+  const WANT = ['android.permission.INTERNET', 'android.permission.POST_NOTIFICATIONS', 'android.permission.ACCESS_NETWORK_STATE', 'android.permission.RECEIVE_BOOT_COMPLETED'];
+  check('APK: asks for the internet, notifications, network state and boot, nothing else (plus AndroidX\'s own signature permission)',
+    isDeepStrictEqual(perms.filter((p) => !p.endsWith('.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION')).sort(), [...WANT].sort()), perms.join(', '));
   const manifest = execFileSync(join(tools, 'aapt2'), ['dump', 'xmltree', '--file', 'AndroidManifest.xml', APK], { encoding: 'utf8' });
   const store = manifest.slice(manifest.indexOf('"app.britto.StoreActivity"'), manifest.indexOf('"app.britto.StoreActivity"') + 400);
   check('APK: Super Browse cannot be opened by other apps (StoreActivity not exported)', /exported\(0x01010010\)=false/.test(store));

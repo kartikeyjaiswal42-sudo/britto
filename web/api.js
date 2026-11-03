@@ -58,6 +58,9 @@ function readToken() { try { return localStorage.getItem(TOKEN_KEY); } catch { r
 function saveToken(t) { try { localStorage.setItem(TOKEN_KEY, t); } catch { /* storage blocked */ } }
 function forgetToken() { try { localStorage.removeItem(TOKEN_KEY); } catch { /* storage blocked */ } }
 
+/** This browser's device token, or null (handed to the Britto app so it can show alerts). */
+export const deviceToken = () => readToken();
+
 /** Which alert channels this site has switched on. -> AppConfig */
 export const getConfig = () => call('/api/config');
 

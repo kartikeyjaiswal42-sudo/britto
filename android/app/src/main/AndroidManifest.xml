@@ -2,9 +2,14 @@
 <!-- Britto for Android (BLUEPRINT §18): the website in a WebView, plus Super Browse, an
      in-app browser per store that reads the page the shopper is looking at with the same
      reader the extension uses. Version, SDK levels and the site address: app/build.gradle.kts.
-     Only one permission: the internet. -->
+     Permissions: the internet; showing notifications (price alerts, asked for when the shopper
+     sets one); knowing whether there is a network (Android 14 refuses a job that waits for one
+     without it: measured, the app crashed); and starting the alert check again after a restart. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:label="@string/app_name"
@@ -31,6 +36,12 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
+
+        <!-- Price alerts as notifications: a periodic check of this phone's alerts (AlertJob). -->
+        <service
+            android:name=".AlertJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <!-- Super Browse: one store in an in-app browser, with the Britto panel. -->
         <activity

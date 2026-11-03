@@ -1,7 +1,10 @@
 package app.britto;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
@@ -47,7 +50,8 @@ public class MainActivity extends ComponentActivity {
         root.addView(web, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
         // Spend Lens: the Britto site (and nothing else) may read the orders kept on this phone.
         if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
-            siteBridge = new Bridge(new SiteBridgeCore(SpendStore.inDirectory(getFilesDir()))::handle);
+            siteBridge = new Bridge(new SiteBridgeCore(SpendStore.inDirectory(getFilesDir()), AlertWatch.inDirectory(getFilesDir()),
+                    () -> runOnUiThread(this::watchAlerts), () -> AlertJob.notificationsAllowed(this), System::currentTimeMillis)::handle);
             WebViewCompat.addWebMessageListener(web, "BrittoBridge", Collections.singleton(siteOrigin()), siteBridge);
         }
         // The site draws the design's tab bar (Home, Deals, Tracker, Shop, Travel) itself.
@@ -56,6 +60,29 @@ public class MainActivity extends ComponentActivity {
         Ui.backGoesBackInWeb(this, web);
         if (saved != null && web.restoreState(saved) != null) return;
         if (!handle(getIntent())) web.loadUrl(BuildConfig.SITE + "/");
+    }
+
+    /** The site handed over its alert token: check every 15 minutes, and ask once to notify. */
+    private void watchAlerts() {
+        AlertJob.schedule(this);
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[] {Manifest.permission.POST_NOTIFICATIONS}, 1);
+        }
+        checkAlertsNow();
+    }
+
+    private void checkAlertsNow() {
+        new Thread(() -> AlertJob.check(getApplicationContext()), "britto-alerts-now").start();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Opening the app shows any alert that fired since the last check, without waiting.
+        if (AlertWatch.inDirectory(getFilesDir()).token() != null) {
+            AlertJob.schedule(this);
+            checkAlertsNow();
+        }
     }
 
     @Override
