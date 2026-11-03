@@ -35,6 +35,9 @@ export interface Store {
   serverFetch: ServerFetch;
   /** What was measured, when, and what came back. Shown on the stores page. */
   measured: string;
+  /** The store's own search page: {q} = the words (encoded), {slug} = the words joined by "-".
+   * `checked` = the day it was opened in a real browser and showed results; null = not yet. */
+  search: { url: string; checked: string | null };
 }
 
 /** What one read of a product page produced. */
@@ -202,6 +205,8 @@ export interface ProductCard {
   lastCheckedAt: Millis | null;
   /** Deals only: the last 90 days of recorded prices, oldest first, for a sparkline. */
   spark?: { at: Millis; price: Paise | null }[];
+  /** Drops only: the reading before this one (core of "was ₹X, now ₹Y"). */
+  drop?: { from: Paise; fromAt: Millis; at: Millis };
 }
 
 /** Every API error has this body. `code` is stable; `message` is for people. */

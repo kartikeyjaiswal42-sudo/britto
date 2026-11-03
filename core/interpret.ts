@@ -10,10 +10,11 @@
 import { decodeEntities, elementById, textOf } from './html.ts';
 import { jsonLdPath, jsonLdProductNode } from './jsonld.ts';
 import { parseRupees } from './money.ts';
-import { jsonPath, type Field, type ReaderConfig } from './recipe.ts';
+import { jsonPath, type Field, type ListingRule, type ReaderConfig } from './recipe.ts';
 import { innerOf, outerOf, selectAll, selectFirst } from './select.ts';
 import { parseOrderDate, type Order } from './spend.ts';
-import type { Extracted, Offer, StoreId } from './types.ts';
+import { parseProductLink } from './stores.ts';
+import type { Extracted, Offer, Paise, ProductKey, StoreId } from './types.ts';
 
 interface Ctx { html: string; url: string; memo: Map<string, unknown> }
 
@@ -177,6 +178,73 @@ export function readOrders(cfg: ReaderConfig, html: string, url: string): Order[
     out.push({ store: cfg.store, orderId: orderId.slice(0, 64), date, total, items: titles ? [titles.slice(0, 200)] : [] });
   }
   return out;
+}
+
+/** One product on a list page (search results, best-sellers), as that page showed it. */
+export interface Listing {
+  key: ProductKey;
+  store: StoreId;
+  pid: string;
+  /** The product's own canonical address (core/stores.ts), never the list's tracking link. */
+  url: string;
+  title: string;
+  price: Paise | null;
+  mrp: Paise | null;
+  image: string | null;
+}
+export type ListingRead =
+  | { status: 'listed'; items: Listing[] }
+  | { status: 'blocked' | 'not_verified' | 'other_page'; items: [] };
+
+/**
+ * Read a list page with one of the recipe's list rules. Every item must name a product page OF
+ * THIS STORE by its own link; one that does not (an ad for another site, a category tile) is
+ * dropped, and so is a second card for the same product. A price outside the rule's own price
+ * field is never taken, as on product pages.
+ */
+export function readListing(cfg: ReaderConfig, rule: ListingRule | undefined, html: string, url: string): ListingRead {
+  if (!rule || rule.verified == null) return { status: 'not_verified', items: [] };
+  if (!new RegExp(rule.page).test(url)) return { status: 'other_page', items: [] };
+  if (isBlocked(cfg, html)) return { status: 'blocked', items: [] };
+  if (rule.endsAt) {
+    const end = html.indexOf(rule.endsAt);
+    if (end >= 0) html = html.slice(0, end);
+  }
+  const items: Listing[] = [];
+  const seen = new Set<string>();
+  const max = rule.max ?? 30;
+  // Up to twice `max` cards: duplicates and foreign links are dropped after selection.
+  for (const el of selectAll(html, rule.items, max * 2)) {
+    if (items.length >= max) break;
+    const part = outerOf(html, el);
+    if (part == null) continue;
+    const ctx: Ctx = { html: part, url, memo: new Map() };
+    const href = firstOf(rule.link, ctx);
+    const name = firstOf(rule.name, ctx)?.replace(/\s+/g, ' ').trim();
+    if (!href || !name) continue;
+    const brand = rule.brand ? firstOf(rule.brand, ctx)?.replace(/\s+/g, ' ').trim() : null;
+    const title = brand && brand.length <= 60 && !name.toLowerCase().startsWith(brand.toLowerCase()) ? `${brand} ${name}` : name;
+    let abs: string;
+    try { abs = new URL(decodeEntities(href), url).href; } catch { continue; }
+    const parsed = parseProductLink(abs);
+    if (!parsed.ok || parsed.link.store !== cfg.store || seen.has(parsed.link.key)) continue;
+    seen.add(parsed.link.key);
+    const price = rule.price ? parseRupees(firstOf(rule.price, ctx)) : null;
+    const mrp = rule.mrp ? parseRupees(firstOf(rule.mrp, ctx)) : null;
+    const okPrice = price != null && price >= MIN_PRICE ? price : null;
+    const image = rule.image ? firstOf(rule.image, ctx) : null;
+    let img: string | null = null;
+    try { img = image ? new URL(decodeEntities(image), url).href : null; } catch { img = null; }
+    items.push({
+      key: parsed.link.key, store: cfg.store, pid: parsed.link.pid, url: parsed.link.url,
+      title: title.slice(0, 300),
+      price: okPrice,
+      // An M.R.P. at or under the price is no M.R.P. at all.
+      mrp: okPrice != null && mrp != null && mrp > okPrice ? mrp : null,
+      image: img && img.startsWith('https://') ? img : null,
+    });
+  }
+  return { status: 'listed', items };
 }
 
 /**

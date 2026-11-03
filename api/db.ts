@@ -77,6 +77,15 @@ export async function recordObservation(
     );
   }
   const changed = statements.length > 0;
+  if (changed && points.length >= 2) {
+    // "Was ₹X, now ₹Y": the new reading against the one before it, both in stock.
+    const prev = points[points.length - 2];
+    const dropped = obs.inStock && obs.price != null && prev?.inStock === true && prev.price != null && obs.price < prev.price;
+    // A rise or a sell-out ends it; an M.R.P.-only change leaves it alone.
+    const over = !obs.inStock || obs.price == null || (prev?.price != null && obs.price > prev.price);
+    if (dropped) statements.push(db.prepare('INSERT OR REPLACE INTO drops (key, from_price, to_price, from_at, at) VALUES (?, ?, ?, ?, ?)').bind(key, prev!.price, obs.price, prev!.at, now));
+    else if (over) statements.push(db.prepare('DELETE FROM drops WHERE key = ?').bind(key));
+  }
   const sale = saleCheck(points, now);
   // The server's reading may rename a product; an extension report only fills a blank title
   // or image (anyone can send one, and nobody should be able to rename a product).
@@ -305,9 +314,36 @@ export async function similarCheaper(db: D1Database, row: ProductRow, limit = 8)
     .map(card);
 }
 
+/** Drops shown: at least this much cheaper than the reading before, within this window. */
+export const DROPS = { minPct: 0.02, window: 14 * 24 * 3_600_000 } as const;
+
+/** Products now cheaper than at the reading before ("was ₹X, now ₹Y"), biggest drop first. */
+export async function recentDrops(db: D1Database, now: Millis, limit = 24, store?: StoreId): Promise<ProductCard[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT p.*, d.from_price, d.from_at, d.at AS drop_at FROM drops d JOIN products p ON p.key = d.key
+       WHERE p.in_stock = 1 AND p.price = d.to_price AND d.at > ? AND (d.from_price - d.to_price) >= d.from_price * ?
+         ${store ? 'AND p.store = ?' : ''}
+       ORDER BY (d.from_price - d.to_price) * 1.0 / d.from_price DESC LIMIT ?`,
+    )
+    .bind(...[now - DROPS.window, DROPS.minPct, ...(store ? [store] : []), limit])
+    .all<ProductRow & { from_price: number; from_at: number; drop_at: number }>();
+  return results.map((r) => ({ ...card(r), drop: { from: r.from_price, fromAt: r.from_at, at: r.drop_at } }));
+}
+
+/** Cards for these keys, for the ones Britto tracks (any order; unknown keys are left out). */
+export async function cardsFor(db: D1Database, keys: readonly ProductKey[]): Promise<ProductCard[]> {
+  if (!keys.length) return [];
+  const { results } = await db
+    .prepare(`SELECT * FROM products WHERE key IN (${keys.map(() => '?').join(',')})`)
+    .bind(...keys.slice(0, 90))
+    .all<ProductRow>();
+  return results.map(card);
+}
+
 export async function recent(db: D1Database, limit = 24): Promise<ProductCard[]> {
   const { results } = await db
-    .prepare('SELECT * FROM products WHERE title IS NOT NULL ORDER BY created_at DESC LIMIT ?')
+    .prepare('SELECT * FROM products WHERE title IS NOT NULL AND last_checked_at IS NOT NULL ORDER BY created_at DESC LIMIT ?')
     .bind(limit)
     .all<ProductRow>();
   return results.map(card);
@@ -315,7 +351,7 @@ export async function recent(db: D1Database, limit = 24): Promise<ProductCard[]>
 
 export async function popular(db: D1Database, limit = 24): Promise<ProductCard[]> {
   const { results } = await db
-    .prepare('SELECT * FROM products WHERE title IS NOT NULL ORDER BY views DESC, created_at DESC LIMIT ?')
+    .prepare('SELECT * FROM products WHERE title IS NOT NULL AND last_checked_at IS NOT NULL ORDER BY views DESC, created_at DESC LIMIT ?')
     .bind(limit)
     .all<ProductRow>();
   return results.map(card);

@@ -178,3 +178,27 @@ CREATE TABLE IF NOT EXISTS coupon_votes (
   worked INTEGER NOT NULL,                   -- 1 it worked, 0 it did not
   PRIMARY KEY (store, code, voter)
 ) WITHOUT ROWID;
+
+-- Store search answers (api/listing.ts), reused for 6 h so the same words do not send a second
+-- request. The prices in them are what the store's search page showed, never a product's history.
+CREATE TABLE IF NOT EXISTS search_cache (
+  store TEXT NOT NULL,
+  q     TEXT NOT NULL,
+  at    INTEGER NOT NULL,
+  json  TEXT NOT NULL,
+  PRIMARY KEY (store, q)
+) WITHOUT ROWID;
+CREATE INDEX IF NOT EXISTS search_cache_at ON search_cache (at);
+
+-- A product whose latest reading is CHEAPER than the reading before it, both in stock: "was ₹X,
+-- now ₹Y". Written with the price row (api/db.ts recordObservation); removed when the price goes
+-- back up or the product goes out of stock. Says nothing about the usual price (that is
+-- products.real_pct, which needs a week of history).
+CREATE TABLE IF NOT EXISTS drops (
+  key        TEXT PRIMARY KEY,
+  from_price INTEGER NOT NULL,
+  to_price   INTEGER NOT NULL,
+  from_at    INTEGER NOT NULL,             -- when the earlier price was first seen
+  at         INTEGER NOT NULL              -- when the cheaper price was first seen
+);
+CREATE INDEX IF NOT EXISTS drops_at ON drops (at);

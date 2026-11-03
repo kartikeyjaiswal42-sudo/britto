@@ -12,6 +12,9 @@
 //   2. Early stop: whenever readerEnough(prefix) is true, readPage(prefix) equals
 //      readPage(whole page), for every 16 KB prefix (the server stops downloading there).
 //   3. Every fixture has an entry, and every entry a fixture.
+// List pages (an entry with "list": "search" | "popular") are read with that list rule: the
+// item count, each pinned item's price, M.R.P. and name, and rule 1 for every pinned price
+// (deleting that card's price element takes its price away).
 // Offers are compared exactly; a priced page whose recipe reads offers must list them.
 // Prints "ok <fixture>" or "DIFF <fixture> <what>: …" lines; exits 1 on any DIFF.
 import { readFileSync, readdirSync } from 'node:fs';
@@ -20,7 +23,7 @@ import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { BUNDLED_READERS } from '../readers/index.ts';
 import { configVersion, validateReader } from '../core/recipe.ts';
-import { fieldValue, readerEnough, readPage } from '../core/interpret.ts';
+import { fieldValue, readerEnough, readListing, readPage } from '../core/interpret.ts';
 import { confirmIdentity } from '../core/extract.ts';
 import { outerOf, selectFirst } from '../core/select.ts';
 import { parseProductLink } from '../core/stores.ts';
@@ -142,6 +145,33 @@ function deletionChangesReading(cfg, html, url, base, nextTarget) {
   return false;
 }
 
+function checkList(f, want, cfg, html, r) {
+  const rule = cfg.domRecipe[want.list];
+  const got = readListing(cfg, rule, html, want.url);
+  const before = diffs;
+  if (got.status !== 'listed') { diff(f, `${want.list}: expected a list, got ${got.status}`); return; }
+  if (got.items.length !== want.count) diff(f, `${want.list}: expected ${want.count} items, got ${got.items.length}`);
+  for (const w of want.items) {
+    const it = got.items.find((i) => i.pid === w.pid);
+    if (!it) { diff(f, `${w.pid}: not in the list`); continue; }
+    for (const k of ['price', 'mrp']) if (it[k] !== w[k]) diff(f, `${w.pid} ${k}: expected ${fmt(w[k])}, got ${fmt(it[k])}`);
+    if (!it.title.startsWith(w.title)) diff(f, `${w.pid} title: expected to start ${fmt(w.title)}, got ${fmt(it.title)}`);
+    if (it.price == null || !rule.price) continue;
+    // Rule 1 for lists: cut this card's price element out and its price must go.
+    const cardStart = html.indexOf(`data-asin="${w.pid}"`);
+    let page = html;
+    for (const fld of rule.price) {
+      const rel = selectFirst(page.slice(cardStart), fld.selector.join(' '));
+      if (!rel) continue;
+      const outer = outerOf(page.slice(cardStart), rel) ?? rel.open;
+      page = cut(page, cardStart + rel.start, cardStart + rel.start + outer.length);
+    }
+    const after = readListing(cfg, rule, page, want.url).items.find((i) => i.pid === w.pid);
+    if (after && after.price === it.price) diff(f, `${w.pid}: deleting its price element left the price at ${it.price} (it comes from somewhere the recipe does not name)`);
+  }
+  if (diffs === before) console.log(`  ok  ${f}: ${want.list} list, ${got.items.length} items · ${r.origin} ${r.version}`);
+}
+
 for (const f of files) {
   const want = expected[f];
   if (!want) continue;
@@ -149,6 +179,7 @@ for (const f of files) {
   if (!r) { diff(f, `no reader for ${want.store}.${want.device ?? 'desktop'}`); continue; }
   const cfg = r.config;
   const html = readFileSync(join(FIXTURES, f), 'utf8');
+  if (want.list) { checkList(f, want, cfg, html, r); continue; }
   const got = reading(cfg, html, want.url);
   const before = diffs;
   for (const k of ['status', 'price', 'mrp', 'inStock', 'pid']) {

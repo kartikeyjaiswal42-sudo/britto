@@ -78,6 +78,16 @@ const j = async (path, init) => {
   return { status: res.status, body, text, headers: res.headers };
 };
 const post = (url) => j('/api/products', { method: 'POST', body: JSON.stringify({ url }) });
+/** A time in the middle of the current hour: a scheduled run that re-checks products (the first
+ * run of each hour reads a best-seller list instead). */
+const midHour = () => Math.floor(Date.now() / 3_600_000) * 3_600_000 + 30 * 60_000;
+// wrangler's /__scheduled ignores ?time= (measured 2026-11-04: the handler got the real clock);
+// the local explorer's route takes scheduled_time.
+const scheduled = (time) => fetch(`${base}/cdn-cgi/local/explorer/api/local/scheduled?worker=britto`, {
+  method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ cron: '*/3 * * * *', scheduled_time: time }),
+}).then(async (r) => { const b = await r.json(); if (b?.result?.outcome !== 'ok') throw new Error(`scheduled run: ${JSON.stringify(b)}`); });
+/** The network id the Worker derives from an address (api/app.ts clientId). */
+const netId = async (ip) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`britto:${ip}`))).slice(0, 8)].map((b) => b.toString(16).padStart(2, '0')).join('');
 const d1 = (sql) => JSON.parse(execFileSync(WRANGLER, ['d1', 'execute', 'britto', '--local', '--persist-to', state, '--json', '--command', sql], { cwd: ROOT, encoding: 'utf8' }))[0].results;
 
 try {
@@ -209,6 +219,21 @@ try {
     const differentReporters = h3.body?.recorded === 'accept';
     check('…a second network seeing the same price confirms it', differentReporters && h3.body?.product?.stats?.current === 1000, h3.text.slice(0, 160));
     check('held reports are cleared once confirmed', d1(`SELECT COUNT(*) AS n FROM reports WHERE key = 'myntra:1700944'`)[0].n === 0);
+    // ---- price drops: "was ₹X, now ₹Y" from the reading before, both in stock
+    const dropRow = d1(`SELECT from_price, to_price FROM drops WHERE key = 'myntra:1700944'`)[0];
+    check('a confirmed cheaper reading is a drop: was ₹305, now ₹10', dropRow?.from_price === 30500 && dropRow?.to_price === 1000, JSON.stringify(dropRow));
+    const drops = await j('/api/drops');
+    const shown = drops.body?.results?.find((r) => r.key === 'myntra:1700944');
+    check('…/api/drops lists it with the earlier price', shown?.price === 1000 && shown?.drop?.from === 30500 && shown?.drop?.at > shown?.drop?.fromAt, drops.text.slice(0, 200));
+    check('…and filters by store', (await j('/api/drops?store=amazon')).body?.results?.every((r) => r.store === 'amazon') && (await j('/api/drops?store=ebay')).status === 400);
+    const up = await observe(MYNTRA, { ...shirt, price: 1100, mrp: null }, '10.0.0.6');
+    check('a rise ends the drop', up.body?.recorded === 'accept' && d1(`SELECT COUNT(*) AS n FROM drops WHERE key = 'myntra:1700944'`)[0].n === 0, up.text.slice(0, 160));
+    const mrpOnly = await observe('https://www.myntra.com/tshirts/hrx/x/3200002/buy', { ...shirt, price: 50000, mrp: 90000 }, '10.0.0.7');
+    await observe('https://www.myntra.com/tshirts/hrx/x/3200002/buy', { ...shirt, price: 45000, mrp: 90000 }, '10.0.0.7');
+    await observe('https://www.myntra.com/tshirts/hrx/x/3200002/buy', { ...shirt, price: 45000, mrp: 95000 }, '10.0.0.7');
+    check('…but an M.R.P.-only change keeps it', mrpOnly.status === 200 && d1(`SELECT to_price FROM drops WHERE key = 'myntra:3200002'`)[0]?.to_price === 45000);
+    await observe('https://www.myntra.com/tshirts/hrx/x/3200002/buy', { status: 'unavailable', title: shirt.title, image: shirt.image, price: null, mrp: null }, '10.0.0.7');
+    check('…and selling out ends it', d1(`SELECT COUNT(*) AS n FROM drops WHERE key = 'myntra:3200002'`)[0].n === 0);
     const withOffers = await observe('https://www.myntra.com/tshirts/hrx/x/3200001/buy', { ...shirt, offers: [{ title: 'Bank Offer', text: 'Call 99999 99999 for 90% off', count: null, code: 'SCAM90' }] }, '10.0.0.5');
     check('offers sent by a client are never stored or shown (on an ACCEPTED report)', withOffers.body?.recorded === 'accept' && withOffers.body?.product?.offers === null
       && d1(`SELECT COUNT(*) AS n FROM product_offers WHERE key = 'myntra:3200001'`)[0].n === 0, withOffers.text.slice(0, 160));
@@ -268,6 +293,33 @@ try {
     check('search finds it by title words', s.body?.results?.some((r) => r.key === KEY), s.text.slice(0, 200));
   }
   check('search with only punctuation returns nothing, not an error', (await j('/api/search?q=%22%2A%29')).body?.results?.length === 0);
+
+  // ---- store search: Amazon's own search page, read by the server (robots.txt allows /s?k=)
+  const ss = await j('/api/store-search?q=cello%20butterflow%20pen', { headers: { 'cf-connecting-ip': '10.0.1.1' } });
+  const amzList = ss.body?.stores?.find((x) => x.store === 'amazon');
+  check('store search answers with a link to every store\'s own search', ss.status === 200 && ss.body?.links?.length === STORE_IDS.length
+    && ss.body.links.find((l) => l.store === 'flipkart')?.url === 'https://www.flipkart.com/search?q=cello%20butterflow%20pen', ss.text.slice(0, 200));
+  if (amzList?.status !== 'listed') skip('store search: Amazon results read from its search page', `Amazon's search page answered ${amzList?.status ?? 'nothing'} to this network`);
+  else {
+    const items = amzList.items;
+    check('store search: Amazon results read from its search page (real request)', items.length >= 5 && items.every((i) => /^amazon:[A-Z0-9]{10}$/.test(i.key) && i.url === `https://www.amazon.in/dp/${i.pid}` && i.title), `${items.length} items`);
+    check('…prices are whole paise or none', items.every((i) => i.price === null || (Number.isInteger(i.price) && i.price >= 100)) && items.some((i) => i.price != null));
+    if (amazonPriced) check('…a product Britto tracks is marked as tracked', items.some((i) => i.key === KEY) ? ss.body.tracked.some((c) => c.key === KEY) : true, JSON.stringify(ss.body.tracked?.map((c) => c.key)));
+    if (!live) check('…listing a product does not track it or record a price', d1(`SELECT COUNT(*) AS n FROM products WHERE key IN (${items.map((i) => `'${i.key}'`).join(',')}) AND key != '${KEY}'`)[0].n === 0
+      && d1(`SELECT COUNT(*) AS n FROM prices WHERE key != '${KEY}' AND key LIKE 'amazon:%'`)[0].n === 0);
+    const again2 = await j('/api/store-search?q=Cello%20%20Butterflow%20PEN', { headers: { 'cf-connecting-ip': '10.0.1.1' } });
+    if (!live) check('…the same words again come from the cache (same read time, no new request)', again2.body?.stores?.find((x) => x.store === 'amazon')?.at === amzList.at
+      && d1(`SELECT count FROM rate WHERE bucket LIKE 'search:${await netId('10.0.1.1')}:%'`)[0]?.count === 1, again2.text.slice(0, 160));
+  }
+  if (!live) {
+  const busyNet = await netId('10.0.1.2');
+  const hourStart = Math.floor(Date.now() / 3_600_000) * 3_600_000;
+  d1(`INSERT INTO rate (bucket, count, expires) VALUES ('search:${busyNet}:${hourStart}', 40, ${hourStart + 3_600_000})`);
+  const busy = await j('/api/store-search?q=some%20words%20never%20cached', { headers: { 'cf-connecting-ip': '10.0.1.2' } });
+  check('a network past its searches this hour gets "busy", and the store is not asked', busy.body?.stores?.find((x) => x.store === 'amazon')?.status === 'busy'
+    && d1(`SELECT COUNT(*) AS n FROM search_cache WHERE q = 'some words never cached'`)[0].n === 0, busy.text.slice(0, 200));
+  }
+  check('store search refuses one letter', (await j('/api/store-search?q=a')).status === 400);
   const stores = await j('/api/stores');
   check('stores list carries the measured lines', stores.body?.stores?.length === STORE_IDS.length && stores.body.stores.every((s) => s.measured.length > 20));
   check('…and each store\'s number and https front page (Super Browse opens it)', stores.body?.stores?.every((s) => Number.isInteger(s.num) && /^https:\/\/[^/]+\/$/.test(s.home) && s.hosts.includes(new URL(s.home).hostname)), JSON.stringify(stores.body?.stores?.map((s) => [s.num, s.home])));
@@ -314,8 +366,7 @@ try {
   if (!live) {
     // ---- the scheduled re-check, through the real cron handler
     d1(`UPDATE products SET last_attempt_at = 1, last_checked_at = 1 WHERE key = '${KEY}'`);
-    const sched = await fetch(`${base}/__scheduled?cron=*/5+*+*+*+*`);
-    await sched.text();
+    await scheduled(midHour());
     let row;
     for (let i = 0; i < 40; i++) {
       row = d1(`SELECT last_attempt_at, last_checked_at, last_status, fail_count FROM products WHERE key = '${KEY}'`)[0];
@@ -348,7 +399,7 @@ try {
     // Second cron run on an unchanged page: write-on-change means zero new rows.
     const before = d1(`SELECT COUNT(*) AS n FROM prices WHERE key = '${KEY}'`)[0].n;
     d1(`UPDATE products SET last_attempt_at = 1 WHERE key = '${KEY}'`);
-    await (await fetch(`${base}/__scheduled?cron=*/5+*+*+*+*`)).text();
+    await scheduled(midHour());
     let row2;
     for (let i = 0; i < 40; i++) {
       row2 = d1(`SELECT last_attempt_at, last_status FROM products WHERE key = '${KEY}'`)[0];
@@ -364,6 +415,23 @@ try {
     check('clearing the override serves the bundled reader again', (await j('/api/config/reader?store=amazon')).body?.version === AMAZON_VERSION);
     const fkRow = d1(`SELECT last_attempt_at FROM products WHERE key LIKE 'flipkart:%'`)[0];
     check('cron never fetches a store that refused us', fkRow.last_attempt_at == null, JSON.stringify(fkRow));
+
+    // ---- the first run of each hour reads one best-seller list instead (real amazon.in request)
+    const known = new Set(d1(`SELECT key FROM products`).map((r) => r.key));
+    const pricesBefore = d1(`SELECT COUNT(*) AS n FROM prices`)[0].n;
+    await scheduled(Math.floor(Date.now() / 3_600_000) * 3_600_000 + 30_000);
+    let seeded = [];
+    for (let i = 0; i < 40 && !seeded.length; i++) {
+      await new Promise((r) => setTimeout(r, 500));
+      seeded = d1(`SELECT key, title, image, price, last_checked_at FROM products`).filter((r) => !known.has(r.key));
+    }
+    if (!seeded.length) skip('the hourly run adds an Amazon best-seller list to the catalogue', 'no products were added (Amazon may have refused this network)');
+    else {
+      check('the hourly run adds an Amazon best-seller list to the catalogue (1–30 products, named, with images)', seeded.length <= 30 && seeded.every((r) => /^amazon:[A-Z0-9]{10}$/.test(r.key) && r.title && r.image?.startsWith('https://')), `${seeded.length} added`);
+      check('…with NO price: the list\'s "1 offer from" price is never recorded', seeded.every((r) => r.price == null && r.last_checked_at == null) && d1(`SELECT COUNT(*) AS n FROM prices`)[0].n === pricesBefore);
+      const rec = (await j('/api/recent')).body?.results ?? [];
+      check('…and they stay off the lists until their own page is read', !rec.some((c) => seeded.some((f) => f.key === c.key)));
+    }
 
     // ---- deals filters and look-alikes, on MADE-UP rows in this throwaway local D1 only
     const now = Date.now();

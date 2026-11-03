@@ -1,8 +1,8 @@
 // Working UI for Britto until the Claude Design screens replace it. Every string from a
 // store (titles, image URLs) goes in via textContent / setAttribute — never innerHTML.
 import {
-  ago, connectTelegram, date, deletePush, disconnectTelegram, getConfig, getDeals, getMe, getPopular, getProduct, getRecent, getStores,
-  pct, removeAlert, rupees, savePush, searchProducts, sendTest, setAlert, toPaise, trackProduct, getGroceryPlatforms, getSimilar, voteCoupon,
+  ago, connectTelegram, date, deletePush, disconnectTelegram, getConfig, getDeals, getDrops, getMe, getPopular, getProduct, getRecent, getStores,
+  pct, removeAlert, rupees, savePush, searchProducts, sendTest, setAlert, storeSearch, toPaise, trackProduct, getGroceryPlatforms, getSimilar, voteCoupon,
 } from './api.js';
 import { drawChart } from './chart.js';
 import { mergeOrders, summarize } from './spend.js';
@@ -78,16 +78,47 @@ document.getElementById('search-form').addEventListener('submit', (e) => {
 
 const STORE_NAMES = { amazon: 'Amazon', flipkart: 'Flipkart', myntra: 'Myntra', vijaysales: 'Vijay Sales', reliancedigital: 'Reliance Digital', nykaa: 'Nykaa', shopclues: 'ShopClues' };
 
+/** Amazon serves any size of its images: a card needs ~400 px, not the 1,500 px original. */
+function thumbUrl(src) {
+  return /^https:\/\/m\.media-amazon\.com\/images\/I\/[^/]+\.[a-z]+$/i.test(src ?? '') ? src.replace(/\._[^/]*_\.([a-z]+)$/i, '._SL400_.$1').replace(/(\/I\/[^./]+)\.([a-z]+)$/i, '$1._SL400_.$2') : src;
+}
+
 function productCard(c) {
-  const badge = c.saleStatus === 'real_drop' && c.realPct != null ? h('span', { class: 'badge good', title: 'below its own usual price' }, `↓ ${pct(c.realPct)} below usual`) : null;
+  const badge = c.drop ? h('span', { class: 'badge good', title: `was ${rupees(c.drop.from)} until ${date(c.drop.at)}` }, `↓ ${pct((c.drop.from - c.price) / c.drop.from)} since ${date(c.drop.fromAt)}`)
+    : c.saleStatus === 'real_drop' && c.realPct != null ? h('span', { class: 'badge good', title: 'below its own usual price' }, `↓ ${pct(c.realPct)} below usual`) : null;
   return h('a', { class: 'card', href: `/p/${encodeURIComponent(c.key)}`, 'data-nav': true },
-    h('div', { class: 'thumb' }, c.image ? h('img', { src: c.image, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }) : null, badge),
+    h('div', { class: 'thumb' }, c.image ? h('img', { src: thumbUrl(c.image), alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }) : null, badge),
     h('div', { class: 'card-body' },
       h('span', { class: 'store' }, STORE_NAMES[c.store] ?? c.store),
       h('span', { class: 'title' }, c.title ?? 'Waiting for first price'),
       h('span', { class: 'price' }, c.inStock === false ? 'Out of stock' : rupees(c.price),
-        c.mrp && c.price && c.mrp > c.price ? h('s', { class: 'mrp' }, rupees(c.mrp)) : null)));
+        c.drop ? h('s', { class: 'mrp', title: 'our reading before' }, rupees(c.drop.from))
+          : c.mrp && c.price && c.mrp > c.price ? h('s', { class: 'mrp' }, rupees(c.mrp)) : null)));
 }
+
+/** A product from a store's own search page: its price is what that page showed, and opening
+ * it starts Britto's history (the product's own page is read then). */
+function listedCard(item, tracked) {
+  const t = tracked.get(item.key);
+  const href = t ? `/p/${encodeURIComponent(item.key)}` : `/p/${encodeURIComponent(item.key)}?add=1`;
+  const badge = t?.saleStatus === 'real_drop' && t.realPct != null ? h('span', { class: 'badge good' }, `↓ ${pct(t.realPct)} below usual`)
+    : t ? h('span', { class: 'badge' }, 'History on Britto') : null;
+  return h('a', { class: 'card', href, 'data-nav': true },
+    h('div', { class: 'thumb' }, item.image ? h('img', { src: thumbUrl(item.image), alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }) : null, badge),
+    h('div', { class: 'card-body' },
+      h('span', { class: 'store' }, STORE_NAMES[item.store] ?? item.store),
+      h('span', { class: 'title' }, item.title),
+      h('span', { class: 'price' }, item.price == null ? 'See price' : rupees(item.price),
+        item.mrp ? h('s', { class: 'mrp' }, rupees(item.mrp)) : null),
+      h('span', { class: 'card-cta' }, t ? 'See price history' : 'Check price history')));
+}
+
+/** Buttons that open each store's own search for these words. */
+function storeButtons(links) {
+  return h('div', { class: 'store-search' }, links.map((l) => h('a', { class: 'store-chip', href: l.url, target: '_blank', rel: 'noopener noreferrer nofollow', 'data-store': l.store },
+    h('span', { class: 'mono', 'data-mono': monogramOf(l.name) }), l.name)));
+}
+const monogramOf = (name) => name.replace(/\.in$/, '').split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 
 function grid(cards, empty) {
   return cards.length ? h('div', { class: 'grid' }, cards.map(productCard)) : h('p', { class: 'muted' }, empty);
@@ -106,11 +137,12 @@ function linkForm(initial = '') {
   return h('div', {}, form, status);
 }
 
-async function addByLink(link, status) {
+async function addByLink(link, status, replace = false) {
   if (status) status.textContent = 'Checking…';
   try {
     const { product } = await trackProduct(link);
-    go(`/p/${encodeURIComponent(product.key)}`);
+    const path = `/p/${encodeURIComponent(product.key)}`;
+    if (replace) { history.replaceState(null, '', path); route(); } else go(path);
   } catch (e) {
     if (status) status.textContent = e.message;
     else alert(e.message);
@@ -148,16 +180,27 @@ async function home() {
       shortcut('Spend Lens', '/spend', 'wallet', 'tint-violet'),
       shortcut('Stores', '/stores', 'store', 'tint-gold'),
       shortcut('Grocery', '/grocery', 'basket', 'tint-pink')),
-    h('section', {}, h('div', { class: 'section-head' }, h('h2', {}, 'Biggest real price drops'), h('a', { href: '/deals', 'data-nav': true }, 'View all')),
-      h('p', { class: 'section-note' }, 'Judged against each product’s own usual price, not its M.R.P.'), h('div', { id: 'deals' }, h('p', { class: 'muted' }, 'Loading…'))),
-    h('section', {}, h('div', { class: 'section-head' }, h('h2', {}, 'Recently tracked')), h('div', { id: 'recent' }, h('p', { class: 'muted' }, 'Loading…'))));
+    h('section', { class: 'quick' }, h('h2', {}, 'Search Amazon with price history'),
+      h('div', { class: 'chips' }, QUICK.map((w) => h('a', { class: 'chip', href: `/search?q=${encodeURIComponent(w)}`, 'data-nav': true }, w)))),
+    h('section', { id: 'drops-sec' }, h('div', { class: 'section-head' }, h('h2', {}, 'Price dropped'), h('a', { href: '/deals', 'data-nav': true }, 'View all')),
+      h('p', { class: 'section-note' }, 'Cheaper now than at our reading before, and still in stock.'), h('div', { id: 'drops' }, h('p', { class: 'muted' }, 'Loading…'))),
+    h('section', { id: 'deals-sec', hidden: true }, h('div', { class: 'section-head' }, h('h2', {}, 'Biggest real price drops'), h('a', { href: '/deals', 'data-nav': true }, 'View all')),
+      h('p', { class: 'section-note' }, 'Below each product’s own usual price over 90 days, not its M.R.P.'), h('div', { id: 'deals' })),
+    h('section', {}, h('div', { class: 'section-head' }, h('h2', {}, 'Recently checked')), h('div', { id: 'recent' }, h('p', { class: 'muted' }, 'Loading…'))));
   config().then((cfg) => {
     if (cfg?.telegram) put(document.getElementById('bot-tip'), 'On your phone? Send any product link to ', botLink(cfg.telegram.bot), ' on Telegram. No app or extension needed.');
   });
-  const [d, r] = await Promise.allSettled([getDeals(), getRecent()]);
-  put(document.getElementById('deals'), d.status === 'fulfilled' ? row(d.value.results, 'No confirmed drops yet. A drop is only confirmed after 7 days of watching a product.') : h('p', { class: 'error' }, d.reason.message));
+  const [dr, d, r] = await Promise.allSettled([getDrops(), getDeals(), getRecent()]);
+  put(document.getElementById('drops'), dr.status === 'fulfilled' ? row(dr.value.results, 'No drops in the last two weeks yet: Britto reads each product about twice a day, so they appear as prices change.') : h('p', { class: 'error' }, dr.reason.message));
+  if (d.status === 'fulfilled' && d.value.results.length) {
+    document.getElementById('deals-sec').hidden = false;
+    put(document.getElementById('deals'), row(d.value.results, ''));
+  }
   put(document.getElementById('recent'), r.status === 'fulfilled' ? grid(r.value.results, 'Nothing tracked yet. Paste a link above.') : h('p', { class: 'error' }, r.reason.message));
 }
+
+/** Quick searches on the home page (Amazon's own results, read by our server). */
+const QUICK = ['Earbuds', 'Smartwatch', 'iPhone 17', 'Air fryer', 'Running shoes', 'Pressure cooker', 'Power bank', 'Trimmer', 'Backpack', 'Face wash'];
 
 const VERDICT_CLASS = { buy: 'good', fair: 'neutral', wait: 'bad', too_early: 'neutral', unavailable: 'neutral' };
 const SALE_TITLE = {
@@ -171,6 +214,8 @@ const SALE_CLASS = { real_drop: 'good', hike_then_drop: 'bad', no_real_drop: 'ne
 
 async function productPage(key) {
   put(app, h('p', { class: 'muted' }, 'Loading…'));
+  // "?add=1" (a search result, a britto.app/<link> address): track it, or find it tracked.
+  if (new URLSearchParams(location.search).has('add') && keyToLink(key)) return addByLink(keyToLink(key), null, true);
   let view;
   try {
     view = (await getProduct(key)).product;
@@ -215,6 +260,7 @@ async function productPage(key) {
           h('h2', {}, SALE_TITLE[view.sale.status]),
           h('p', {}, view.sale.explanation),
           view.sale.claimedPct != null ? h('p', { class: 'small' }, `Claimed: ${pct(view.sale.claimedPct)} off M.R.P. · Real: ${view.sale.realPct == null ? 'not known yet' : pct(view.sale.realPct) + ' vs usual'}`) : null)),
+      compareSection(view),
       offersSection(view),
       h('section', {}, h('div', { class: 'chart-head' }, h('h2', {}, 'Price history'), rangeBar), chartHost),
       alertBox(view),
@@ -231,6 +277,28 @@ async function productPage(key) {
     put(document.getElementById('similar'), h('h2', {}, 'Similar, and cheaper'), h('p', { class: 'muted small' }, basis), grid(results, ''));
   }).catch(() => {});
   if (location.hash === '#alert') document.getElementById('alert')?.scrollIntoView();
+}
+
+/** The same product on the other stores: their own search pages for its first words. Britto
+ * cannot say it is the same item (stores name products differently), so these are searches.
+ * The search addresses come from the server (core/stores.ts), never a copy here. */
+function compareSection(view) {
+  const words = (view.title ?? '').replace(/[|,(:].*$/, '').replace(/[^\p{L}\p{N}\s.+-]/gu, ' ').split(/\s+/).filter(Boolean).slice(0, 6).join(' ');
+  if (words.length < 3) return null;
+  const box = h('section', { class: 'compare', id: 'compare' });
+  storesOnce().then((stores) => {
+    const links = stores.filter((s) => s.id !== view.store.id).map((s) => ({ store: s.id, name: s.name, url: searchLink(s, words) }));
+    put(box, h('h2', {}, 'Check other stores'),
+      h('p', { class: 'muted small' }, `Searches for “${words}”. Stores name products differently, so check it is the same item.`),
+      storeButtons(links));
+  }).catch(() => {});
+  return box;
+}
+
+let storesCache = null;
+const storesOnce = () => (storesCache ??= getStores().then((r) => r.stores).catch((e) => { storesCache = null; throw e; }));
+function searchLink(store, words) {
+  return store.search.url.replace('{q}', encodeURIComponent(words)).replace('{slug}', encodeURIComponent(words.toLowerCase().replace(/ /g, '-')));
 }
 
 // Offers the store's own page showed when OUR server last read it (BLUEPRINT §15): quoted as
@@ -371,15 +439,41 @@ function keyToLink(key) {
   return null;
 }
 
+const STATUS_NOTE = {
+  busy: 'You have used this hour’s store searches from your network. Tracked products are still shown, and the store buttons below always work.',
+  blocked: 'Amazon did not show our search its results just now. Use the store buttons below.',
+  failed: 'Amazon did not answer our search just now. Try again in a minute, or use the store buttons below.',
+};
+
 async function searchPage(q) {
-  put(app, h('h1', {}, `Results for “${q}”`), h('p', { class: 'muted' }, 'Searching…'));
+  const box = document.querySelector('#search-form input');
+  if (box && box !== document.activeElement) box.value = q;
+  const tracked = h('section', { id: 'tracked' });
+  const live = h('section', { id: 'live' }, h('div', { class: 'section-head' }, h('h2', {}, 'On Amazon.in now')), h('div', { class: 'grid skeleton' }, Array.from({ length: 6 }, () => h('div', { class: 'card ghost' }))));
+  const others = h('section', { id: 'others' });
+  put(app, h('h1', {}, `Results for “${q}”`), tracked, live, others);
+  searchProducts(q).then(({ results }) => {
+    if (results.length) put(tracked, h('div', { class: 'section-head' }, h('h2', {}, 'With price history on Britto')), row(results, ''));
+  }).catch(() => {});
+  let res;
   try {
-    const { results } = await searchProducts(q);
-    put(app, h('h1', {}, `Results for “${q}”`),
-      grid(results, 'Nothing we track matches that. Paste the product’s link to start tracking it.'), linkForm());
+    res = await storeSearch(q);
   } catch (e) {
-    put(app, h('h1', {}, 'Search failed'), h('p', { class: 'error' }, e.message));
+    put(live, h('p', { class: 'error' }, e.message));
+    return;
   }
+  const known = new Map(res.tracked.map((c) => [c.key, c]));
+  for (const s of res.stores) {
+    put(live, h('div', { class: 'section-head' }, h('h2', {}, `On ${s.name} now`)),
+      s.status === 'listed'
+        ? [h('p', { class: 'section-note' }, `Prices as ${s.name}’s search page showed them ${ago(s.at)}; the product’s own page can differ. Tap one to see its price history: Britto starts watching it then.`),
+          s.items.length ? h('div', { class: 'grid' }, s.items.map((i) => listedCard(i, known))) : h('p', { class: 'muted' }, `${s.name} found nothing for that.`)]
+        : h('p', { class: 'notice' }, STATUS_NOTE[s.status]));
+  }
+  if (!res.stores.length) put(live);
+  put(others, h('div', { class: 'section-head' }, h('h2', {}, 'Search other stores')),
+    h('p', { class: 'section-note' }, inApp ? 'Opens the store inside Britto: its product pages show their price history.' : 'Opens the store’s own search. With the Britto extension or app, its product pages show their price history.'),
+    storeButtons(res.links.filter((l) => l.store !== 'amazon' || !res.stores.some((s) => s.store === 'amazon' && s.status === 'listed'))));
 }
 
 /** A tiny step line of a deal's last 90 days, so the drop can be checked by eye. */
@@ -407,7 +501,7 @@ async function dealsPage() {
   const params = new URLSearchParams(location.search);
   const filter = { store: params.get('store') ?? '', min: Number(params.get('min')) || 0 };
   put(app, h('h1', {}, 'Real price drops'), h('p', { class: 'muted' }, 'Loading…'));
-  const [{ stores }, d, p] = await Promise.all([getStores(), getDeals(filter), getPopular()]);
+  const [{ stores }, d, p, dr] = await Promise.all([getStores(), getDeals(filter), getPopular(), getDrops(filter.store || undefined)]);
   const apply = (next) => go(`/deals?${new URLSearchParams(Object.entries({ ...filter, ...next }).filter(([, v]) => v)).toString()}`);
   const storeSelect = h('select', { 'aria-label': 'Store', onchange: (e) => apply({ store: e.target.value }) },
     h('option', { value: '' }, 'All stores'), stores.map((s) => h('option', { value: s.id, selected: s.id === filter.store }, s.name)));
@@ -424,6 +518,9 @@ async function dealsPage() {
     h('p', { class: 'muted' }, 'Only products at least 5% below their own usual price (90-day time-weighted median, M.R.P. ignored), and not raised just before the “sale”. The line under each shows its last 90 days.'),
     h('div', { class: 'filters' }, storeSelect, minSelect),
     cards.length ? h('div', { class: 'grid' }, cards) : h('p', { class: 'muted' }, 'No confirmed drops for this filter yet. A drop is only confirmed after a week of watching a product.'),
+    h('div', { class: 'section-head' }, h('h2', {}, 'Price dropped since our reading before')),
+    h('p', { class: 'section-note' }, 'Cheaper now than at the reading before, in the last two weeks. This says nothing about the usual price: that takes a week of history.'),
+    grid(dr.results, 'None in the last two weeks yet.'),
     h('h2', {}, 'Most viewed'), grid(p.results, 'Nothing yet.'));
 }
 

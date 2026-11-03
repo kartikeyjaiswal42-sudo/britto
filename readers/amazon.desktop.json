@@ -2,7 +2,7 @@
   "schema": 1,
   "store": "amazon",
   "device": "desktop",
-  "revision": 2,
+  "revision": 3,
   "verified": "2026-10-26",
   "reportsPid": true,
   "domRecipe": {
@@ -45,6 +45,45 @@
       "count": { "selector": [".vsx-offers-count"], "attribute": "textContent" },
       "max": 8
     },
-    "earlyStop": { "complete": ["productTitle", "availability"], "thenUnavailableOr": ["corePriceDisplay_desktop_feature_div", "vsxoffers_feature_div"] }
+    "earlyStop": { "complete": ["productTitle", "availability"], "thenUnavailableOr": ["corePriceDisplay_desktop_feature_div", "vsxoffers_feature_div"] },
+    "search": {
+      "verified": "2026-11-03",
+      "url": "https://www.amazon.in/s?k={q}",
+      "page": "^https://www\\.amazon\\.in/s\\?k=",
+      "items": "div[data-component-type=s-search-result]",
+      "endsAt": "s-pagination-strip",
+      "link": [{"selector": ["a[href*=\"/dp/\"]"], "attribute": "href"}],
+      "name": [{"selector": ["h2[aria-label]"], "attribute": "attr:aria-label"}, {"selector": ["h2"], "attribute": "textContent"}],
+      "brand": [{"selector": ["h2.a-size-mini"], "attribute": "textContent"}],
+      "price": [{"selector": [".a-price[data-a-color=base]", ".a-offscreen"], "attribute": "textContent", "squash": true, "regex": ["([\\d,]+(?:\\.\\d{1,2})?)"]}],
+      "mrp": [{"selector": [".a-price.a-text-price", ".a-offscreen"], "attribute": "textContent", "squash": true, "regex": ["([\\d,]+(?:\\.\\d{1,2})?)"]}],
+      "image": [{"selector": ["img.s-image"], "attribute": "attr:src"}],
+      "max": 24
+    },
+    "popular": {
+      "verified": "2026-11-03",
+      "urls": [
+        "https://www.amazon.in/gp/bestsellers/electronics",
+        "https://www.amazon.in/gp/bestsellers/computers",
+        "https://www.amazon.in/gp/bestsellers/kitchen",
+        "https://www.amazon.in/gp/bestsellers/beauty",
+        "https://www.amazon.in/gp/bestsellers/hpc",
+        "https://www.amazon.in/gp/bestsellers/shoes",
+        "https://www.amazon.in/gp/bestsellers/apparel",
+        "https://www.amazon.in/gp/bestsellers/watches",
+        "https://www.amazon.in/gp/bestsellers/sports",
+        "https://www.amazon.in/gp/bestsellers/toys",
+        "https://www.amazon.in/gp/bestsellers/home-improvement",
+        "https://www.amazon.in/gp/bestsellers/luggage",
+        "https://www.amazon.in/gp/bestsellers/baby"
+      ],
+      "page": "^https://www\\.amazon\\.in/gp/bestsellers/",
+      "items": "div[data-asin]",
+      "endsAt": "a-pagination",
+      "link": [{"selector": ["a[href*=\"/dp/\"]"], "attribute": "href"}],
+      "name": [{"selector": ["[class*=p13n-sc-css-line-clamp]"], "attribute": "textContent"}, {"selector": ["img"], "attribute": "alt"}],
+      "image": [{"selector": ["img"], "attribute": "attr:src"}],
+      "max": 30
+    }
   }
 }

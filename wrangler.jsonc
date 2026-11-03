@@ -18,7 +18,7 @@
   ],
   // Free on every plan (5 cron triggers per account on Free). Each run re-checks at most
   // PER_RUN products (api/app.ts) so it stays inside the 10 ms CPU limit.
-  "triggers": { "crons": ["*/5 * * * *"] },
+  "triggers": { "crons": ["*/3 * * * *"] },
   "observability": { "enabled": true },
   // Named in the bot's User-Agent. AMITY's workers.dev subdomain is account-wide and shared
   // with a paying client's URL — never change the subdomain itself (workspace rule).

@@ -18,6 +18,7 @@ const CHECK = ['node', ['scripts/check-readers.mjs']];
 const UNIT2 = ['node', ['--test', 'core/sales.test.ts']];
 const GROCERY = ['node', ['--test', 'core/grocery.test.ts']];
 const TRAVEL = ['node', ['--test', 'core/travel.test.ts']];
+const LISTING = ['node', ['--test', 'api/listing.test.ts']];
 // The slow ones (a real Worker; prove also makes its real amazon.in requests): run them by name.
 const PROVE = ['node', ['scripts/prove.mjs']];
 const EXTENSION = ['node', ['scripts/extension.mjs']];
@@ -376,6 +377,43 @@ export const MUTANTS = [
     name: 'app: the injected reader starts again on every injection',
     file: 'android/js/inject.ts', find: "if (bridge && window.top === window && !w.__brittoStarted) {", replace: "if (bridge && window.top === window) {",
     run: APP, expect: [/a second injection on the same page adds no panel and no report/],
+  },
+  // ---- store search, best-seller lists and drops (2026-11-04)
+  {
+    name: 'list reader keeps another store\'s links',
+    file: 'core/interpret.ts', find: 'if (!parsed.ok || parsed.link.store !== cfg.store || seen.has(parsed.link.key)) continue;', replace: 'if (!parsed.ok || seen.has(parsed.link.key)) continue;',
+    run: LISTING, expect: [/another store's link/],
+  },
+  {
+    name: 'list reader reads past the end marker',
+    file: 'core/interpret.ts', find: '    if (end >= 0) html = html.slice(0, end);\n', replace: '',
+    run: LISTING, expect: [/nothing after the end marker/],
+  },
+  {
+    name: 'validator lets a list send the server to another site',
+    file: 'core/recipe.ts', find: "if (Object.hasOwn(STORES, String(store)) && !STORES[store as StoreId].hosts.includes(host))", replace: 'if (false)',
+    run: LISTING, expect: [/list addresses must be on the store's own site/],
+  },
+  {
+    name: 'Amazon search reads the struck-out M.R.P. as the price',
+    file: 'readers/amazon.desktop.json', find: '".a-price[data-a-color=base]"', replace: '".a-price.a-text-price"',
+    run: CHECK, expect: [/^amazon-search-(boat-earbuds|cello-technotip-paise|iphone-15-brands)\.html /],
+  },
+  {
+    name: 'a price rise does not end a drop',
+    file: 'api/db.ts', find: "    else if (over) statements.push(db.prepare('DELETE FROM drops WHERE key = ?').bind(key));\n", replace: '',
+    run: PROVE, expect: [/a rise ends the drop/, /selling out ends it/],
+  },
+  {
+    name: 'store search ignores the hourly allowance',
+    file: 'api/listing.ts', find: "  if (!(await allowFetch())) return { ...base, status: 'busy', items: [], at: null };\n", replace: '',
+    // Uncharged, the cache check's evidence (one search charged for two asks) reads none too.
+    run: PROVE, expect: [/past its searches this hour/, /same words again come from the cache/],
+  },
+  {
+    name: 'lists show best-seller products before their own page is read',
+    file: 'api/db.ts', find: "'SELECT * FROM products WHERE title IS NOT NULL AND last_checked_at IS NOT NULL ORDER BY created_at DESC LIMIT ?'", replace: "'SELECT * FROM products WHERE title IS NOT NULL ORDER BY created_at DESC LIMIT ?'",
+    run: PROVE, expect: [/stay off the lists until their own page is read/],
   },
 ];
 
