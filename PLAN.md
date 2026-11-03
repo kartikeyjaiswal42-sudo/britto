@@ -24,7 +24,9 @@
 >   wait for fares people actually saw.
 > - **P10 Spend Lens** (2026-11-03): on-device order parsing and summary, app + extension; no
 >   store's order page is readable until the owner saves one (HISTORY "P10").
-> **Next: P5** (the owner's Claude Design export arrived 2026-11-03: `design/`), then **P11**. P5 waits for the owner's Claude Design
+> - **P5 design** (2026-11-03): the owner's Claude Design (design/, v4) rebuilt in `web/`;
+>   money screens, phone login and the overlay bubble deliberately not built (HISTORY "P5").
+> **Next: P11** (Job-ready). P5 waits for the owner's Claude Design
 > export. Owner-only steps: top of HISTORY.md, "Waiting for the owner".
 
 ## Unattended runs (the owner is away and cannot answer)

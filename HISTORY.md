@@ -1178,3 +1178,59 @@ orders (`{ok:true,kept:2}`), `getSpend` from that store page was dropped, the ap
   built: no category map exists. Optional aggregate sync (`POST /api/spend/summary`) not built:
   nothing needs it, and a server copy of someone's spending is a privacy cost with no feature.
 - Order pages on a real phone; the extension on a real order page.
+
+## P5 design, 2026-11-03 (local session) — branch `p5-design`
+
+**Asked:** "install ui ux from download folder … it is in zip file" — `Britto Mobile App Design.zip`
+(Claude Design export, 10 files: v1–v4 of "Britto App" + "Britto Screens", `support.js`).
+Kept in `design/` with a README; **v4 is current: 32 Android screens**.
+
+### Decided
+
+- **The export is the visual spec, rebuilt in `web/`** (DESIGN-BRIEF "Integration contract"):
+  `support.js` runs React + Babel from unpkg, which the CSP forbids. Data still comes only
+  through `web/api.js`; the push/Telegram code was kept and restyled.
+- **Not built from the design, on purpose:** cashback, wallet, withdraw, payouts, spin & rewards,
+  refer & earn (real money; out since 2026-10-27), phone login + OTP (owner chose no Britto account
+  on 2026-10-29), the price bubble over other apps (needs Android accessibility/overlay
+  permissions; Super Browse does it inside Britto). The design's example numbers ("12,480
+  checked", "₹620 cashback") are not shown anywhere; every number on the site is real.
+
+### Built
+
+Tokens measured from v4 (primary #1F5BFF, ink #141B34, muted #6B7390, green/red/orange/yellow/
+violet tints, surfaces #F4F6FB) + a navy dark theme in the same palette; Outfit + Manrope
+self-hosted (`web/fonts`, OFL licences; CSP allows no Google Fonts). Shell: "b" brand mark,
+search with icon, desktop nav, a 5-tab bottom bar on phones (Home, Deals, Tracker, Shop, Travel;
+current tab marked). Home: blue header + hero, the overlapping "Paste a product link" card,
+promo cards (Fake sale detector, Real drops, Travel), an 8-shortcut grid, a sideways row of real
+drops, recently tracked. Product: card with big price, orange "Buy at ₹…" + "Price alert",
+verdict cards with status icons, range pills, stat tiles. Alerts page titled "Price Tracker".
+Store tiles get letter badges (no logos, as in the design). The Android app shows the site's tab
+bar (the native 3-button bar is gone). The store-page panel uses the design palette.
+
+### Found and fixed on the way
+
+- **The live /alerts page showed the word "null"** whenever Telegram is off (it is, in
+  production): the DOM's `replaceChildren` turns a `null` argument into text. All 31 calls go
+  through `put()`, which skips null/false like `h()`. New check: no page shows a stray
+  "null"/"undefined"/"NaN" (red on /alerts with put() not filtering).
+- The link box measured 23 px tall on phones (`flex: 1` in the stacked layout overrode its
+  height); now 46 px; checked (>= 44 px), red on the old CSS at 390 px only.
+- Dark mode: white on the lighter orange was ~2.3:1; orange buttons get dark text in dark mode.
+
+### Verified
+
+browser.mjs 86/0 (1280 light, 390 dark; fonts load; no console errors; no sideways scroll) ·
+npm test 116/116 · typechecks · check:readers · prove 111/0 · alerts.mjs 68/0 · extension.mjs
+38/38 · app.mjs 30/30 · Gradle 11/11 · screenshots of Home, product, Tracker, Deals, Shop,
+Travel, Spend Lens, Stores, Search, Grocery at 390 px against the design · the Android 14
+emulator shows the design's home and tab bar.
+
+### NOT done
+
+- The status-bar strip in the app stays light above the blue Home header (the design runs blue
+  behind the clock): needs the app to follow each page's colour.
+- Screens of the design with no Britto feature yet: categories, filters, onboarding,
+  notifications list, profile/settings, flight results with fares. Deals still uses selects,
+  not the design's chips.
