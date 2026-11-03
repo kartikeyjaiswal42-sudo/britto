@@ -297,7 +297,7 @@ try {
   check('prefix form without https:// works too', pre2.status === 302 && pre2.headers.get('location')?.includes('/p/myntra%3A1700944'));
   const pg = await j(`/p/${encodeURIComponent(KEY)}`);
   check('/p/<key> serves the app', pg.status === 200 && pg.text.includes('id="app"'), `${pg.status} ${pg.headers.get('location') ?? ''}`);
-  for (const path of ['/deals', '/stores', '/search?q=pen', '/browse', '/grocery', '/travel']) {
+  for (const path of ['/deals', '/stores', '/search?q=pen', '/browse', '/grocery', '/travel', '/spend']) {
     const r = await j(path);
     check(`${path} serves the app`, r.status === 200 && r.text.includes('id="app"'), `${r.status} ${r.headers.get('location') ?? ''}`);
   }

@@ -5,6 +5,7 @@ import {
   pct, removeAlert, rupees, savePush, searchProducts, sendTest, setAlert, toPaise, trackProduct, getGroceryPlatforms, getSimilar, voteCoupon,
 } from './api.js';
 import { drawChart } from './chart.js';
+import { mergeOrders, summarize } from './spend.js';
 import { airportIndex, flightSearch, hotelSearch, MAX_DAYS_AHEAD, rideSearch, todayIST } from './travel.js';
 
 const app = document.getElementById('app');
@@ -403,7 +404,61 @@ async function browsePage() {
     ...SECTORS.flatMap(sectionFor),
     h('p', { class: 'small muted' }, inApp
       ? 'Britto never sees your number, the code or your login: they stay in this app\u2019s browser on your phone.'
-      : 'In the Britto Android app these open inside the app, where you log in once with your number.'));
+      : 'In the Britto Android app these open inside the app, where you log in once with your number.'),
+    h('p', {}, h('a', { href: '/spend', 'data-nav': true }, 'Spend Lens'), ': what you spent across stores, from your own order pages, worked out on your phone.'));
+}
+
+/**
+ * The app's bridge on the Britto site (MainActivity, this origin only): Spend Lens orders kept on
+ * this phone. Absent in a browser, in which case Spend Lens says where it works.
+ */
+function siteBridge() {
+  const bridge = window.BrittoBridge;
+  if (!bridge) return null;
+  const pending = new Map();
+  let seq = 0;
+  bridge.onmessage = (event) => {
+    const { id, reply } = JSON.parse(event.data);
+    pending.get(id)?.(reply);
+    pending.delete(id);
+  };
+  return (msg) => new Promise((resolve) => {
+    const id = ++seq;
+    pending.set(id, resolve);
+    bridge.postMessage(JSON.stringify({ id, msg }));
+  });
+}
+
+/**
+ * Spend Lens (BLUEPRINT §13): what you spent, from your own order pages, summed HERE from the
+ * orders the app keeps on this phone. Nothing about your orders is sent to Britto (rule 5): this
+ * page makes no request with them.
+ */
+async function spendPage() {
+  const ask = siteBridge();
+  const intro = h('p', { class: 'muted' }, 'Your spending across stores, from your own order pages. It is worked out on this phone; your orders are never uploaded to Britto.');
+  if (!ask) {
+    app.replaceChildren(h('h1', {}, 'Spend Lens'), intro,
+      h('p', {}, 'Spend Lens works in the Britto Android app: open a store from Shop, log in, and open your orders page. Britto keeps the orders it reads there on your phone, and this page adds them up.'));
+    return;
+  }
+  const reply = await ask({ type: 'getSpend' });
+  const orders = mergeOrders([], (reply?.orders ?? []).filter((o) => o && typeof o.total === 'number'));
+  const s = summarize(orders);
+  const table = (rows, label) => h('table', { class: 'spend' },
+    h('tbody', {}, rows.map((r) => h('tr', {}, h('td', {}, label(r)), h('td', { class: 'num' }, rupees(r.total)), h('td', { class: 'num small muted' }, `${r.orders} order${r.orders === 1 ? '' : 's'}`)))));
+  const monthName = (m) => new Date(`${m}-01T00:00:00Z`).toLocaleDateString('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  const clear = h('button', { class: 'secondary', type: 'button' }, 'Delete Spend Lens data from this phone');
+  clear.addEventListener('click', async () => { await ask({ type: 'clearSpend' }); spendPage(); });
+  app.replaceChildren(h('h1', {}, 'Spend Lens'), intro,
+    ...(s.orders === 0
+      ? [h('p', {}, 'No orders kept yet. Open a store from Shop, log in, and open your orders page: Britto reads the orders shown there (for stores whose order page it has learned).')]
+      : [
+          h('p', { class: 'spend-total' }, h('strong', {}, rupees(s.total)), ` on ${s.orders} order${s.orders === 1 ? '' : 's'}, ${date(Date.parse(s.first))} to ${date(Date.parse(s.last))}`),
+          h('h2', {}, 'By month'), table(s.byMonth, (r) => monthName(r.month)),
+          h('h2', {}, 'By store'), table(s.byStore, (r) => STORE_NAMES[r.store] ?? r.store),
+          clear,
+        ]));
 }
 
 /**
@@ -639,6 +694,7 @@ function route() {
   if (pathname === '/grocery') return done(groceryPage());
   if (pathname === '/travel') return done(travelPage());
   if (pathname === '/alerts') return done(alertsPage());
+  if (pathname === '/spend') return done(spendPage());
   return done(home());
 }
 

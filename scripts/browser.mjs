@@ -193,6 +193,50 @@ try {
     check('…inside the Britto app (no location permission): says to use the phone\'s browser for rides', /does not ask for your location/.test(await appPage.locator('#ride-links').innerText()) && (await appPage.locator('#ride-links a').count()) === 0);
     await appCtx.close();
 
+    // Spend Lens (BLUEPRINT §13): in a browser it says where it works; in the app it sums the
+    // orders the app's bridge hands it, and sends NOTHING about them anywhere (rule 5).
+    await page.goto(base + '/spend', { waitUntil: 'networkidle' });
+    check('Spend Lens in a browser says it works in the app and uploads nothing', /works in the Britto Android app/.test(await page.locator('#app').innerText()) && /never uploaded/.test(await page.locator('#app').innerText()));
+    const spendCtx = await browser.newContext({ viewport, colorScheme: scheme });
+    // A stand-in for the app's site bridge (SiteBridgeCore), holding MADE-UP orders.
+    await spendCtx.addInitScript(() => {
+      const orders = [
+        { store: 'amazon', orderId: 'TEST-403-111', date: '2026-10-29', total: 176327, items: ['made-up order'] },
+        { store: 'amazon', orderId: 'TEST-403-222', date: '2026-10-03', total: 26500, items: [] },
+        { store: 'flipkart', orderId: 'TEST-OD-333', date: '2026-09-30', total: 22500, items: [] },
+      ];
+      window.__bridgeSeen = [];
+      window.BrittoBridge = {
+        onmessage: null,
+        postMessage(data) {
+          const { id, msg } = JSON.parse(data);
+          window.__bridgeSeen.push(msg.type);
+          const reply = msg.type === 'getSpend' ? { ok: true, orders } : msg.type === 'clearSpend' ? (orders.length = 0, { ok: true }) : null;
+          setTimeout(() => this.onmessage?.({ data: JSON.stringify({ id, reply }) }), 10);
+        },
+      };
+    });
+    const spendPage = await spendCtx.newPage();
+    const sent = [];
+    // Recorded when a request STARTS: an upload that never finishes still counts. Not 'networkidle'
+    // (measured: Chrome never reported a fetch to a 404 route as finished, though the Worker logged
+    // the 404 in 6 ms, so the page never went idle and the check could not run).
+    spendPage.on('request', (r) => sent.push(`${r.method()} ${r.url()} ${r.postData() ?? ''}`));
+    await spendPage.goto(base + '/spend', { waitUntil: 'load' });
+    await spendPage.waitForFunction(() => /By month|No orders kept yet/.test(document.getElementById('app')?.textContent ?? ''));
+    await spendPage.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
+    const spendText = await spendPage.locator('#app').innerText();
+    check('Spend Lens in the app: the total, by month and by store, from the orders on the phone', /₹2,253\.27/.test(spendText) && /3 orders/.test(spendText)
+      && /October 2026[\s\S]*₹2,028\.27/.test(spendText) && /September 2026[\s\S]*₹225/.test(spendText) && /Amazon[\s\S]*₹2,028\.27/.test(spendText), spendText.slice(0, 300));
+    const leaked = sent.filter((r) => /TEST-|176327|2028\.27|2,028|22500|26500/.test(r));
+    check('…and no request carries an order number or an amount (nothing uploaded)', leaked.length === 0 && sent.every((r) => !r.startsWith('POST')), leaked.concat(sent.filter((r) => r.startsWith('POST'))).join(' | '));
+    await spendPage.getByRole('button', { name: /Delete Spend Lens data/ }).click();
+    await spendPage.waitForFunction(() => /No orders kept yet/.test(document.getElementById('app')?.textContent ?? ''));
+    check('…"Delete" clears them through the app\'s bridge', JSON.stringify(await spendPage.evaluate(() => window.__bridgeSeen)) === '["getSpend","clearSpend","getSpend"]');
+    await spendPage.evaluate(() => window.scrollTo(500, 0));
+    check('…no horizontal scroll on Spend Lens', (await spendPage.evaluate(() => window.scrollX)) === 0);
+    await spendCtx.close();
+
     check('no console errors', errors.length === 0, errors.join(' | '));
     await ctx.close();
   }

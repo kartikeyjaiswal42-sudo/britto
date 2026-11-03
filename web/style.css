@@ -135,3 +135,9 @@ button:disabled { opacity: .6; cursor: progress; }
   .alert-row > button { grid-column: 2; justify-self: start; }
   .small-thumb { width: 48px; }
 }
+
+/* Spend Lens */
+table.spend { width: 100%; border-collapse: collapse; }
+table.spend td { padding: 8px 4px; border-bottom: 1px solid var(--line, rgba(127,127,127,.25)); }
+table.spend td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.spend-total strong { font-size: 1.6rem; font-variant-numeric: tabular-nums; margin-right: .25em; }
