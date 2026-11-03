@@ -1,11 +1,14 @@
 package app.britto;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -14,7 +17,8 @@ import java.util.regex.Pattern;
 
 /**
  * What the app's bridge answers, without Android in the way (so it is unit-tested on a
- * computer): the four messages the extension's service worker answers (BLUEPRINT §7.5).
+ * computer): the messages the extension's service worker answers (BLUEPRINT §7.5), plus
+ * saveOrders (Spend Lens, §13), which keeps the orders on this phone and never sends them.
  * In: {"id": n, "msg": {...}}. Out: {"id": n, "reply": {...}}, or null for anything that is
  * not one of these messages exactly (dropped without an answer, like the extension does).
  * It reaches only Britto's public API; it never sees cookies or page content.
@@ -43,12 +47,14 @@ final class BridgeCore {
 
     private final Set<String> storeIds;
     private final Transport transport;
+    private final SpendStore spend;
     private final LongSupplier clock;
     private final Map<String, Cached> configs = new HashMap<>();
 
-    BridgeCore(Set<String> storeIds, Transport transport, LongSupplier clock) {
+    BridgeCore(Set<String> storeIds, Transport transport, LongSupplier clock, SpendStore spend) {
         this.storeIds = storeIds;
         this.transport = transport;
+        this.spend = spend;
         this.clock = clock;
     }
 
@@ -106,6 +112,17 @@ final class BridgeCore {
                     .put("readerVersion", READER_VERSION)
                     .put("client", "app");
                 return reply(transport.request("POST", "/api/observations", body.toString(), null));
+            }
+            case "saveOrders": {
+                // Spend Lens: kept in the app's own storage. No transport call here, ever (rule 5).
+                // Write-only: no message lets a store page read orders back.
+                String store = msg.optString("store");
+                JSONArray orders = msg.optJSONArray("orders");
+                if (!storeIds.contains(store) || orders == null || orders.length() == 0 || orders.length() > 100) return null;
+                for (int i = 0; i < orders.length(); i++) {
+                    if (!isOrder(orders.optJSONObject(i), store)) return null;
+                }
+                return new JSONObject().put("ok", true).put("kept", spend.keep(orders));
             }
             case "reportTelemetry": {
                 String store = msg.optString("store");
@@ -191,5 +208,27 @@ final class BridgeCore {
         } catch (JSONException e) {
             return new JSONObject();
         }
+    }
+
+    /** The shape core/spend.ts isOrder accepts, for one store: what the app may keep. */
+    static boolean isOrder(JSONObject o, String store) {
+        if (o == null || o.length() != 5 || !store.equals(o.optString("store"))) return false;
+        String id = o.optString("orderId");
+        if (id.isEmpty() || id.length() > 64) return false;
+        try {
+            LocalDate.parse(o.optString("date")); // strict ISO day: 2026-02-30 is refused
+        } catch (DateTimeParseException e) {
+            return false;
+        }
+        if (!o.optString("date").matches("^\\d{4}-\\d{2}-\\d{2}$")) return false;
+        Object total = o.opt("total");
+        if (!(total instanceof Integer || total instanceof Long) || ((Number) total).longValue() < 0) return false;
+        JSONArray items = o.optJSONArray("items");
+        if (items == null || items.length() > 50) return false;
+        for (int i = 0; i < items.length(); i++) {
+            Object item = items.opt(i);
+            if (!(item instanceof String) || ((String) item).length() > 200) return false;
+        }
+        return true;
     }
 }

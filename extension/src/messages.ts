@@ -3,6 +3,7 @@
 // politeness and the network. Every message is checked by isRequest(); anything else is
 // dropped without an answer.
 import type { ReaderConfig } from '../../core/recipe.ts';
+import { isOrder, type Order } from '../../core/spend.ts';
 import { STORE_IDS } from '../../core/stores.ts';
 import type { ProductView, StoreId } from '../../core/types.ts';
 
@@ -18,7 +19,10 @@ export type Request =
   | { type: 'getReaderConfig'; store: StoreId; device: 'desktop' | 'mobile' }
   | { type: 'postObservation'; url: string; observed: ObservedPayload; configVersion: string }
   | { type: 'getProductAnswer'; key: string }
-  | { type: 'reportTelemetry'; store: StoreId; outcome: 'blocked' | 'unrecognised'; configVersion: string };
+  | { type: 'reportTelemetry'; store: StoreId; outcome: 'blocked' | 'unrecognised'; configVersion: string }
+  // Spend Lens (BLUEPRINT §13): the shopper's own orders, kept ON THIS DEVICE. The service worker
+  // (and the app's bridge) store them locally and never send them anywhere (rule 5).
+  | { type: 'saveOrders'; store: StoreId; orders: Order[] };
 
 export type ConfigReply =
   | { ok: true; config: ReaderConfig; version: string }
@@ -53,6 +57,9 @@ export function isRequest(m: unknown): m is Request {
     case 'reportTelemetry':
       return STORES.has(String(m['store'])) && (m['outcome'] === 'blocked' || m['outcome'] === 'unrecognised')
         && typeof m['configVersion'] === 'string' && VERSION.test(m['configVersion']);
+    case 'saveOrders':
+      return STORES.has(String(m['store'])) && Array.isArray(m['orders']) && m['orders'].length <= 100
+        && m['orders'].every((o) => isOrder(o) && o.store === m['store']);
     default:
       return false;
   }

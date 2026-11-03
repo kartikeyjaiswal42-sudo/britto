@@ -42,7 +42,13 @@ public class BridgeCoreTest {
 
     private final FakeServer server = new FakeServer();
     private long now = 1_000_000L;
-    private final BridgeCore core = new BridgeCore(new HashSet<>(Arrays.asList("amazon", "flipkart", "myntra", "vijaysales")), server, () -> now);
+    /** The phone's storage, in memory: what Spend Lens keeps. */
+    private final String[] disk = {null};
+    private final SpendStore spend = new SpendStore(new SpendStore.Disk() {
+        @Override public String read() { return disk[0]; }
+        @Override public void write(String text) { disk[0] = text; }
+    });
+    private final BridgeCore core = new BridgeCore(new HashSet<>(Arrays.asList("amazon", "flipkart", "myntra", "vijaysales")), server, () -> now, spend);
 
     private JSONObject ask(String msg) throws Exception {
         String out = core.handle("{\"id\":7,\"msg\":" + msg + "}");
@@ -127,5 +133,49 @@ public class BridgeCoreTest {
         assertNull(core.handle("not json"));
         assertNull(core.handle("{\"msg\":{\"type\":\"getProductAnswer\",\"key\":\"amazon:B09X5DK382\"}}"));
         assertEquals("no request was made", 0, server.calls.size());
+    }
+
+    private static final String ORDER_A = "{\"store\":\"amazon\",\"orderId\":\"403-1\",\"date\":\"2026-10-29\",\"total\":176327,\"items\":[\"Cello pens\"]}";
+    private static final String ORDER_B = "{\"store\":\"amazon\",\"orderId\":\"403-2\",\"date\":\"2026-10-03\",\"total\":26500,\"items\":[]}";
+
+    @Test
+    public void spendLensOrdersAreKeptOnThePhoneAndNeverSent() throws Exception {
+        JSONObject r = ask("{\"type\":\"saveOrders\",\"store\":\"amazon\",\"orders\":[" + ORDER_A + "," + ORDER_B + "]}");
+        assertTrue(r.getBoolean("ok"));
+        assertEquals(2, r.getInt("kept"));
+        // The same order read again replaces itself: still two.
+        assertEquals(2, ask("{\"type\":\"saveOrders\",\"store\":\"amazon\",\"orders\":[" + ORDER_A + "]}").getInt("kept"));
+        assertEquals(2, spend.all().length());
+        assertEquals("no request was made: the orders stay on this phone", 0, server.calls.size());
+    }
+
+    @Test
+    public void aStorePageCannotReadOrdersBackOrWriteOddOnes() throws Exception {
+        ask("{\"type\":\"saveOrders\",\"store\":\"amazon\",\"orders\":[" + ORDER_A + "]}");
+        assertNull("store pages have no way to read orders", ask("{\"type\":\"getSpend\"}"));
+        String[] bad = {
+            "{\"type\":\"saveOrders\",\"store\":\"flipkart\",\"orders\":[" + ORDER_A + "]}",
+            "{\"type\":\"saveOrders\",\"store\":\"ebay\",\"orders\":[" + ORDER_A.replace("amazon", "ebay") + "]}",
+            "{\"type\":\"saveOrders\",\"store\":\"amazon\",\"orders\":[]}",
+            "{\"type\":\"saveOrders\",\"store\":\"amazon\",\"orders\":[" + ORDER_A.replace("2026-10-29", "2026-02-30") + "]}",
+            "{\"type\":\"saveOrders\",\"store\":\"amazon\",\"orders\":[" + ORDER_A.replace("176327", "1763.27") + "]}",
+            "{\"type\":\"saveOrders\",\"store\":\"amazon\",\"orders\":[" + ORDER_A.replace("\"items\"", "\"cookie\":\"x\",\"items\"") + "]}",
+        };
+        for (String m : bad) assertNull(m, ask(m));
+        assertEquals("only the one good order", 1, spend.all().length());
+        assertEquals(0, server.calls.size());
+    }
+
+    @Test
+    public void theBrittoSiteReadsAndClearsSpendLensButNothingElse() throws Exception {
+        ask("{\"type\":\"saveOrders\",\"store\":\"amazon\",\"orders\":[" + ORDER_A + "," + ORDER_B + "]}");
+        SiteBridgeCore site = new SiteBridgeCore(spend);
+        JSONObject got = new JSONObject(site.handle("{\"id\":3,\"msg\":{\"type\":\"getSpend\"}}")).getJSONObject("reply");
+        assertEquals(2, got.getJSONArray("orders").length());
+        assertNull("the site cannot write orders", site.handle("{\"id\":4,\"msg\":{\"type\":\"saveOrders\",\"store\":\"amazon\",\"orders\":[" + ORDER_A + "]}}"));
+        assertNull("nor ask Britto's server anything", site.handle("{\"id\":5,\"msg\":{\"type\":\"getProductAnswer\",\"key\":\"amazon:B09X5DK382\"}}"));
+        new JSONObject(site.handle("{\"id\":6,\"msg\":{\"type\":\"clearSpend\"}}"));
+        assertEquals(0, spend.all().length());
+        assertEquals(0, server.calls.size());
     }
 }

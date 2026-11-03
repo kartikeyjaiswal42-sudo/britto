@@ -306,6 +306,18 @@ export const MUTANTS = [
     run: ['node', ['--test', 'core/spend.test.ts']], expect: [/summary: totals by month/],
   },
   {
+    name: 'app: Spend Lens orders are also uploaded when saved (rule 5 broken)',
+    file: 'android/app/src/main/java/app/britto/BridgeCore.java', find: '                return new JSONObject().put("ok", true).put("kept", spend.keep(orders));',
+    replace: '                transport.request("POST", "/api/spend/orders", orders.toString(), null);\n                return new JSONObject().put("ok", true).put("kept", spend.keep(orders));',
+    run: GRADLE_TEST, expect: [/BridgeCoreTest > spendLensOrdersAreKeptOnThePhoneAndNeverSent/, /BridgeCoreTest > aStorePageCannotReadOrdersBackOrWriteOddOnes/, /BridgeCoreTest > theBrittoSiteReadsAndClearsSpendLensButNothingElse/],
+  },
+  {
+    name: 'app: a store page can read the Spend Lens orders back',
+    file: 'android/app/src/main/java/app/britto/BridgeCore.java', find: '            case "saveOrders": {',
+    replace: '            case "getSpend":\n                return new JSONObject().put("ok", true).put("orders", spend.all());\n            case "saveOrders": {',
+    run: GRADLE_TEST, expect: [/BridgeCoreTest > aStorePageCannotReadOrdersBackOrWriteOddOnes/],
+  },
+  {
     name: 'prove: Reliance Digital (refuses Cloudflare) is server-fetched again',
     file: 'core/stores.ts', find: "    serverFetch: 'refused',\n    measured:\n      '2026-10-27: refuses our server on Cloudflare", replace: "    serverFetch: 'yes',\n    measured:\n      '2026-10-27: refuses our server on Cloudflare",
     run: PROVE, expect: [/reliancedigital: tracked, never fetched by our server/],

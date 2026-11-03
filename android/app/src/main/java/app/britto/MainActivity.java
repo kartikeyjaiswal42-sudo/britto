@@ -11,7 +11,10 @@ import android.widget.LinearLayout;
 
 import androidx.activity.ComponentActivity;
 import androidx.activity.EdgeToEdge;
+import androidx.webkit.WebViewCompat;
+import androidx.webkit.WebViewFeature;
 
+import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,6 +27,7 @@ import java.util.regex.Pattern;
 public class MainActivity extends ComponentActivity {
     private static final Pattern LINK = Pattern.compile("https?://[^\\s<>\"']+");
     private WebView web;
+    private Bridge siteBridge;
 
     @Override
     protected void onCreate(Bundle saved) {
@@ -42,6 +46,11 @@ public class MainActivity extends ComponentActivity {
             }
         });
         root.addView(web, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
+        // Spend Lens: the Britto site (and nothing else) may read the orders kept on this phone.
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
+            siteBridge = new Bridge(new SiteBridgeCore(SpendStore.inDirectory(getFilesDir()))::handle);
+            WebViewCompat.addWebMessageListener(web, "BrittoBridge", Collections.singleton(siteOrigin()), siteBridge);
+        }
         LinearLayout bar = new LinearLayout(this);
         bar.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams third = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
@@ -93,6 +102,18 @@ public class MainActivity extends ComponentActivity {
             return true;
         }
         return false;
+    }
+
+    /** The Britto site's origin ("https://host" or "http://127.0.0.1:port" in test builds). */
+    @Override
+    protected void onDestroy() {
+        if (siteBridge != null) siteBridge.close();
+        super.onDestroy();
+    }
+
+    static String siteOrigin() {
+        Uri site = Uri.parse(BuildConfig.SITE);
+        return site.getScheme() + "://" + site.getHost() + (site.getPort() == -1 ? "" : ":" + site.getPort());
     }
 
     static boolean isSite(Uri uri) {

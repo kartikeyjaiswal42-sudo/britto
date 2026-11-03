@@ -107,6 +107,16 @@ export type LinkResult =
 
 const ASIN = /^[A-Z0-9]{10}$/;
 
+/** The store whose own site this address is on (not a link shortener), or null. */
+export function storeOfPage(url: string): StoreId | null {
+  try {
+    const hit = storeForHost(new URL(url).hostname.toLowerCase());
+    return hit && !hit.short ? hit.store : null;
+  } catch {
+    return null;
+  }
+}
+
 function storeForHost(host: string): { store: StoreId; short: boolean } | null {
   for (const s of Object.values(STORES)) {
     if (s.hosts.includes(host)) return { store: s.id, short: false };

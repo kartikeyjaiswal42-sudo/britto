@@ -3,6 +3,7 @@
 // which reader config read it) and nothing else: no cookies, no browsing history, no account
 // details. It also fetches the reader configs the content script runs (BLUEPRINT §6.3).
 import { configFromServed } from '../../core/recipe.ts';
+import { isOrder, mergeOrders, type Order } from '../../core/spend.ts';
 import { parseProductLink } from '../../core/stores.ts';
 import { isRequest, type ConfigReply, type Reply, type Request } from './messages.ts';
 
@@ -73,7 +74,16 @@ async function readerConfig(store: string, device: string): Promise<ConfigReply>
   }
 }
 
-async function handle(msg: Request): Promise<Reply | ConfigReply | { ok: true }> {
+/** Spend Lens orders live in this browser only (chrome.storage.local); nothing sends them. */
+const SPEND_KEY = 'spend:orders';
+async function keepOrders(orders: Order[]): Promise<{ ok: true; kept: number }> {
+  const kept = ((await chrome.storage.local.get(SPEND_KEY))[SPEND_KEY] ?? []) as Order[];
+  const merged = mergeOrders(kept.filter(isOrder), orders);
+  await chrome.storage.local.set({ [SPEND_KEY]: merged });
+  return { ok: true, kept: merged.length };
+}
+
+async function handle(msg: Request): Promise<Reply | ConfigReply | { ok: true; kept?: number }> {
   switch (msg.type) {
     case 'getReaderConfig': {
       // One question to the server per store at a time, however many pages ask.
@@ -90,6 +100,8 @@ async function handle(msg: Request): Promise<Reply | ConfigReply | { ok: true }>
     case 'reportTelemetry':
       await call('/api/telemetry', { method: 'POST', body: JSON.stringify({ feature: 'read', store: msg.store, outcome: msg.outcome, configVersion: msg.configVersion, readerVersion: READER_VERSION, client: 'extension' }) });
       return { ok: true };
+    case 'saveOrders':
+      return keepOrders(msg.orders);
     case 'postObservation': {
       const parsed = parseProductLink(msg.url);
       if (!parsed.ok) return { ok: false, code: 'not_a_product', message: 'Not a product page.' };

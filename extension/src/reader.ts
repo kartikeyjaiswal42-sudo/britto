@@ -5,12 +5,12 @@
 // only the interpreter (core/interpret.ts), no store recipes: a store changing its page is
 // fixed on the server, never by a new release. The host supplies the transport to the server
 // (§7.5 messages), the device class, and what "Save this page" does.
-import { confirmIdentity, readPage } from '../../core/interpret.ts';
+import { confirmIdentity, readOrders, readPage } from '../../core/interpret.ts';
 import type { ReaderConfig } from '../../core/recipe.ts';
-import { parseProductLink } from '../../core/stores.ts';
+import { parseProductLink, storeOfPage } from '../../core/stores.ts';
 import type { Extracted, StoreId } from '../../core/types.ts';
 import type { ConfigReply, ObservedPayload, Reply, Request } from './messages.ts';
-import { renderPanel } from './panel.ts';
+import { renderNotice, renderPanel } from './panel.ts';
 
 export interface ReaderHost {
   send(msg: Request): Promise<unknown>;
@@ -39,12 +39,39 @@ async function readThisPage(config: ReaderConfig, pid: string): Promise<Extracte
   return last!;
 }
 
+/**
+ * Spend Lens (BLUEPRINT §13): on the shopper's own order-history page, keep the orders it shows
+ * ON THIS DEVICE (saveOrders goes to the extension's local storage or the app's own storage,
+ * never to Britto's server). Only with a reader whose orderHistory section was verified against
+ * a real order page; otherwise nothing is read.
+ */
+async function readOrderPage(url: string): Promise<void> {
+  const store = storeOfPage(url);
+  if (!store) return;
+  const reader = await send<ConfigReply>({ type: 'getReaderConfig', store, device: host.device });
+  const rule = reader?.ok ? reader.config.domRecipe.orderHistory : undefined;
+  if (!reader?.ok || !rule?.verified || !new RegExp(rule.page).test(url)) return;
+  for (const wait of WAITS) {
+    await new Promise((r) => setTimeout(r, wait));
+    if (location.href !== url) return;
+    const orders = readOrders(reader.config, document.documentElement.outerHTML, url);
+    if (orders?.length) {
+      const kept = await send<{ ok: boolean; kept?: number }>({ type: 'saveOrders', store, orders });
+      if (kept?.ok) renderNotice(`${orders.length} order${orders.length === 1 ? '' : 's'} kept for Spend Lens on this device. Nothing was uploaded.`);
+      return;
+    }
+  }
+}
+
 async function run(): Promise<void> {
   const url = location.href;
   if (url === handledUrl) return;
   handledUrl = url;
   const parsed = parseProductLink(url);
-  if (!parsed.ok) return;
+  if (!parsed.ok) {
+    await readOrderPage(url);
+    return;
+  }
   const { store, pid, key } = parsed.link;
   const panel = renderPanel(store, host.savePage);
   panel.loading();

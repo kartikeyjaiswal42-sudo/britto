@@ -120,12 +120,12 @@ tasks.withType<Test>().configureEach {
     jvmArgs("--add-opens=java.base/java.io=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
 }
 
-// The bridge harness: the app's REAL BridgeCore + Api, compiled for a computer against org.json
+// The bridge harness: the app's REAL BridgeCore + SpendStore + Api, compiled for a computer against org.json
 // (Android's own JSON API), so scripts/app.mjs can drive the page reader in Chromium through the
 // exact Java code the app runs. Only the WebView/Activity glue is left for a phone.
 val harnessDeps: Configuration by configurations.creating
 val bridgeHarness = tasks.register<JavaCompile>("bridgeHarness") {
-    source(file("src/main/java/app/britto/BridgeCore.java"), file("src/main/java/app/britto/Api.java"), fileTree("src/harness/java"))
+    source(file("src/main/java/app/britto/BridgeCore.java"), file("src/main/java/app/britto/SpendStore.java"), file("src/main/java/app/britto/Api.java"), fileTree("src/harness/java"))
     classpath = harnessDeps
     destinationDirectory.set(layout.buildDirectory.dir("bridge-harness/classes"))
     options.release.set(17)

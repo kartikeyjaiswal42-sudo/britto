@@ -12,6 +12,7 @@ import androidx.webkit.WebViewCompat;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Function;
 
 /**
  * The page reader's way to the Britto server inside the app (BLUEPRINT §18): a WebView message
@@ -20,11 +21,12 @@ import java.util.concurrent.Executors;
  * an ad frame or any other site gets nothing. The answers come from {@link BridgeCore}.
  */
 final class Bridge implements WebViewCompat.WebMessageListener {
-    private final BridgeCore core;
+    private final Function<String, String> core;
     private final ExecutorService exec = Executors.newSingleThreadExecutor();
     private final Handler main = new Handler(Looper.getMainLooper());
 
-    Bridge(BridgeCore core) {
+    /** core: {@link BridgeCore#handle} on store pages, {@link SiteBridgeCore#handle} on the Britto site. */
+    Bridge(Function<String, String> core) {
         this.core = core;
     }
 
@@ -38,7 +40,7 @@ final class Bridge implements WebViewCompat.WebMessageListener {
         final String data = message.getData();
         if (!isMainFrame || data == null) return;
         exec.execute(() -> {
-            String reply = core.handle(data);
+            String reply = core.apply(data);
             if (reply != null) main.post(() -> replyProxy.postMessage(reply));
         });
     }

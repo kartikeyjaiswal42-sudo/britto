@@ -15,7 +15,12 @@ import java.util.concurrent.Executors;
  */
 public final class HarnessMain {
     public static void main(String[] args) throws Exception {
-        BridgeCore core = new BridgeCore(new HashSet<>(Arrays.asList(System.getProperty("britto.stores").split(","))), Api::request, System::currentTimeMillis);
+        BridgeCore core = new BridgeCore(new HashSet<>(Arrays.asList(System.getProperty("britto.stores").split(","))), Api::request, System::currentTimeMillis,
+            new SpendStore(new SpendStore.Disk() {
+                private String text;
+                @Override public String read() { return text; }
+                @Override public void write(String t) { text = t; }
+            }));
         ExecutorService exec = Executors.newSingleThreadExecutor();
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
         for (String line; (line = in.readLine()) != null; ) {

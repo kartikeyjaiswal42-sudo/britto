@@ -70,7 +70,7 @@ public class StoreActivity extends ComponentActivity {
         web = new WebView(this);
         Ui.setUpWebView(web, null); // the store sees the phone's own WebView, unchanged
         java.util.Set<String> origins = Stores.origins(this);
-        bridge = new Bridge(new BridgeCore(Stores.ids(this), Api::request, System::currentTimeMillis));
+        bridge = new Bridge(new BridgeCore(Stores.ids(this), Api::request, System::currentTimeMillis, SpendStore.inDirectory(getFilesDir()))::handle);
         if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
             WebViewCompat.addWebMessageListener(web, "BrittoBridge", origins, bridge);
         } else {

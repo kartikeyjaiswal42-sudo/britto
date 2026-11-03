@@ -179,6 +179,28 @@ export function renderPanel(store: StoreId, savePage: ((store: StoreId) => void)
 }
 
 /** Save the page as an .html file in Downloads, so a reader for it can be built. Nothing is uploaded. */
+/** A one-line Britto note on a page that is not a product (Spend Lens on an order page). */
+export function renderNotice(text: string): void {
+  document.querySelector('britto-panel')?.remove();
+  const host = document.createElement('britto-panel');
+  const root = host.attachShadow({ mode: BRITTO_SHADOW });
+  const style = el('style');
+  style.textContent = CSS;
+  const box = el('div', 'box');
+  box.setAttribute('role', 'status');
+  const head = el('div', 'head');
+  const logo = el('span', 'logo', 'Brit');
+  logo.append(el('span', '', 'to'));
+  const close = el('button', '', '×');
+  close.title = 'Hide';
+  close.addEventListener('click', () => host.remove());
+  head.append(logo, el('span', 'mini', text), close);
+  box.append(head);
+  root.append(style, box);
+  document.documentElement.append(host);
+  if (BRITTO_SHADOW === 'open') host.dataset['notice'] = text;
+}
+
 export function savePageAsFile(store: StoreId): void {
   const blob = new Blob(['<!-- saved by the Britto extension from ', location.href.replace(/--/g, ''), ' -->\n', document.documentElement.outerHTML], { type: 'text/html' });
   const a = document.createElement('a');
