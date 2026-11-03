@@ -39,6 +39,12 @@ to this list and removes what is done.
    with the trip filled in and shows the fares. Press **Save page** at the top, and send the
    `britto-page-uber-mobile-….html` file from your phone's Downloads to the next session. (It
    holds your pickup point and Uber's prices, nothing about your account.)
+4c. **Save your orders page once, for Spend Lens** (3 minutes). In the Britto app: Shop →
+   Amazon.in → log in (your number, Amazon's own page) → menu → **Your Orders** → press **Save
+   page** at the top, and send the `britto-page-amazon-mobile-….html` file to the next session.
+   It contains your recent orders (that is the point); it goes only into Britto's private test
+   folder to teach the reader, never onto the live site. Until a real orders page is checked,
+   Spend Lens reads nothing. The same for Flipkart and Myntra if you shop there.
 5. ~~Save three phone pages~~ (done 2026-10-29 in the emulator: 4 Amazon, 3 Flipkart, 2 Myntra
    pages, each saved with the app's own Save page).
 6. **A signing key for the app** (5 minutes, once): on your Mac run
@@ -1119,3 +1125,56 @@ reddens at both sizes with the Hotels section removed, restored.
   with the session scratchpad; re-save with `scripts/android-cdp.mjs … save`).
 - No "connected" badge: telling a login from its cookies would need each service's session
   cookie name, which needs a logged-in session to learn.
+
+## P10 Spend Lens, 2026-11-03 (local session) — branch `p10-spend-lens`
+
+**Asked (2026-10-29):** "then make P10 and P11". BLUEPRINT §13 + rule 5: the shopper's own
+order-history pages, read and summed on the device; raw orders never uploaded; a test proves it.
+
+### Built
+
+- `web/spend.js` (+ `.d.ts`; plain JS so the /spend page runs it): `parseOrderDate` ("29 October
+  2026", "Oct 3, 2026", "03/10/2026"; impossible days refused), `mergeOrders` (same store + order
+  number replaces, never double-counts), `summarize` (total, first/last, by month, by store).
+  `core/spend.ts`: the `Order` type, re-exports, `isOrder`.
+- `DomRecipe.orderHistory` {verified, page, items, orderId, date, total, titles?, max?} with its
+  **own** verified day; `readOrders` reads nothing unless that section is verified and the
+  address matches. **No store ships one yet**: no real order page exists (it needs the
+  shopper's login) — owner item 4c. Guessing Amazon's order-page markup from memory was not done.
+- Shared reader: on a store page that is not a product page, a verified orderHistory rule →
+  `saveOrders` → a one-line notice ("… kept for Spend Lens on this device. Nothing was uploaded").
+- Extension 0.4.0: kept in `chrome.storage.local`; the popup shows the summary and "Delete".
+- App 0.2.0: `BridgeCore.saveOrders` → `SpendStore` (a private file; allowBackup is off), never the
+  transport, and **write-only**: no message lets a store page read orders back (a store's
+  scripts must not see what was bought elsewhere). `SiteBridgeCore`, attached ONLY to the
+  Britto site's origin, answers `getSpend`/`clearSpend`. `/spend` (website) sums them on the
+  phone; in a browser it says it works in the app. Linked from Super Browse.
+
+### Verified
+
+Unit 116/116 (7 spend tests on a MADE-UP order page, labelled) · typechecks · check:readers ·
+prove 111/0 (`/spend serves the app`) · Gradle 11/11 (+3: kept and NO request; a store page
+cannot read back or write odd orders; the site reads/clears and nothing else) · app.mjs 30/30 ·
+extension.mjs 38/38 (+6, incl. "the service worker's calls to Britto are visible to this test",
+so "nothing about them went to Britto" means something) · browser.mjs 82/0 (+5 per size: totals,
+**no request carries an order number or amount**, Delete, no sideways scroll). Mutants, each
+caught exactly: unverified rule read · merge by number alone · impossible day · year not month ·
+app uploads orders (3 red) · store page reads back · extension uploads · /spend POSTs the orders.
+**On the Android 14 emulator** (local Worker): the Amazon page's real bridge kept 2 made-up
+orders (`{ok:true,kept:2}`), `getSpend` from that store page was dropped, the app's /spend showed
+₹2,028.27 on 2 orders, and the Worker log shows only GET /spend and /spend.js — zero POSTs.
+
+### Found on the way
+
+- Chrome never reported a fetch to a 404 route as finished (the Worker logged the 404 in 6 ms),
+  so a page that makes one never goes "networkidle"; the no-upload check records requests when
+  they START instead.
+- My expected total in the first browser check was arithmetic, not product (₹2,250.27 vs the
+  right ₹2,253.27).
+
+### NOT done
+
+- **No order page is readable yet** (owner item 4c). Categories (BLUEPRINT "by category") not
+  built: no category map exists. Optional aggregate sync (`POST /api/spend/summary`) not built:
+  nothing needs it, and a server copy of someone's spending is a privacy cost with no feature.
+- Order pages on a real phone; the extension on a real order page.

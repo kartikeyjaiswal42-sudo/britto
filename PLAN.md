@@ -22,7 +22,9 @@
 >   Lens and AI look-alikes wait for Workers AI (owner item 11).
 > - **P9 (deep links)**: `/travel` flights, hotels, rides to airports. Fares and flight alerts
 >   wait for fares people actually saw.
-> **Next: P10** (Spend Lens), branched from `main`. P5 waits for the owner's Claude Design
+> - **P10 Spend Lens** (2026-11-03): on-device order parsing and summary, app + extension; no
+>   store's order page is readable until the owner saves one (HISTORY "P10").
+> **Next: P5** (the owner's Claude Design export arrived 2026-11-03: `design/`), then **P11**. P5 waits for the owner's Claude Design
 > export. Owner-only steps: top of HISTORY.md, "Waiting for the owner".
 
 ## Unattended runs (the owner is away and cannot answer)
