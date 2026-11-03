@@ -286,6 +286,26 @@ export const MUTANTS = [
     run: CHECK, expect: [/^flipkart-mobile-cello-pinpoint-variant\.html (status|price|inStock|deleting)/],
   },
   {
+    name: 'Spend Lens reads orders with an unverified orderHistory rule',
+    file: 'core/interpret.ts', find: "if (!rule || rule.verified == null || !new RegExp(rule.page).test(url)) return null;", replace: "if (!rule || !new RegExp(rule.page).test(url)) return null;",
+    run: ['node', ['--test', 'core/spend.test.ts']], expect: [/readOrders reads nothing with an unverified rule/],
+  },
+  {
+    name: 'Spend Lens merges orders by number alone (two stores, one order)',
+    file: 'core/spend.ts', find: "byKey.set(`${o.store}:${o.orderId}`, o);", replace: "byKey.set(o.orderId, o);",
+    run: ['node', ['--test', 'core/spend.test.ts']], expect: [/merging: the same order read again/],
+  },
+  {
+    name: 'Spend Lens accepts a day that does not exist (31 September)',
+    file: 'core/spend.ts', find: "  if (day.getUTCFullYear() !== y || day.getUTCMonth() !== m - 1 || day.getUTCDate() !== d) return null;\n", replace: "",
+    run: ['node', ['--test', 'core/spend.test.ts']], expect: [/order dates as stores print them/, /readOrders: one order per card/, /isOrder: what a client may keep/],
+  },
+  {
+    name: 'Spend Lens totals by year instead of month',
+    file: 'core/spend.ts', find: "const month = o.date.slice(0, 7);", replace: "const month = o.date.slice(0, 4);",
+    run: ['node', ['--test', 'core/spend.test.ts']], expect: [/summary: totals by month/],
+  },
+  {
     name: 'prove: Reliance Digital (refuses Cloudflare) is server-fetched again',
     file: 'core/stores.ts', find: "    serverFetch: 'refused',\n    measured:\n      '2026-10-27: refuses our server on Cloudflare", replace: "    serverFetch: 'yes',\n    measured:\n      '2026-10-27: refuses our server on Cloudflare",
     run: PROVE, expect: [/reliancedigital: tracked, never fetched by our server/],

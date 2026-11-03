@@ -12,6 +12,7 @@ import { jsonLdPath, jsonLdProductNode } from './jsonld.ts';
 import { parseRupees } from './money.ts';
 import { jsonPath, type Field, type ReaderConfig } from './recipe.ts';
 import { innerOf, outerOf, selectAll, selectFirst } from './select.ts';
+import { parseOrderDate, type Order } from './spend.ts';
 import type { Extracted, Offer, StoreId } from './types.ts';
 
 interface Ctx { html: string; url: string; memo: Map<string, unknown> }
@@ -149,6 +150,31 @@ export function readOffers(cfg: ReaderConfig, html: string): Offer[] {
     };
     const id = JSON.stringify(offer);
     if (!seen.has(id)) { seen.add(id); out.push(offer); }
+  }
+  return out;
+}
+
+/**
+ * The shopper's own orders on their order-history page (BLUEPRINT §13 Spend Lens), or null
+ * when this config has no VERIFIED order rule for this address. The result is for the device
+ * only: clients keep it locally and never send it (rule 5). A card without a readable order
+ * number, a real date and a total is skipped, never guessed.
+ */
+export function readOrders(cfg: ReaderConfig, html: string, url: string): Order[] | null {
+  const rule = cfg.domRecipe.orderHistory;
+  if (!rule || rule.verified == null || !new RegExp(rule.page).test(url)) return null;
+  const out: Order[] = [];
+  const seen = new Set<string>();
+  for (const el of selectAll(html, rule.items, rule.max ?? 50)) {
+    const part = outerOf(html, el);
+    if (part == null) continue;
+    const orderId = fieldValue(rule.orderId, part);
+    const date = parseOrderDate(fieldValue(rule.date, part));
+    const total = parseRupees(fieldValue(rule.total, part));
+    if (!orderId || !date || total == null || seen.has(orderId)) continue;
+    seen.add(orderId);
+    const titles = rule.titles ? fieldValue(rule.titles, part) : null;
+    out.push({ store: cfg.store, orderId: orderId.slice(0, 64), date, total, items: titles ? [titles.slice(0, 200)] : [] });
   }
   return out;
 }

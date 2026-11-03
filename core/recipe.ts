@@ -14,6 +14,7 @@
 //   DomRecipe.blocked              bot-wall / error-page markers -> status 'blocked'
 //   DomRecipe.earlyStop            when a server download may stop (CPU budget)
 //   DomRecipe.offers               the offers / coupon codes the page shows (BLUEPRINT §15)
+//   DomRecipe.orderHistory         the shopper's own order list, read on the device (§13)
 //   Field.regex                    alternatives, tried in order (first that matches wins)
 import { compile, SelectorError } from './select.ts';
 import { rupeesToPaise } from './money.ts';
@@ -62,6 +63,11 @@ export interface DomRecipe {
   blocked?: string[][];
   /** Offers the page shows: every element matching `items` is one offer (BLUEPRINT §15). */
   offers?: { items: string; title: Field; text: Field; count?: Field; code?: Field; max?: number };
+  /** The shopper's own order list (BLUEPRINT §13 Spend Lens), read and kept on the device only.
+   * `page` (a regex on the address) says which page it is; every element matching `items` is one
+   * order. It carries its OWN `verified` day: a reader verified on product pages says nothing
+   * about order pages, and clients read nothing with an unverified section. */
+  orderHistory?: OrderHistoryRule;
   /** Server early stop: every id in `complete` is a closed element, and then either the page
    * reads as unavailable or every id in `thenUnavailableOr` is closed too. */
   earlyStop?: { complete: string[]; thenUnavailableOr?: string[] };
@@ -110,12 +116,23 @@ export interface ReaderConfig {
 
 type Check = { ok: true; config: ReaderConfig } | { ok: false; errors: string[] };
 
+export interface OrderHistoryRule {
+  verified: string | null;
+  page: string;
+  items: string;
+  orderId: Field;
+  date: Field;
+  total: Field;
+  titles?: Field;
+  max?: number;
+}
+
 const ATTRS = new Set(['innerText', 'innerHTML', 'textContent', 'content', 'href', 'alt', 'URL']);
 const FIELD_KEYS = new Set(['selector', 'attribute', 'regex', 'match', 'global', 'sub_regex', 'squash', 'json', 'jsonld', 'replace']);
 const TOP_KEYS = new Set(['schema', 'store', 'device', 'revision', 'verified', 'reportsPid', 'toCacheLong', 'domRecipe', 'apiRecipes']);
 const DOM_KEYS = new Set([
   'classSelector', 'name', 'price', 'mrp', 'image', 'pid', 'itm', 'availability', 'discontinuedText', 'blocked', 'earlyStop',
-  'rating', 'ratingsCount', 'reviewsCount', 'brand', 'categoryPath', 'seller', 'pincodeFromStorageKeys', 'offers',
+  'rating', 'ratingsCount', 'reviewsCount', 'brand', 'categoryPath', 'seller', 'pincodeFromStorageKeys', 'offers', 'orderHistory',
 ]);
 // sellerPageFallback (§6.1) is not implemented: refused, so no recipe can rely on it silently.
 const AVAIL_KEYS = new Set(['selectors', 'outOfStockText', 'fields']);
@@ -245,6 +262,19 @@ export function validateReader(input: unknown): Check {
         if (of['count'] !== undefined) checkField(of['count'], 'domRecipe.offers.count', errors);
         if (of['code'] !== undefined) checkField(of['code'], 'domRecipe.offers.code', errors);
         if (of['max'] !== undefined && !(Number.isInteger(of['max']) && (of['max'] as number) >= 1 && (of['max'] as number) <= 20)) errors.push('domRecipe.offers.max: 1 to 20');
+      }
+    }
+    const oh = d['orderHistory'];
+    if (oh !== undefined) {
+      if (!isObj(oh)) errors.push('domRecipe.orderHistory: must be an object');
+      else {
+        unknownKeys(oh, new Set(['verified', 'page', 'items', 'orderId', 'date', 'total', 'titles', 'max']), 'domRecipe.orderHistory', errors);
+        if (!(oh['verified'] === null || (typeof oh['verified'] === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(oh['verified'])))) errors.push('domRecipe.orderHistory.verified: a YYYY-MM-DD day or null');
+        checkRegex(oh['page'], 'domRecipe.orderHistory.page', errors);
+        checkSelector(oh['items'], 'domRecipe.orderHistory.items', errors);
+        for (const k of ['orderId', 'date', 'total'] as const) checkField(oh[k], `domRecipe.orderHistory.${k}`, errors);
+        if (oh['titles'] !== undefined) checkField(oh['titles'], 'domRecipe.orderHistory.titles', errors);
+        if (oh['max'] !== undefined && !(Number.isInteger(oh['max']) && (oh['max'] as number) >= 1 && (oh['max'] as number) <= 100)) errors.push('domRecipe.orderHistory.max: 1 to 100');
       }
     }
     const av = d['availability'];
