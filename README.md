@@ -49,7 +49,7 @@ answer, never worked around.
 
 **Proving it.** Every reader is checked against pages saved from real stores
 (`test/fixtures/`). Every test suite is **proved able to fail**: `npm run mutate` breaks the
-code in 107 deliberate ways, and each must turn exactly its own checks red (the mutation run
+code in 109 deliberate ways, and each must turn exactly its own checks red (the mutation run
 has caught tests that passed while asserting nothing). "Verified live" means checked in the
 production database, not a fixture.
 

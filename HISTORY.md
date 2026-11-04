@@ -26,8 +26,9 @@ to this list and removes what is done.
    to the next session). That lets a session check and switch on the Flipkart reader.
 4. **Install the Android app on your phone** (5 minutes): open
    https://britto.amitynoidalibrary.workers.dev/app on the phone, tap **Download**, open the
-   file, allow installs from Chrome once, Install. (Version 0.4.0, 2026-11-04, signed with the
-   release key of item 6, so later versions install over it.) It was tested end to end on an
+   file, allow installs from Chrome once, Install. (Version 0.5.0, 2026-11-04, signed with the
+   release key of item 6, so later versions install over it; 0.5.0 was seen installing over
+   0.4.0 with its data kept.) It was tested end to end on an
    Android 14 emulator against the live site (HISTORY "P11 part 1"); a real phone is still the
    final check: tell the next session anything that looks wrong. Uninstall any older Britto
    first (it was signed with a different key).
@@ -74,8 +75,7 @@ to this list and removes what is done.
    were checked inside the Britto app on 2026-11-04 and are read for fares now): in the Britto
    app open Travel → Flights, DEL to BOM, any date, Compare fares; under "Also search on" tap
    **Skyscanner**: it asks "Are you a person or a robot?" (press and hold). Tell the next
-   session whether it then showed fares. Under Hotels type `Goa` and tap **Booking.com**: say
-   "filled in" or "empty".
+   session whether it then showed fares. (Booking.com hotels are read in the app since 0.5.0.)
 13. **Log in to Appetize** (if you want to try the app in your browser): the Chrome window on
    appetize.io asks you to log in again. Log in and tell the session; it uploads
    `web/download/britto.apk` there. Appetize's free plan gives 30 minutes a month. Typing your
@@ -91,6 +91,14 @@ to this list and removes what is done.
    press **Save page** at the top (do NOT book). Send the `britto-page-rapido-….html` file to
    the next session. It may hold your name or saved places: it stays private, and only the
    ride list (names and fares) goes into the tests, as was done for Uber.
+16. **Try 0.5.0's new things on your phone** (10 minutes, after item 4): Travel → Flights,
+   DEL to BOM, a date, **Compare fares**: check that a row of dates with prices appears under
+   "Cheapest found" (tap a day: it compares that day), and tap **Alert me if it gets cheaper**.
+   Then add a Return date and compare again (round trip). Then Hotels → Goa → **Compare
+   hotels**. Tell the next session which sites showed prices. On the test phone MakeMyTrip and
+   Goibibo stopped answering after many test searches in one day (a bare "200-OK" page and a
+   network error); on your phone they should answer normally. A fare alert notification comes
+   only when a fare drops at least ₹100 below the lowest seen, so it may take days.
 
 ## S1, 2026-10-26: foundations
 
@@ -1440,3 +1448,104 @@ Win, Verified Deals, Gift Cards).
 - The saved Uber page in `~/.britto/pages/` (2026-11-04 09:32) holds a destination from the
   owner's Uber account (Amity University Gate 4): it stays on the Mac; only its ride list is in
   the repo (`test/fixtures/fares-uber-cp-del-t3-2026-11-04-list.html`).
+
+## P11 part 2b, 2026-11-04 (local session): fare strip, round trip, hotels, fare alerts, status bar, link previews, abuse review
+
+**Asked:** "build the remaining things" (PLAN: P11 part 2b). Rapido stays blocked on the owner's
+saved fare page (owner item 15).
+
+### Measured first
+- **The sites' own date strips are already in the pages saved on 2026-11-04.** MakeMyTrip and
+  Goibibo: one layout (`div.flexiitemCal`, the searched day `flexiCalActive`, 15 days 10-24
+  Nov; a `p.loaderBox.flexiitemCal` placeholder sits among them). ixigo: 31 days (Thu 05 Nov to
+  Sat 05 Dec) printed as "Fri, 20" with no month, so "05" appears twice; the searched day has
+  `border-subbrand-500`. **A strip figure is not a fare from the list:** MakeMyTrip's strip
+  said ₹7,116 for 20 Nov while its list started at ₹7,016.
+- **Hotels in the app (debug build, Goa 20-22 Nov, 2 adults), one load each:** Booking.com 30
+  hotels, "Price for 2 nights" (the whole stay), current price in
+  `[data-testid=price-and-discounted-price]`, taxes separate. Cleartrip 5 hotels (it draws
+  only what is on screen), price per night ("+ ₹3,311 taxes & fees / night"; page data
+  `"price":18393` for the first). **MakeMyTrip hotels with a city name and no city code: a
+  bare "200-OK" page**, so it stays a front-page link. No hotel was on both sites' lists.
+
+### Built
+- `core/fares.ts`: `strip` in a recipe (entries, printed day, price, the searched day's
+  marker); `readStrip` dates each entry from the searched day by its position and requires every
+  printed weekday, month and day to fit, else no strip at all (`dayFits`). Hotels: `area`
+  field and `per: 'night' | 'stay'` (required for hotels, refused elsewhere).
+- `web/fares.json`: strips for ixigo, MakeMyTrip, Goibibo; hotel recipes for Booking.com
+  (per stay) and Cleartrip (per night; the price is the amount just before its tax line).
+- `web/compare.js`: `fareStrip` (lowest per day across sites), `tripTotal` (two one-way
+  tickets), `hotelKey` + `groupHotels` (per night; the same hotel merged only on an identical
+  word set, filler words dropped).
+- App: the reader gets the searched day and the strip entries beside the cards; `FareJob`
+  accepts a `date` only as a real `YYYY-MM-DD` and counts the strip in "still changing";
+  `FareRunner` works with no screen (laid out at the phone's size) and says when a compare is
+  done; reader errors are logged instead of passing for "no fares".
+  **Fare alerts:** `FareWatches` (on the phone only; ≤ 3 routes; same route and day replaces;
+  alert when ≥ ₹100 and ≥ 1% below the lowest seen; past days dropped) + `FareAlertJob` (every
+  6 h with a network: today's recipes from /fares.json, each route compared again with no
+  screen, notification "Flight fare dropped" that opens Travel). **Status bar:** the page
+  reports its top bar's and tab bar's colours (`bars`); the app paints a strip behind the
+  status bar and sets light or dark icons. Bridge: `bars`, `watchFare`, `fareWatches`,
+  `unwatchFare`. Version 0.5.0 (6).
+- Site (app): the merged strip under "Cheapest found" (tap a day = compare it); round trip =
+  onward compare, then return compare, then "Cheapest round trip found, as two one-way
+  tickets" + the sites' round-trip links; "Alert me if it gets cheaper than ₹X"; Fare alerts
+  list on Travel (Compare now, Stop); Hotels → "Compare hotels" (per night, "₹900/night
+  (₹1,800 for 2 nights)"). **`siteBridge()` is now one shared sender:** each call used to
+  replace the bridge's reply handler, so a second user (bars, alerts) would have hung a running
+  compare.
+- **Link previews** (`api/meta.ts`): the Worker writes a page's own title, description and
+  Open Graph tags into the shell; a product link gets its name, price now, usual price and
+  picture (https only), all escaped.
+- **Abuse review** (`ABUSE.md`): short links now limited (30 an hour per network or chat)
+  BEFORE they are followed (they were followed before the add limit was checked: unlimited
+  requests to Amazon from one network); product views count once per network per product per
+  hour ("popular" is ordered by views, so a script could put any product on the home page).
+- README: a case-study section and the Travel section rewritten (it still said no fares).
+
+### Verified (this session)
+- `npm test` 141/141 · typecheck (both) · check:readers clean · Android unit tests 30/30 ·
+  `app.mjs` 32/0 (against the 0.5.0 release APK) · `browser.mjs` 100/0 (local) · `prove`
+  133/0 (incl. the short-link limit, views once per network, a shared product link's own
+  title and tags, /travel's title).
+- **21 new mutants, each red on exactly its checks:** 3 strip, 2 compare (strip, round-trip
+  total), 4 hotels, 6 Android (alert drop rule, three routes, searched day, strip settling,
+  today's recipes, bar colours), 2 link previews, 2 abuse (through prove). One survived first
+  ("$&" in a title): the test then found the escaped title in og:title and missed the broken
+  `<title>`; the test now checks the `<title>` element. The full 109-mutant run was NOT
+  repeated this session.
+- **In the app (debug build `app.britto.dev`, Android 14 emulator, the owner's home network):**
+  - Status bar: blue behind the clock with white icons above the blue Home header, white with
+    dark icons on Travel; the strip behind the navigation bar white like the tab bar
+    (screenshots).
+  - Round trip DEL⇄BOM 20/23 Nov, 95 s: "Cheapest round trip found, as two one-way tickets
+    ₹14,220" = ₹7,217 onward + ₹7,003 return (ixigo both ways); each leg's strip had 31 days
+    read live from ixigo with the searched day marked (20 Nov, 23 Nov).
+  - Fare alert: "Alert me if it gets cheaper than ₹7,217" → "Fare alert set …"; Travel lists
+    it. With the stored lowest raised to ₹8,000 by hand and the app sent to the background,
+    `cmd jobscheduler run -f app.britto.dev 4202` compared again **with no screen** in 45 s and
+    Android showed **"Flight fare dropped — DEL → BOM, Fri 20 Nov: ₹7,217 on ixigo, down from
+    ₹8,000."**; the stored lowest became ₹7,217.
+  - Hotels, Goa 20-22 Nov: Booking.com 30 hotels from ₹900/night (₹1,800 for 2 nights),
+    Cleartrip 2 hotels (5 earlier the same day) from ₹9,788/night, merged per night.
+  - One-way DEL→BOM 20 Nov after the emulator restart: EaseMyTrip 40 fares and ixigo 6, both
+    from ₹7,217; strip 31 days.
+- Release 0.5.0 (294,189 bytes, sha256 26df6c3f…, the same certificate fbf25e7d… as 0.4.0)
+  installed over 0.4.0 on the emulator with its first-install date (= data) kept.
+
+### NOT verified
+- **MakeMyTrip and Goibibo stopped answering this emulator in the afternoon** (after ~6 test
+  searches each that day): MakeMyTrip a bare "200-OK" page (169 characters, seen in Super
+  Browse too), Goibibo `ERR_HTTP2_PROTOCOL_ERROR` three times. Not worked around. Their strips
+  are verified on the saved pages only; their fares were read live in the morning (P11 2a).
+- The emulator's DNS failed after a cold boot (Booking.com, EaseMyTrip: ERR_NAME_NOT_RESOLVED
+  in every browser in the app); restarting the emulator with `-dns-server 1.1.1.1,8.8.8.8`
+  fixed it. A test-machine problem; not seen on phones.
+- A fare alert on a real phone over days (Android may run the 6-hour job later than asked);
+  the job was forced once on the emulator.
+- Round trips use two one-way searches; the sites' own round-trip pages (sometimes cheaper)
+  are linked, not read. Hotel compare reads only the first hotels each site draws.
+- Link previews as WhatsApp/Telegram actually render them (the tags are checked, not the apps).
+- A real phone (owner items 4 and 16).
