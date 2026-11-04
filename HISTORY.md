@@ -24,21 +24,17 @@ to this list and removes what is done.
    the extension, press "Save this page for Britto" in the panel, and put the downloaded
    `britto-page-flipkart-….html` file into the `britto/test/fixtures/` folder (or attach it
    to the next session). That lets a session check and switch on the Flipkart reader.
-4. **Try the Android app on your phone** (10 minutes): it now works on an Android 14
-   emulator (2026-10-29: Amazon, Flipkart and Myntra prices read from the page once the
-   phone readers are live, Back, Share → Britto, Save page, dark mode). A real phone is still
-   the final check: download the APK (GitHub → Actions → newest run → Artifacts →
-   `britto-apk`), install, open Britto → Shop → a store → any product, and tell the next
-   session what the Britto panel said. Uninstall an older Britto first (different signing keys
-   until item 6 is done).
-4b. **Log in to Uber inside Britto and save one fare screen** (5 minutes; this is what lets
-   Britto read and compare ride fares, as you decided on 2026-10-29). In the Britto app: Shop →
-   Rides → Uber → **Login** (top right) → type your number → enter the code Uber sends. Your
-   login stays in the app on your phone; Britto never sees the number or the code. Then in
-   Britto open **Travel**, fill "Ride to the airport" and tap **Uber**: Uber opens inside Britto
-   with the trip filled in and shows the fares. Press **Save page** at the top, and send the
-   `britto-page-uber-mobile-….html` file from your phone's Downloads to the next session. (It
-   holds your pickup point and Uber's prices, nothing about your account.)
+4. **Install the Android app on your phone** (5 minutes): open
+   https://britto.amitynoidalibrary.workers.dev/app on the phone, tap **Download**, open the
+   file, allow installs from Chrome once, Install. (Version 0.3.1, 2026-11-04, signed with the
+   release key of item 6, so later versions install over it.) It was tested end to end on an
+   Android 14 emulator against the live site (HISTORY "P11 part 1"); a real phone is still the
+   final check: tell the next session anything that looks wrong. Uninstall any older Britto
+   first (it was signed with a different key).
+4b. ~~Log in to Uber inside Britto and save one fare screen~~ (done 2026-11-04: you logged in
+   on the emulator; a fare screen, Connaught Place → Delhi T3, was saved with Save page. It is
+   kept OUTSIDE the repo in `~/.britto/pages/` on the Mac, because it came from your logged-in
+   account; checked for your number, name, email and session tokens, none found.)
 4c. **Save your orders page once, for Spend Lens** (3 minutes). In the Britto app: Shop →
    Amazon.in → log in (your number, Amazon's own page) → menu → **Your Orders** → press **Save
    page** at the top, and send the `britto-page-amazon-mobile-….html` file to the next session.
@@ -47,16 +43,14 @@ to this list and removes what is done.
    Spend Lens reads nothing. The same for Flipkart and Myntra if you shop there.
 5. ~~Save three phone pages~~ (done 2026-10-29 in the emulator: 4 Amazon, 3 Flipkart, 2 Myntra
    pages, each saved with the app's own Save page).
-6. **A signing key for the app** (5 minutes, once): on your Mac run
-   `keytool -genkeypair -keystore britto-release.keystore -alias britto -keyalg RSA -keysize 3072 -validity 10000`
-   (pick a strong password; keep the file and password safe, never in the repo). Then on
-   GitHub → Settings → Secrets and variables → Actions add `ANDROID_KEYSTORE_B64` (the output
-   of `base64 -i britto-release.keystore`) and `ANDROID_KEYSTORE_PASS` (the password). From
-   then on every APK from GitHub Actions can update the installed app.
-7. **Phone notifications (FCM)** (optional, 10 minutes): create a free Firebase project at
-   console.firebase.google.com, add an Android app with package name `app.britto`, download
-   `google-services.json` and give it to a session (it is not secret, but it is yours). Until
-   then the app's alerts come by Telegram.
+6. **Back up the app's signing key** (2 minutes, once): it was made on 2026-11-04 in the folder
+   `~/.britto/` on this Mac (`britto-release.jks`, with its password in `release.env`; neither is
+   in the repo). Copy that whole folder somewhere safe (a USB stick, or an encrypted note).
+   Every version of the app must be signed with it: if it is lost, everyone has to uninstall
+   Britto (losing their alerts) before a new version installs. `node scripts/publish-apk.mjs`
+   builds, signs and publishes the app with it.
+7. ~~Phone notifications (FCM)~~ (not needed: since 2026-11-04 the app asks the server for
+   fired alerts every 15 minutes and when it opens, and shows them as notifications.)
 8. **Grocery pages from your phone** (P7, 10 minutes, after item 4): in the Britto app, set a
    delivery address in Blinkit, Zepto, Swiggy Instamart and BigBasket inside Super Browse (they
    are not in the Shop grid yet: open them from a Telegram/WhatsApp link to their site), open
@@ -67,9 +61,8 @@ to this list and removes what is done.
    extension): sign up at affiliate.flipkart.com, then in the dashboard go to API → API Token →
    Generate. Do not paste the token anywhere; tell the next session "Flipkart affiliate token
    is ready" and it will explain how to store it as a Worker secret yourself.
-10. **CPU check on production** (optional, 2 minutes): in the `britto` folder run
-   `npx wrangler tail britto --format json | grep cpuTime` for 10 minutes and paste the
-   numbers into the next session. (Measures what the new reader costs on Cloudflare.)
+10. ~~CPU check on production~~ (measured 2026-11-04 with `wrangler tail`: two Amazon store
+   searches took 470 ms and 94 ms of CPU and both answered normally; no CPU-limit errors seen.)
 11. **Decide on Workers AI** (P8, a decision, 1 minute): picture search ("Lens": photo of a
    product → matches) and smarter "similar products" need Cloudflare Workers AI. Cloudflare's
    pricing page (read 2026-10-27) says every account gets 10,000 "neurons" a day free, and on
@@ -85,6 +78,11 @@ to this list and removes what is done.
    trip was already there) or "empty" (you had to type it). Britto's test computer is in the
    USA and these four sites refused it, so only you can check them; the next session then
    marks each link as checked or removes it.
+13. **Log in to Appetize** (if you want to try the app in your browser): the Chrome window on
+   appetize.io asks you to log in again. Log in and tell the session; it uploads
+   `web/download/britto.apk` there. Appetize's free plan gives 30 minutes a month. Typing your
+   number into an Appetize phone sends it through Appetize's computers, so test logins on your
+   own phone instead.
 
 ## S1, 2026-10-26: foundations
 
@@ -1234,3 +1232,90 @@ emulator shows the design's home and tab bar.
 - Screens of the design with no Britto feature yet: categories, filters, onboarding,
   notifications list, profile/settings, flight results with fares. Deals still uses selects,
   not the design's chips.
+
+## P11 part 1, 2026-11-03/04 (local session): a catalogue, store search, drops, app alerts, the app tested live
+
+The owner said the site was empty ("total shit") and asked for the app to work "like BuyHatke",
+tested before installing it. Measured first: production held **11 products and 21 price
+readings**, and search only searched those 11. So the work was data and entry points, not looks.
+
+### Built (all on `main`, deployed)
+- **Store search** (`api/listing.ts`, `/api/store-search`): Amazon.in's own search page, read by
+  the server with the honest User-Agent. Checked first: amazon.in robots.txt does not disallow
+  `/s?k=` or `/gp/bestsellers/` for `*` (it disallows only filtered searches). New recipe
+  sections `search` / `popular` (core/recipe.ts `ListingRule`): own `verified` day, an `endsAt`
+  marker (download stops at the page strip), addresses limited to the store's own hosts, a
+  `brand` joined to the name. Cached 6 h in D1 (`search_cache`; the Cache API does nothing on
+  workers.dev), 40 searches/network/hour. **List prices are labelled as the list's and never
+  enter history** (the pen set: ₹280 on the search page, ₹265 on its own page).
+- **Catalogue**: the first scheduled run of each hour reads one of 13 Amazon best-seller lists
+  and adds up to 30 products WITHOUT a price (the list shows "1 offer from ₹18,99900": a lowest
+  offer, paise glued on); later runs read each product's own page. Cron every 3 min; cap 650.
+- **Drops** (`drops` table, `/api/drops`): "was ₹X, now ₹Y" from the reading before, both in
+  stock; a rise or a sell-out ends it, an M.R.P.-only change does not.
+- **Site**: search page (Amazon results + one tap to every other store's own search), quick
+  searches and "Price dropped" on Home, "Check other stores" on product pages, 400 px Amazon
+  thumbnails, the sale check says when it will be ready ("ready around 11 Nov").
+- **App alerts as notifications, no push service**: the site (in the app) hands its device
+  token over the site-only bridge; `AlertJob` (JobScheduler, 15 min + on open) asks
+  `/api/me` and shows each firing not shown yet (`AlertWatch`). Tapping opens the product.
+- **App download**: `/app` page; `scripts/publish-apk.mjs` builds, signs with the release key
+  in `~/.britto/` (refuses any other signer) and writes `web/download/britto.json`.
+- **Icons**: the design's white b on #1F5BFF everywhere, Android adaptive icon included.
+
+### Bugs found by testing for real (each fixed)
+1. **The app crashed when an alert was set**: Android 14 refuses a job that waits for a network
+   without ACCESS_NETWORK_STATE (SecurityException, found on the emulator).
+2. **Flipkart products opened from search could not be read** (live, in the app): Flipkart
+   changes the address with pushState and keeps the SEARCH page's data (an ItemList, no Product
+   JSON-LD). The same address loaded directly read ₹1,849. The shared reader now loads such a
+   page once for real (once per product per tab: a store that rewrites its address on every
+   load cannot loop; the first guard, by address, could have, and a test proved it). Verified
+   after: Flipkart search → "Cello Gripper 30" read ₹262 in the app.
+3. **The APK was never published**: `.gitignore`'s `*.apk` silently kept
+   `web/download/britto.apk` out of git; live answered 404 while britto.json described it.
+   `prove` now downloads it and compares size and SHA-256 (it was red against production).
+4. **GitHub runs #69/#70 failed** on my new live check, not on the site: it sent a made-up
+   `CF-Connecting-IP` header, which Cloudflare refuses from outside (403, error 1000). Local only now.
+5. The keyboard stayed over search results in the app; the in-app alert box showed the
+   website's Telegram text; the download page said Android 8 (minSdk is 29 = Android 10) and
+   at first claimed app notifications before they existed. All corrected.
+
+### Measured
+- Production after one night: **308 products, 196 priced** (from 11). 70 "unrecognised" are
+  honest non-reads: Amazon redirects some best-seller ids to another product (identity check
+  refuses it), and some pages have "No featured offers" (only third-party sellers, no price
+  to pay). 0 drops yet: prices had not changed since their first read.
+- Amazon answers store search from Cloudflare (live: 16–24 results, ~2 s). `wrangler tail`:
+  cpuTime 470 ms and 94 ms for two searches, outcome ok (no CPU-limit errors).
+- Alert notifications end to end on the Android 14 emulator against a LOCAL Worker: a real
+  Amazon read (₹280) crossed a ₹300 target the throwaway database had been set up to cross;
+  the notification appeared ("Price alert … at or below your target of ₹300"); tapping it
+  opened the product; a second check showed nothing new.
+- The release app (0.3.1) against PRODUCTION on the emulator: Home, search "earbuds" (16
+  results), a result → product page (server read ₹1,849), "Check other stores" → Flipkart's
+  search inside the app (₹1,849 there too), Flipkart product → panel read, Amazon product via
+  Share → panel ₹1,199 (M.R.P. ₹6,999), Amazon sign-in page (+91 number field), Uber sign-in;
+  the owner logged in to Uber, and Uber's fare screen (Connaught Place → DEL T3: Go Sedan
+  ₹366.18 … Black ₹699.10) was saved with Save page. Nothing was booked.
+- **An Uber code was sent by my test**: the emulator's Android autofill had kept a number from
+  an earlier session and Uber submitted it on its own; it was the owner's number (they confirmed
+  and logged in). Lesson: on a test phone, never tap into a login field that autofill fills.
+
+### Gates (final code)
+`npm test` 123 · typecheck both configs · check:readers (5 list pages added) · prove 129/0 local
+(real amazon.in) and **69/0 live** · browser.mjs 98/0 · extension.mjs 38/0 · app.mjs 32/0 ·
+Java unit tests 16/16. **Proved able to fail**: 14 new breakages, each reddening exactly its
+checks (list reader ×3 + Amazon search recipe, drops ×1, search limit ×1, unread products ×1,
+AlertWatch ×3, reader reload ×2; 2 browser breakages by hand). Two tests were too weak at
+first and were fixed (a sample Flipkart link with no "/dp/"; a skip that hid a wrong link).
+
+### NOT verified / not done
+- A real phone (only the emulator). App notifications against PRODUCTION (only locally:
+  a live alert fires when a watched product's price crosses, at most every 3 h).
+- Uber fares are saved but **not read yet**: Uber is a "service", not a store, in the reader
+  system, so reading it needs its own small schema step (next session). Ola/Rapido: none.
+- Myntra/Nykaa search links: headless Chrome is refused by both, so marked unchecked.
+- Flights/hotels still show no fares (no permitted free source; unchanged since P9).
+- The app's status bar stays light grey above the blue Home header.
+- Appetize upload: waiting for the owner to log in to Appetize again (item 13).

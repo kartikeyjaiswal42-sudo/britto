@@ -26,7 +26,11 @@
 >   store's order page is readable until the owner saves one (HISTORY "P10").
 > - **P5 design** (2026-11-03): the owner's Claude Design (design/, v4) rebuilt in `web/`;
 >   money screens, phone login and the overlay bubble deliberately not built (HISTORY "P5").
-> **Next: P11** (Job-ready). P5 waits for the owner's Claude Design
+> - **P11 part 1** (2026-11-04): Amazon store search, a best-seller catalogue (308 products live
+>   after one night, from 11), price drops, alerts as app notifications, the app on the site at
+>   /app (0.3.1, release-signed), Flipkart-from-search fixed (HISTORY "P11 part 1").
+> **Next: P11 part 2**: read Uber's fare screen (page saved, kept outside the repo), SSR meta for
+> shared links, abuse review, README case study, the app's status-bar colour. Earlier note: P5 waits for the owner's Claude Design
 > export. Owner-only steps: top of HISTORY.md, "Waiting for the owner".
 
 ## Unattended runs (the owner is away and cannot answer)
