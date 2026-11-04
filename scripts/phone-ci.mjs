@@ -102,7 +102,12 @@ function tapSystem(ids, texts) {
   return null;
 }
 
-  await ev(`history.pushState(null, '', '/travel#cabs'); dispatchEvent(new PopStateEvent('popstate')); 1`);
+  // The DevTools target can be listed before its page has loaded (it was, on GitHub: origin
+  // "null", an empty URL): wait for Britto's own page, then open Travel → Cabs.
+  const loaded = await until(`location.origin === 'http://127.0.0.1:${port}' && document.readyState === 'complete' && !!document.querySelector('#app *')`, 90000, 1000);
+  step(`Britto's page loaded: ${!!loaded}`);
+  await ev(`location.href = '/travel#cabs', 1`);
+  await sleep(1500);
   check('Travel opens on Cabs in the app, with pickup, drop and the ride apps', await until(`!!document.querySelector('#panel-cabs:not([hidden]) #ride-compare [name=pickup]') && document.querySelectorAll('#ride-apps li[data-app]').length === 2`, 20000));
   shot('01-cabs');
 

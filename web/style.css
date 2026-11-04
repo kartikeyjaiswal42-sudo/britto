@@ -402,3 +402,6 @@ svg.ico { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColo
   :root:not([data-theme="light"]) .ride-best, :root:not([data-theme="light"]) .cab-promo { background: #1C2A55; }
   :root:not([data-theme="light"]) .app-mono.app-uber, :root:not([data-theme="light"]) .app-badge.app-uber { background: #EEF1F7; color: #0F1530; }
 }
+/* Travel forms: two fields a row on a phone (From | To, Depart | Return, …), as in the design. */
+.travel-form .fields { grid-template-columns: repeat(auto-fill, minmax(min(140px, 100%), 1fr)); }
+.travel-form .field input[type="date"] { min-width: 0; width: 100%; }

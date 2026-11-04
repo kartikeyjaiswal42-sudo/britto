@@ -61,6 +61,7 @@ jobs:
           target: google_apis_playstore
           arch: x86_64
           ram-size: 4096M
+          profile: pixel_6
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -dns-server 1.1.1.1,8.8.8.8
           disable-animations: true
           script: node scripts/phone-ci.mjs android/app/build/outputs/apk/debug/app-debug.apk 8799
