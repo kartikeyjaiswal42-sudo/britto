@@ -106,6 +106,7 @@ public class MainActivity extends ComponentActivity {
             siteBridge = new Bridge(new SiteBridgeCore(SpendStore.inDirectory(getFilesDir()), AlertWatch.inDirectory(getFilesDir()),
                     () -> runOnUiThread(this::watchAlerts), () -> AlertJob.notificationsAllowed(this), System::currentTimeMillis, bridgeFares)
                     .withPlaces(this::findPlaces)
+                    .withHere(this::findHere)
                     .withBars((top, bottom) -> runOnUiThread(() -> paintBars(top, bottom)))
                     .withFareAlerts(fareAlerts())
                     .withRides(rides())
@@ -154,6 +155,76 @@ public class MainActivity extends ComponentActivity {
             throw new IllegalStateException(e);
         }
         return out;
+    }
+
+    private volatile java.util.concurrent.CountDownLatch locationAsked;
+
+    private boolean mayLocate() {
+        return checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                || checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        java.util.concurrent.CountDownLatch asked = locationAsked;
+        if (requestCode == 2 && asked != null) asked.countDown();
+    }
+
+    /**
+     * "Use my current location" (ride compare): asks Android's location permission the first time
+     * (the shopper decides), then one fresh fix, then the phone's Geocoder for its address. Runs on
+     * the bridge's thread; waits at most 45 s for the answer to the permission and 15 s for a fix.
+     */
+    @SuppressWarnings({"deprecation", "MissingPermission"})
+    private JSONObject findHere() {
+        try {
+            if (!mayLocate()) {
+                java.util.concurrent.CountDownLatch asked = new java.util.concurrent.CountDownLatch(1);
+                locationAsked = asked;
+                runOnUiThread(() -> requestPermissions(new String[] {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 2));
+                asked.await(45, java.util.concurrent.TimeUnit.SECONDS);
+                if (!mayLocate()) return new JSONObject().put("reason", "denied");
+            }
+            android.location.LocationManager lm = getSystemService(android.location.LocationManager.class);
+            if (lm == null || !lm.isLocationEnabled()) return new JSONObject().put("reason", "off");
+            String provider = Build.VERSION.SDK_INT >= 31 && lm.hasProvider(android.location.LocationManager.FUSED_PROVIDER) && lm.isProviderEnabled(android.location.LocationManager.FUSED_PROVIDER)
+                    ? android.location.LocationManager.FUSED_PROVIDER
+                    : lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) ? android.location.LocationManager.GPS_PROVIDER
+                    : android.location.LocationManager.NETWORK_PROVIDER;
+            java.util.concurrent.atomic.AtomicReference<android.location.Location> got = new java.util.concurrent.atomic.AtomicReference<>();
+            java.util.concurrent.CountDownLatch fixed = new java.util.concurrent.CountDownLatch(1);
+            if (Build.VERSION.SDK_INT >= 30) {
+                lm.getCurrentLocation(provider, null, getMainExecutor(), loc -> { got.set(loc); fixed.countDown(); });
+            } else {
+                lm.requestSingleUpdate(provider, loc -> { got.set(loc); fixed.countDown(); }, android.os.Looper.getMainLooper());
+            }
+            fixed.await(15, java.util.concurrent.TimeUnit.SECONDS);
+            android.location.Location loc = got.get();
+            if (loc == null) { // no fresh fix in time: a recent one from any source will do
+                for (String p : lm.getProviders(true)) {
+                    android.location.Location last = lm.getLastKnownLocation(p);
+                    if (last != null && System.currentTimeMillis() - last.getTime() < 10 * 60_000L && (loc == null || last.getTime() > loc.getTime())) loc = last;
+                }
+            }
+            if (loc == null) return new JSONObject().put("reason", "none");
+            String address = null;
+            if (android.location.Geocoder.isPresent()) {
+                try {
+                    java.util.List<android.location.Address> at = new android.location.Geocoder(this, new java.util.Locale("en", "IN")).getFromLocation(loc.getLatitude(), loc.getLongitude(), 1);
+                    if (at != null && !at.isEmpty() && at.get(0).getMaxAddressLineIndex() >= 0) address = at.get(0).getAddressLine(0);
+                } catch (IOException e) {
+                    address = null; // offline: the point alone still makes a ride link
+                }
+            }
+            return new JSONObject().put("name", "Current location").put("address", address == null ? JSONObject.NULL : address)
+                    .put("lat", loc.getLatitude()).put("lng", loc.getLongitude()).put("accuracy", loc.hasAccuracy() ? Math.round(loc.getAccuracy()) : JSONObject.NULL);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+        } catch (org.json.JSONException | SecurityException | IllegalArgumentException e) {
+            return null;
+        }
     }
 
     /** The site handed over its alert token: check every 15 minutes, and ask once to notify. */

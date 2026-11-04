@@ -22,12 +22,23 @@ const ICONS = {
   wallet: ['M3 6h18v13H3z', 'M3 10h18M16 14.5h2'],
   store: ['M4 9l1.5-5h13L20 9', 'M4 9h16v11H4z', 'M9 20v-6h6v6'],
   basket: ['M4 10h16l-1.5 10h-13z', 'M8 10l4-6 4 6'],
+  car: ['M5 17h14', 'M6 17l1.5-6h9L18 17', 'M8 17v2M16 17v2', 'M9 8h6'],
+  auto: ['M4 16h16', 'M6 16l2-7h8l2 7', 'M7 16v3M17 16v3'],
+  bike: ['M5 14a3 3 0 100 6 3 3 0 100-6', 'M19 14a3 3 0 100 6 3 3 0 100-6', 'M5 17l4-8h5l5 8', 'M12 9l-1-3H9'],
+  hotel: ['M3 20V8l9-4 9 4v12', 'M9 20v-6h6v6'],
+  locate: ['M12 9a3 3 0 100 6 3 3 0 100-6', 'M12 2v3M12 19v3M2 12h3M19 12h3', 'M12 5a7 7 0 100 14 7 7 0 100-14'],
+  swap: ['M7 4v16M7 4L3 8M7 4l4 4', 'M17 20V4M17 20l-4-4M17 20l4-4'],
+  pin: ['M12 21s7-6.1 7-12a7 7 0 00-14 0c0 5.9 7 12 7 12z', 'M12 6.5a2.5 2.5 0 100 5 2.5 2.5 0 100-5'],
+  clock: ['M12 3a9 9 0 100 18 9 9 0 100-18', 'M12 7v5l3 2'],
+  check: ['M5 12l5 5L20 7'],
+  arrow: ['M5 12h14', 'M13 6l6 6-6 6'],
 };
 function icon(name) {
   const NS = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');
   svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('class', 'ico');
   for (const d of ICONS[name]) {
     const p = document.createElementNS(NS, 'path');
     p.setAttribute('d', d);
@@ -173,15 +184,22 @@ async function home() {
     h('div', { class: 'promos' },
       h('a', { class: 'promo fake', href: '#paste', onclick: focusPaste }, h('span', { class: 'tag' }, 'Fake sale detector'), h('b', {}, 'Is that sale real?'), h('span', {}, 'We check the price against the product’s own usual price, not its M.R.P.')),
       h('a', { class: 'promo deals', href: '/deals', 'data-nav': true }, h('span', { class: 'tag' }, 'Real drops'), h('b', {}, 'Biggest real price drops'), h('span', {}, 'Only drops below what each product usually costs.')),
-      h('a', { class: 'promo travel', href: '/travel', 'data-nav': true }, h('span', { class: 'tag' }, 'Travel'), h('b', {}, 'One search, every site'), h('span', {}, 'Flights, hotels and rides, filled in on each site.'))),
+      h('a', { class: 'promo travel', href: '/travel#flights', 'data-nav': true }, h('span', { class: 'tag' }, 'Travel'), h('b', {}, 'One search, every site'), h('span', {}, 'Flights and hotels from every site, side by side.'))),
+    h('section', { class: 'cab-promo', id: 'cab-promo' },
+      h('span', { class: 'eyebrow' }, inApp ? 'Cabs' : 'Cabs, in the Britto app'),
+      h('b', {}, 'Uber and Rapido, one list'),
+      h('p', {}, 'Enter where you are going once. Britto reads both apps\u2019 fares on your phone and puts the cheapest ride first. It never books.'),
+      inApp
+        ? h('a', { class: 'button light', href: '/travel#cabs', 'data-nav': true }, 'Compare cabs', icon('arrow'))
+        : h('a', { class: 'button light', href: '/app', 'data-nav': true }, 'Get the app')),
     h('nav', { class: 'shortcuts', 'aria-label': 'Britto features' },
       shortcut('Fake sale', '#paste', 'shield', 'tint-red', focusPaste),
       shortcut('Price tracker', '/alerts', 'trend', 'tint-blue'),
-      shortcut('Flights', '/travel', 'plane', 'tint-sky'),
+      shortcut('Cabs', '/travel#cabs', 'car', 'tint-gold'),
+      shortcut('Flights', '/travel#flights', 'plane', 'tint-sky'),
       shortcut('Deals', '/deals', 'tag', 'tint-orange'),
       shortcut('Shop', '/browse', 'bag', 'tint-green'),
       shortcut('Spend Lens', '/spend', 'wallet', 'tint-violet'),
-      shortcut('Stores', '/stores', 'store', 'tint-gold'),
       inApp ? shortcut('Grocery', '/grocery', 'basket', 'tint-pink') : shortcut('Get the app', '/app', 'bag', 'tint-pink')),
     h('section', { class: 'quick' }, h('h2', {}, 'Search Amazon with price history'),
       h('div', { class: 'chips' }, QUICK.map((w) => h('a', { class: 'chip', href: `/search?q=${encodeURIComponent(w)}`, 'data-nav': true }, w)))),
@@ -533,9 +551,37 @@ function watchRideReads(box, ids) {
   tick();
 }
 
-/** "Gate no. 3, Amity Rd, Sector 125, Noida, …" -> "Gate no. 3, Amity Rd" */
-const shortPlace = (p) => String(p).split(',').map((x) => x.trim()).filter(Boolean).slice(0, 2).join(', ');
+/** "Gate no. 3, Amity Rd, Sector 125, Noida, …" -> "Gate no. 3, Amity Rd" (n parts) */
+const shortPlace = (p, n = 2) => String(p).split(',').map((x) => x.trim()).filter(Boolean).slice(0, n).join(', ');
 const clock = (ms) => new Date(ms).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
+
+/** A ride's kind from its name in the app, for the filter chips: "Bike Saver" -> bike. */
+function rideKind(label) {
+  const l = String(label).toLowerCase();
+  if (/bike|moto|scooty|two.?wheeler/.test(l)) return 'bike';
+  if (/\bauto\b|rickshaw/.test(l)) return 'auto';
+  if (/xl\b|\bsuv\b|[67].?seat|innova/.test(l)) return 'xl';
+  if (/premier|premium|black|prime|comfort|lux|exec/.test(l)) return 'premium';
+  return 'cab';
+}
+const RIDE_KINDS = [['all', 'All'], ['bike', 'Bike'], ['auto', 'Auto'], ['cab', 'Cab'], ['premium', 'Premium'], ['xl', 'XL']];
+
+/** What the last compare found for each ride app on this phone (logged in or not), kept here. */
+const RIDE_STATE_KEY = 'britto.rideApps';
+function rideState() {
+  try { return JSON.parse(localStorage.getItem(RIDE_STATE_KEY) ?? '{}') ?? {}; } catch { return {}; }
+}
+function noteRideState(read) {
+  const now = rideState();
+  let changed = false;
+  for (const s of read) {
+    if (!['fares', 'login', 'check'].includes(s.status)) continue;
+    if (now[s.id]?.status === s.status && Date.now() - (now[s.id]?.at ?? 0) < 60_000) continue;
+    now[s.id] = { status: s.status, at: Date.now() };
+    changed = true;
+  }
+  if (changed) try { localStorage.setItem(RIDE_STATE_KEY, JSON.stringify(now)); } catch { /* private mode: not kept */ }
+}
 
 function drawRides(box, sites, st, others) {
   rideDraws.set(box, [sites, st, others]);
@@ -551,40 +597,244 @@ function drawRides(box, sites, st, others) {
     .map((s) => (s.status !== 'fares' && rideReads.has(s.id) ? { ...s, ...rideReads.get(s.id), opened: true } : s));
   const opened = others.filter((l) => READ_WHILE_OPEN.has(l.id) && rideReads.has(l.id)).map((l) => ({ ...l, ...rideReads.get(l.id), opened: true }));
   const read = [...auto, ...opened];
+  noteRideState(read);
   const rest = others.filter((l) => !opened.some((o) => o.id === l.id));
   const tripOf = read.filter((s) => s.status === 'fares' && s.places?.filter(Boolean).length === 2);
   const rides = rideRows(read);
   const openButton = (l) => (READ_WHILE_OPEN.has(l.id) && inApp
     ? h('button', { type: 'button', class: 'button secondary small', 'data-read': l.id, onclick: () => openToRead(l) }, `Open ${l.name}`)
     : h('a', { class: 'button secondary small', href: l.url, rel: 'noopener' }, `Open ${l.name}`));
+  const count = (s) => rides.filter((r) => r.site.id === s.id).length;
+  const kinds = new Set(rides.map((r) => rideKind(r.label)));
+  const kind = kinds.has(box.dataset.kind) ? box.dataset.kind : 'all';
+  const shown = rides.filter((r) => kind === 'all' || rideKind(r.label) === kind);
+  const best = rides[0];
+  const rival = best && rides.find((r) => r.site.id !== best.site.id);
+  const badge = (site) => h('span', { class: `app-badge app-${site.id}` }, site.name);
   put(box,
-    h('p', { class: 'fare-progress small' }, st.done ? `Checked on your phone just now.` : 'Checking ride fares on your phone…'),
+    h('p', { class: 'fare-progress small' }, st.done ? 'Checked on your phone just now.' : 'Checking ride fares on your phone…'),
     st.done ? null : h('progress', { class: 'fare-bar' }),
-    h('ul', { class: 'fare-sites' }, read.map((s) => h('li', { 'data-site': s.id, 'data-status': s.status },
+    h('ul', { class: 'fare-sites ride-sites' }, read.map((s) => h('li', { 'data-site': s.id, 'data-status': s.status },
       h('span', { class: 'fare-site' }, s.name),
-      s.status === 'fares' && rides.some((r) => r.site.id === s.id)
-        ? h('span', {}, `${rides.filter((r) => r.site.id === s.id).length} rides from ${rupees(rides.find((r) => r.site.id === s.id).price)}`,
+      s.status === 'fares' && count(s)
+        ? h('span', { class: 'ride-ok' }, icon('check'), `${count(s)} rides from ${rupees(rides.find((r) => r.site.id === s.id).price)}`,
           s.opened ? h('span', { class: 'small muted' }, ` · read at ${clock(s.at)}`) : null)
         : h('span', { class: 'small muted' }, s.stage === 'failed'
           ? 'did not list the same place, so Britto stopped. Open it and enter the trip there: Britto reads its prices while you look.'
           : FARE_STATUS[s.status] ?? FARE_STATUS.waiting),
-      openButton(s)))),
-    tripOf.map((s) => h('p', { class: 'small muted', 'data-trip': s.id }, `${s.name}\u2019s prices are for the trip in its own boxes: ${s.places.map(shortPlace).join(' \u2192 ')}. Check it is the same trip.`)),
-    rides.length ? h('ol', { class: 'fare-list' }, rides.map((r) => h('li', { 'data-ride': r.label },
-      h('div', { class: 'fare-flight' }, h('strong', {}, r.label), h('span', { class: 'small muted' }, r.eta ? `pickup ${r.eta}` : '')),
-      h('div', { class: 'fare-offers' }, h('a', { class: 'offer', href: r.site.url, rel: 'noopener', 'data-offer': r.site.id }, h('span', {}, r.site.name), h('b', {}, rupees(r.price))))))) : null,
+      s.status === 'fares' && count(s) ? null : openButton(s)))),
+    best ? h('section', { class: 'ride-best', 'data-best': best.site.id },
+      h('span', { class: 'eyebrow' }, 'Cheapest right now'),
+      h('div', { class: 'ride-best-row' },
+        h('span', { class: `ride-ico kind-${rideKind(best.label)}` }, icon(rideKind(best.label) === 'cab' || rideKind(best.label) === 'premium' || rideKind(best.label) === 'xl' ? 'car' : rideKind(best.label))),
+        h('span', { class: 'ride-best-name' }, h('b', {}, `${best.label} on ${best.site.name}`),
+          h('small', {}, [best.eta ? `pickup ${best.eta}` : null, rival ? `${rupees(rival.price - best.price)} less than ${rival.site.name}’s cheapest` : null].filter(Boolean).join(' · '))),
+        h('strong', {}, rupees(best.price))),
+      h('a', { class: 'button light', href: best.site.url, rel: 'noopener', 'data-offer': best.site.id }, `Book it in ${best.site.name}`)) : null,
+    tripOf.map((s) => h('p', { class: 'small muted', 'data-trip': s.id }, `${s.name}’s prices are for the trip in its own boxes: ${s.places.map((x) => shortPlace(x)).join(' → ')}. Check it is the same trip.`)),
+    kinds.size > 1 ? h('div', { class: 'chips ride-kinds', role: 'group', 'aria-label': 'Ride type' },
+      RIDE_KINDS.filter(([id]) => id === 'all' || kinds.has(id)).map(([id, label]) => h('button', {
+        type: 'button', class: 'chip', 'aria-pressed': String(id === kind), 'data-kind': id,
+        onclick: () => { box.dataset.kind = id; drawRides(box, sites, st, others); },
+      }, label))) : null,
+    shown.length ? h('ol', { class: 'fare-list ride-list' }, shown.map((r) => h('li', { 'data-ride': r.label },
+      h('a', { class: 'offer ride-row', href: r.site.url, rel: 'noopener', 'data-offer': r.site.id },
+        h('span', { class: `ride-ico kind-${rideKind(r.label)}` }, icon(['bike', 'auto'].includes(rideKind(r.label)) ? rideKind(r.label) : 'car')),
+        h('span', { class: 'ride-name' }, h('b', {}, r.label), h('small', {}, badge(r.site), r.eta ? ` pickup ${r.eta}` : '')),
+        h('b', { class: 'ride-price' }, rupees(r.price)))))) : null,
     rest.length ? h('ul', { class: 'fare-sites' }, rest.map((l) => h('li', { 'data-site': l.id, 'data-status': 'link' },
       h('span', { class: 'fare-site' }, l.name),
       h('span', { class: 'small muted' }, READ_WHILE_OPEN.has(l.id) && inApp
         ? `Its trip is typed on its own page: open it, log in with your number once, and enter the same pickup and drop. Britto reads its prices while you look and shows them here.`
         : 'Britto cannot read its fares yet: open it, log in with your number once, and enter the trip there.'),
       openButton(l)))) : null,
-    h('p', { class: 'small muted' }, 'Fares as each app\u2019s own page showed them on this phone. Tap one to book it there; Britto never books a ride.'));
+    h('p', { class: 'small muted' }, 'Fares exactly as each app’s own page showed them on this phone. Tap a ride to book it in that app; Britto never books a ride.'));
 }
 
 const addDaysISO = (iso, n) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 /** "DEL · New Delhi" (what the airport list puts in the box) or "del" -> "DEL". */
 const airportCode = (v) => (/^\s*([A-Za-z]{3})\b/.exec(v)?.[1] ?? '').toUpperCase();
+
+/**
+ * A row of tabs over panels (Travel: Cabs, Flights, Hotels). The open tab is kept in the address
+ * (/travel#cabs) and on this device, so Back and a reload come back to it.
+ */
+let travelTabsShow = null;
+function tabs(panels, list, fallback) {
+  const want = location.hash.slice(1);
+  let saved = null;
+  try { saved = localStorage.getItem('britto.travelTab'); } catch { /* not kept */ }
+  const ids = list.map(([id]) => id);
+  const first = ids.includes(want) ? want : ids.includes(saved) ? saved : fallback;
+  const buttons = new Map();
+  const show = (id, remember = true) => {
+    for (const [k, panel] of Object.entries(panels)) panel.hidden = k !== id;
+    for (const [k, b] of buttons) b.setAttribute('aria-selected', String(k === id));
+    if (!remember) return;
+    try { localStorage.setItem('britto.travelTab', id); } catch { /* not kept */ }
+    history.replaceState(null, '', `${location.pathname}#${id}`);
+  };
+  const bar = h('div', { class: 'seg', role: 'tablist', 'aria-label': 'Travel' }, list.map(([id, label, ic]) => {
+    const b = h('button', { type: 'button', role: 'tab', id: `tab-${id}`, 'aria-controls': `panel-${id}`, onclick: () => show(id) }, icon(ic), label);
+    buttons.set(id, b);
+    return b;
+  }));
+  show(first, false);
+  return { bar, show };
+}
+
+/** Recent ride trips, kept on this phone only (never sent to Britto), newest first, at most 3. */
+const RECENT_RIDES_KEY = 'britto.recentRides';
+function recentRides() {
+  try { return (JSON.parse(localStorage.getItem(RECENT_RIDES_KEY) ?? '[]') ?? []).filter((t) => t?.pickup?.place && t?.drop?.place).slice(0, 3); } catch { return []; }
+}
+function keepRide(trip) {
+  const same = (a, b) => a.pickup.value === b.pickup.value && a.drop.value === b.drop.value;
+  const list = [trip, ...recentRides().filter((t) => !same(t, trip))].slice(0, 3);
+  try { localStorage.setItem(RECENT_RIDES_KEY, JSON.stringify(list)); } catch { /* not kept */ }
+}
+
+/** Where the trip apps stand on this phone, from the last compare (RIDE_STATE_KEY). */
+const RIDE_APPS = [
+  { id: 'uber', name: 'Uber', url: 'https://m.uber.com/' },
+  { id: 'rapido', name: 'Rapido', url: 'https://m.rapido.bike/' },
+];
+function rideAppsCard() {
+  const known = rideState();
+  return h('section', { class: 'ride-apps', id: 'ride-apps' },
+    h('div', { class: 'ride-apps-head' }, h('h3', {}, 'Your ride apps'), h('span', { class: 'small muted' }, 'read on this phone')),
+    h('ul', {}, RIDE_APPS.map((a) => {
+      const k = known[a.id];
+      const fresh = k && Date.now() - k.at < 7 * 86_400_000;
+      const text = fresh && k.status === 'fares' ? `Logged in · prices read ${ago(k.at)}`
+        : fresh && k.status === 'login' ? 'Not logged in: tap Open and log in with your number once'
+          : fresh && k.status === 'check' ? 'Asked to confirm you are a person: tap Open'
+            : 'Log in once inside Britto before your first compare';
+      return h('li', { 'data-app': a.id, 'data-state': fresh ? k.status : 'unknown' },
+        h('span', { class: `app-mono app-${a.id}` }, a.name[0]),
+        h('span', { class: 'app-text' }, h('b', {}, a.name), h('small', { class: fresh && k.status === 'fares' ? 'ok' : 'muted' }, text)),
+        READ_WHILE_OPEN.has(a.id)
+          ? h('button', { type: 'button', class: 'button secondary small', 'data-read': a.id, onclick: () => openToRead(a) }, 'Open')
+          : h('a', { class: 'button secondary small', href: a.url, rel: 'noopener' }, 'Open'));
+    })),
+    h('p', { class: 'small muted' }, 'Britto types your trip into each app’s own page and reads the fares it shows. It never presses Book.'));
+}
+
+/**
+ * The Cabs form in the app: pickup (typed, or "Use my current location") and drop, the phone's own
+ * place suggestions as you type, then each ride app's fares read on this phone (drawRides).
+ */
+function cabCompare() {
+  const ask = siteBridge();
+  const status = h('p', { class: 'form-status', role: 'status' });
+  const sugg = h('ul', { class: 'place-list', id: 'place-list', role: 'listbox', 'aria-label': 'Places', hidden: true });
+  const out = h('div', { class: 'travel-out', id: 'ride-compare-out', 'aria-live': 'polite' });
+  const pickup = h('input', { name: 'pickup', placeholder: 'Where are you?', autocomplete: 'off', required: true, 'aria-label': 'Pickup', enterkeyhint: 'next' });
+  const drop = h('input', { name: 'drop', placeholder: 'Where to?', autocomplete: 'off', required: true, 'aria-label': 'Drop', enterkeyhint: 'search' });
+  const pickupLabel = h('small', {}, 'Pickup');
+  let timer = 0;
+  let run = 0;
+  const hide = () => { sugg.hidden = true; put(sugg); };
+  // A place picked from the list (or the phone's location) stays with its box until it is typed in again.
+  const choose = (input, place, shown, say) => {
+    input.value = shown;
+    input.place = place;
+    input.dataset.say = say ?? shown;
+    hide();
+    status.textContent = '';
+    if (input === pickup && !drop.value) drop.focus();
+    else input.blur();
+  };
+  const suggest = (input) => {
+    if (input === pickup) pickupLabel.textContent = 'Pickup';
+    input.place = null;
+    input.dataset.say = '';
+    const q = input.value.trim();
+    const mine = ++run;
+    clearTimeout(timer);
+    if (q.length < 3 || !ask) return hide();
+    timer = setTimeout(async () => {
+      const r = await ask({ type: 'places', q });
+      if (mine !== run || document.activeElement !== input) return;
+      const found = r?.places ?? [];
+      if (!found.length) return hide();
+      put(sugg, found.map((p) => {
+        const named = p.name && p.name !== q && !/^\d/.test(p.name);
+        const shown = named ? p.name : shortPlace(p.address, 3);
+        return h('li', {}, h('button', { type: 'button', class: 'place', role: 'option', onclick: () => choose(input, p, shown, named ? p.name : input.value.trim()) },
+          icon('pin'), h('span', {}, h('b', {}, shown), h('small', {}, p.address))));
+      }));
+      input.closest('.trip-row')?.after(sugg);
+      sugg.hidden = false;
+    }, 400);
+  };
+  for (const input of [pickup, drop]) {
+    input.addEventListener('input', () => suggest(input));
+    input.addEventListener('blur', () => setTimeout(() => { if (!sugg.contains(document.activeElement)) hide(); }, 250));
+  }
+  const locate = h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Use my current location', onclick: async () => {
+    locate.disabled = true;
+    status.textContent = '';
+    const before = pickup.placeholder;
+    pickup.value = '';
+    pickup.placeholder = 'Finding where you are…';
+    const r = ask ? await askHere(ask) : null;
+    locate.disabled = false;
+    pickup.placeholder = before;
+    if (!r?.ok) {
+      status.textContent = r?.reason === 'denied' ? 'Location was not allowed. Type the pickup instead.'
+        : r?.reason === 'off' ? 'Location is off on this phone. Turn it on, or type the pickup.'
+          : 'The phone could not find where you are just now. Type the pickup instead.';
+      return;
+    }
+    const p = r.place;
+    const near = p.address ? shortPlace(p.address, 3) : '';
+    choose(pickup, { ...p, name: near || 'Current location', address: p.address ?? '' }, near ? shortPlace(p.address) : 'Current location', near);
+    pickupLabel.textContent = 'Pickup · your location';
+  } }, icon('locate'));
+  locate.hidden = !appCanLocate;
+  const swap = h('button', { type: 'button', class: 'icon-btn ghost', 'aria-label': 'Swap pickup and drop', onclick: () => {
+    [pickup.value, drop.value] = [drop.value, pickup.value];
+    [pickup.place, drop.place] = [drop.place, pickup.place];
+    [pickup.dataset.say, drop.dataset.say] = [drop.dataset.say ?? '', pickup.dataset.say ?? ''];
+  } }, icon('swap'));
+  const recent = h('div', { class: 'recent-rides' });
+  const drawRecent = () => {
+    const list = recentRides();
+    put(recent, list.length ? [h('h3', { class: 'eyebrow' }, 'Recent trips'), h('ul', {}, list.map((t) => h('li', {},
+      h('button', { type: 'button', class: 'recent', onclick: () => {
+        for (const [input, side] of [[pickup, t.pickup], [drop, t.drop]]) { input.value = side.value; input.place = side.place; input.dataset.say = side.say ?? side.value; }
+        form.requestSubmit();
+      } }, icon('clock'), h('span', {}, `${t.pickup.value} → ${t.drop.value}`)))))] : []);
+  };
+  const form = h('form', { class: 'travel-form cab-form', id: 'ride-compare', onsubmit: async (e) => {
+    e.preventDefault();
+    hide();
+    document.activeElement?.blur?.();
+    fareRun++;
+    if (!ask) return put(out, h('p', { class: 'error' }, 'Ride compare works in the Britto app.'));
+    put(out, h('p', { class: 'muted small' }, 'Finding the places…'));
+    const placeOf = async (input) => input.place ?? (await ask({ type: 'places', q: input.value }))?.places?.[0];
+    const [p, d] = await Promise.all([placeOf(pickup), placeOf(drop)]);
+    if (!p || !d) return put(out, h('p', { class: 'error' }, `${!p ? 'Pickup' : 'Drop'}: no such place found. Try a landmark and the city, or pick one from the list.`));
+    const say = (input) => input.dataset.say || input.value;
+    const r = rideCompare(p, d, { pickup: say(pickup), drop: say(drop) });
+    if (!r.ok) return put(out, h('p', { class: 'error' }, r.reason));
+    keepRide({ pickup: { value: pickup.value, place: p, say: say(pickup) }, drop: { value: drop.value, place: d, say: say(drop) } });
+    drawRecent();
+    const live = h('div', {});
+    put(out, h('p', { class: 'trip-line small' }, h('b', {}, 'From '), shortPlace(p.address || p.name, 3), h('br'), h('b', {}, 'To '), shortPlace(d.address || d.name, 3)), live);
+    if (!(await liveFares(live, r.links, 'ride', drawRides))) put(live, travelLinks(r.links));
+  } },
+  h('div', { class: 'trip-card' },
+    h('div', { class: 'trip-row' }, h('span', { class: 'dot from' }), h('span', { class: 'trip-field' }, pickupLabel, pickup), locate),
+    h('div', { class: 'trip-row' }, h('span', { class: 'dot to' }), h('span', { class: 'trip-field' }, h('small', {}, 'Drop'), drop), swap)),
+  status,
+  h('button', { type: 'submit', class: 'go' }, 'Compare cabs', icon('arrow')),
+  out);
+  drawRecent();
+  return h('div', {}, form, rideAppsCard(), recent);
+}
 
 async function travelPage() {
   put(app, h('p', { class: 'muted' }, 'Loading…'));
@@ -617,7 +867,7 @@ async function travelPage() {
       liveFares(flightOut, r.links, 'flight', (box, sites, st, others) => drawFares(box, sites, st, others, r.q, airports, again(depart), watchFare(r.q)), { date: r.q.depart }).then((live) => { if (!live) show(flightOut, r); });
       return;
     }
-    show(flightOut, r, r.ok ? h('p', { class: 'small' }, h('button', { type: 'button', class: 'link', onclick: () => { rideTo.value = from.value; document.getElementById('rides')?.scrollIntoView(); } }, `Need a ride to ${r.q.from}?`)) : null);
+    show(flightOut, r, r.ok ? h('p', { class: 'small' }, h('button', { type: 'button', class: 'link', onclick: () => { rideTo.value = from.value; travelTabsShow?.show('cabs'); document.getElementById('rides')?.scrollIntoView(); } }, `Need a ride to ${r.q.from}?`)) : null);
   } },
   h('div', { class: 'fields' }, field('From', from), field('To', to), field('Depart', depart), field('Return (optional)', ret), field('Adults', adults), field('Class', cabin)),
   h('button', { type: 'submit' }, inApp ? 'Compare fares' : 'Show flight searches'), flightOut);
@@ -704,30 +954,9 @@ async function travelPage() {
   h('div', { class: 'fields' }, field('City', city), field('Check-in', checkIn), field('Check-out', checkOut), field('Guests (one room)', guests)),
   h('button', { type: 'submit' }, inApp ? 'Compare hotels' : 'Show hotel searches'), hotelOut);
 
-  // Ride compare (app only): places from the phone's own place search, fares from Uber's own page.
-  const pickup = h('input', { name: 'pickup', placeholder: 'Connaught Place, New Delhi', autocomplete: 'off', required: true });
-  const drop = h('input', { name: 'drop', placeholder: 'Delhi Airport Terminal 3', autocomplete: 'off', required: true });
-  const rideCmpOut = out('ride-compare-out');
-  const rideCmp = h('form', { class: 'travel-form', id: 'ride-compare', onsubmit: async (e) => {
-    e.preventDefault();
-    document.activeElement?.blur?.();
-    fareRun++;
-    const ask = siteBridge();
-    if (!ask) return put(rideCmpOut, h('p', { class: 'error' }, 'Ride compare works in the Britto app.'));
-    put(rideCmpOut, h('p', { class: 'muted small' }, 'Finding the places…'));
-    const [a, b] = await Promise.all([ask({ type: 'places', q: pickup.value }), ask({ type: 'places', q: drop.value })]);
-    const p = a?.places?.[0];
-    const d = b?.places?.[0];
-    if (!p || !d) return put(rideCmpOut, h('p', { class: 'error' }, `${!p ? 'Pickup' : 'Drop'}: no such place found. Try a landmark and the city.`));
-    const r = rideCompare(p, d, { pickup: pickup.value, drop: drop.value });
-    if (!r.ok) return put(rideCmpOut, h('p', { class: 'error' }, r.reason));
-    const live = h('div', {});
-    put(rideCmpOut, h('p', { class: 'small' }, h('b', {}, 'From '), p.address, h('br'), h('b', {}, 'To '), d.address), live);
-    if (!(await liveFares(live, r.links, 'ride', drawRides))) put(live, travelLinks(r.links));
-  } },
-  h('div', { class: 'fields' }, field('Pickup', pickup), field('Drop', drop)),
-  h('p', { class: 'small muted' }, 'Places are found by your phone. Britto opens Uber with the trip, types the same places into Rapido\u2019s own boxes and picks Rapido\u2019s matching place, then reads both apps\u2019 fares on this phone. Log in to each once in the app first (Open Uber, Open Rapido). Britto never books.'),
-  h('button', { type: 'submit' }, 'Compare rides'), rideCmpOut);
+  // Ride compare (app only): places from the phone's own place search (or its location, when the
+  // shopper taps for it), fares read from each ride app's own page on this phone.
+  const rideCmp = inApp ? cabCompare() : null;
 
   // Rides to the airport: the shopper's location goes into the Uber link only, never to Britto.
   const rideTo = h('input', { name: 'rideTo', list: 'airport-list', placeholder: 'DEL · New Delhi', autocomplete: 'off', required: true });
@@ -736,8 +965,16 @@ async function travelPage() {
     e.preventDefault();
     const code = airportCode(rideTo.value);
     if (!airports.has(code)) return show(rideOut, rideSearch({ to: code }, airports, rides.uber));
-    // The Britto app asks for the internet only, so its pages cannot have your location.
-    if (inApp) return put(rideOut, h('p', { class: 'notice' }, `The Britto app does not ask for your location, so ride links work in your phone\u2019s browser: open ${location.host}/travel there.`));
+    // In the app the phone's location comes from Android (asked when tapped), never from Britto.
+    if (inApp) {
+      const ask = siteBridge();
+      if (!ask || !appCanLocate) return put(rideOut, h('p', { class: 'notice' }, `This copy of the Britto app cannot read your location, so ride links work in your phone\u2019s browser: open ${location.host}/travel there.`));
+      put(rideOut, h('p', { class: 'muted small' }, 'Finding where you are…'));
+      askHere(ask).then((r) => (r?.ok
+        ? show(rideOut, rideSearch({ to: code, pickup: { lat: r.place.lat, lng: r.place.lng } }, airports, rides.uber))
+        : put(rideOut, h('p', { class: 'error' }, r?.reason === 'denied' ? 'Location was not allowed, so no ride link can start from where you are.' : r?.reason === 'off' ? 'Location is off on this phone. Turn it on and try again.' : 'The phone could not find where you are just now.'))));
+      return;
+    }
     if (!navigator.geolocation) return put(rideOut, h('p', { class: 'error' }, 'This browser cannot share your location.'));
     put(rideOut, h('p', { class: 'muted small' }, 'Asking for your location…'));
     navigator.geolocation.getCurrentPosition(
@@ -749,15 +986,19 @@ async function travelPage() {
   h('p', { class: 'small muted' }, 'Your location goes only into the ride link, on this device. Britto never receives it.'),
   h('button', { type: 'submit' }, 'Use my location'), rideOut);
 
+  const panels = {
+    cabs: h('section', { class: 'tab-panel', id: 'panel-cabs', role: 'tabpanel', 'aria-labelledby': 'tab-cabs' },
+      rideCmp,
+      h('h2', {}, 'Ride to the airport'), ridesForm),
+    flights: h('section', { class: 'tab-panel', id: 'panel-flights', role: 'tabpanel', 'aria-labelledby': 'tab-flights' }, flights, watchList),
+    hotels: h('section', { class: 'tab-panel', id: 'panel-hotels', role: 'tabpanel', 'aria-labelledby': 'tab-hotels' }, hotels),
+  };
+  travelTabsShow = tabs(panels, [['cabs', 'Cabs', 'car'], ['flights', 'Flights', 'plane'], ['hotels', 'Hotels', 'hotel']], inApp ? 'cabs' : 'flights');
   put(app, h('h1', {}, 'Travel'),
-    h('p', { class: 'muted' }, inApp
-      ? 'Enter your trip once. Britto opens MakeMyTrip, ixigo, Goibibo and EaseMyTrip (flights), Booking.com and Cleartrip (hotels) and Uber and Rapido (rides) on this phone, reads the prices each one shows, and lists them side by side. Britto\u2019s server never sees your search, and nothing is booked.'
+    h('p', { class: 'muted travel-lede' }, inApp
+      ? 'Enter your trip once. Britto opens each app’s own page on this phone, reads the prices it shows and lists them side by side. Britto’s server never sees your trip, and nothing is booked.'
       : 'Enter your trip once and open the same search on each site. In the Britto Android app, Britto also reads the fares each site shows and compares them for you.'),
-    list,
-    inApp ? h('section', {}, h('h2', {}, 'Rides'), rideCmp) : null,
-    h('section', {}, h('h2', {}, 'Flights'), flights, watchList),
-    h('section', {}, h('h2', {}, 'Hotels'), hotels),
-    h('section', {}, h('h2', {}, 'Ride to the airport'), ridesForm));
+    list, travelTabsShow.bar, panels.cabs, panels.flights, panels.hotels);
   loadWatches();
 }
 
@@ -910,6 +1151,12 @@ async function appPage() {
 
 /** Inside the Britto Android app (it adds "BrittoApp/<version>" to its WebView's User-Agent). */
 const inApp = /\bBrittoApp\//.test(navigator.userAgent);
+/** The app's version from its User-Agent ("BrittoApp/0.7.0"), as [major, minor], or null. */
+const appVersion = (() => { const m = /\bBrittoApp\/(\d+)\.(\d+)/.exec(navigator.userAgent); return m ? [Number(m[1]), Number(m[2])] : null; })();
+/** App 0.7.0 and later can hand the page the phone's location (the "here" message). */
+const appCanLocate = !!appVersion && (appVersion[0] > 0 || appVersion[1] >= 7);
+/** Asks the app for the phone's location; an app that never answers counts as "none" after 90 s. */
+const askHere = (ask) => Promise.race([ask({ type: 'here' }), new Promise((r) => setTimeout(() => r({ ok: false, reason: 'none' }), 90_000))]);
 
 /**
  * Super Browse (BLUEPRINT §18): every store Britto knows, opened in the app's in-app browser,

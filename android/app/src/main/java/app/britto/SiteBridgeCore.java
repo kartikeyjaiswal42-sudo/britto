@@ -104,6 +104,23 @@ final class SiteBridgeCore {
         return this;
     }
 
+    /**
+     * Where the phone is, for a ride's pickup, asked only when the shopper taps "Use my current
+     * location" (Android asks them first). The place stays on the phone: it goes into the ride
+     * apps' pages, never to Britto's server.
+     */
+    interface Here {
+        /** {"name", "address", "lat", "lng"}, or {"reason": "denied" | "off" | "none"}. */
+        JSONObject find();
+    }
+
+    private Here here;
+
+    SiteBridgeCore withHere(Here h) {
+        this.here = h;
+        return this;
+    }
+
     static final java.util.regex.Pattern SITE_ID = java.util.regex.Pattern.compile("^[a-z]{2,20}$");
 
     private static final java.util.regex.Pattern COLOUR = java.util.regex.Pattern.compile("^#[0-9a-fA-F]{6}$");
@@ -221,6 +238,15 @@ final class SiteBridgeCore {
                     if (share == null) return null;
                     String text = msg.optString("text", "");
                     reply = new JSONObject().put("ok", !text.isEmpty() && text.length() <= 500 && share.text(text));
+                    break;
+                }
+                case "here": {
+                    if (here == null) return null;
+                    JSONObject found = here.find();
+                    boolean ok = found != null && found.has("lat") && found.has("lng")
+                            && Math.abs(found.optDouble("lat", 99)) <= 90 && Math.abs(found.optDouble("lng", 999)) <= 180;
+                    reply = ok ? new JSONObject().put("ok", true).put("place", found)
+                            : new JSONObject().put("ok", false).put("reason", found == null ? "none" : found.optString("reason", "none"));
                     break;
                 }
                 case "rideReading": {

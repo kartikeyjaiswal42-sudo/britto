@@ -202,12 +202,17 @@ try {
     check('…in a browser: links only, and fares are said to be read in the Android app', await page.locator('#flight-links .fare-sites, #ride-compare').count() === 0
       && /Android app, Britto also reads the fares/.test(await page.locator('#app > p.muted').first().innerText()));
     check('…and every link opens in a new tab without telling the site where you came from', (await page.locator('#flight-links a').evaluateAll((as) => as.every((a) => a.target === '_blank' && /noreferrer/.test(a.rel)))));
+    check('…tabs: Flights open first in a browser, Cabs and Hotels hidden', await page.locator('#panel-flights').isVisible() && !(await page.locator('#panel-hotels').isVisible()) && !(await page.locator('#panel-cabs').isVisible())
+      && (await page.locator('#tab-flights').getAttribute('aria-selected')) === 'true');
+    await page.click('#tab-hotels');
+    check('…tapping Hotels shows only the hotels and keeps it in the address', await page.locator('#panel-hotels').isVisible() && !(await page.locator('#panel-flights').isVisible()) && new URL(page.url()).hash === '#hotels');
     await page.fill('#hotels [name=city]', 'Goa');
     await page.fill('#hotels [name=checkIn]', when);
     await page.fill('#hotels [name=checkOut]', later);
     await page.click('#hotels button[type=submit]');
     const hotelWant = hotelSearch({ city: 'Goa', checkIn: when, checkOut: later, adults: 2 });
     check('…hotels: Cleartrip with the city, dates and guests', hotelWant.ok && (await page.locator('#hotel-links li[data-site=cleartrip] a').getAttribute('href')) === hotelWant.links[0].url);
+    await page.click('#tab-cabs');
     await page.fill('#rides [name=rideTo]', 'DEL · New Delhi');
     await page.click('#rides button[type=submit]');
     await page.waitForSelector('#ride-links li');
@@ -222,7 +227,20 @@ try {
     await appPage.goto(base + '/travel', { waitUntil: 'networkidle' });
     await appPage.fill('#rides [name=rideTo]', 'DEL · New Delhi');
     await appPage.click('#rides button[type=submit]');
-    check('…inside the Britto app (no location permission): says to use the phone\'s browser for rides', /does not ask for your location/.test(await appPage.locator('#ride-links').innerText()) && (await appPage.locator('#ride-links a').count()) === 0);
+    check('…inside the Britto app (here with no app bridge to ask for the location): says to use the phone\'s browser for rides', /cannot read your location/.test(await appPage.locator('#ride-links').innerText()) && (await appPage.locator('#ride-links a').count()) === 0);
+    check('…inside the app, Cabs opens first: pickup with "Use my current location", drop, swap, the ride apps', await appPage.locator('#panel-cabs').isVisible()
+      && await appPage.locator('#ride-compare [name=pickup]').isVisible() && await appPage.locator('#ride-compare [name=drop]').isVisible()
+      && (await appPage.locator('#ride-compare button[aria-label="Swap pickup and drop"]').count()) === 1
+      && (await appPage.locator('#ride-apps li[data-app]').evaluateAll((lis) => lis.map((li) => li.dataset.app).join())) === 'uber,rapido');
+    check('…an app older than 0.7.0 (it cannot hand over the location) shows no "Use my current location"', (await appPage.locator('#ride-compare button[aria-label="Use my current location"]').count()) === 1
+      && !(await appPage.locator('#ride-compare button[aria-label="Use my current location"]').isVisible()));
+    const newApp = await browser.newContext({ viewport, colorScheme: scheme, userAgent: `${await page.evaluate(() => navigator.userAgent)} BrittoApp/0.7.0` });
+    const newPage = await newApp.newPage();
+    await newPage.goto(base + '/travel', { waitUntil: 'networkidle' });
+    check('…app 0.7.0 shows it', await newPage.locator('#ride-compare button[aria-label="Use my current location"]').isVisible());
+    await newApp.close();
+    await appPage.evaluate(() => window.scrollTo(500, 0));
+    check('…and no horizontal scroll on the app\'s Cabs tab', (await appPage.evaluate(() => window.scrollX)) === 0);
     await appCtx.close();
 
     // Spend Lens (BLUEPRINT §13): in a browser it says where it works; in the app it sums the

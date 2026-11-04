@@ -1,0 +1,70 @@
+# The Britto app on an Android phone emulator, on GitHub's computers instead of the owner's
+# 8 GB laptop (an emulator there froze it, 2026-11-05). scripts/phone-ci.mjs drives the app's
+# Cabs tab like a person: current location, the phone's place suggestions, Compare cabs.
+# Screenshots + results.json: Actions → the run → Artifacts → phone-ci.
+#
+# Runs by hand (Actions → Phone test → Run workflow) and on pushes that change the app or the
+# site. A fresh emulator is logged in to no ride app, so Uber and Rapido are expected to say
+# "log in"; fares with a login are checked on a real phone.
+
+name: Phone test
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'android/**'
+      - 'web/**'
+      - 'scripts/phone-ci.mjs'
+      - '.github/workflows/phone.yml'
+
+jobs:
+  phone:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      # GitHub's Linux machines can run the emulator with hardware acceleration (KVM).
+      - name: Allow the emulator to use KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+      # Britto's site, local on the runner (no Cloudflare account involved), for the app to open.
+      - name: Britto site on 127.0.0.1:8799
+        run: |
+          npx wrangler d1 execute britto --local --persist-to .wrangler/ci --file=api/schema.sql
+          nohup npx wrangler dev --local --persist-to .wrangler/ci --port 8799 > wrangler.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:8799/ && break; sleep 2; done
+          curl -sf -o /dev/null http://127.0.0.1:8799/travel
+      - name: The debug app, opening that site
+        working-directory: android
+        run: ./gradlew --no-daemon assembleDebug -Pbritto.site=http://127.0.0.1:8799
+      - name: Phone emulator (Android 14, Google Play image) and the Cabs test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis_playstore
+          arch: x86_64
+          ram-size: 4096M
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -dns-server 1.1.1.1,8.8.8.8
+          disable-animations: true
+          script: node scripts/phone-ci.mjs android/app/build/outputs/apk/debug/app-debug.apk 8799
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: phone-ci
+          path: |
+            phone-ci/
+            wrangler.log
+          if-no-files-found: warn

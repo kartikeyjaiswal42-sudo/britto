@@ -100,4 +100,26 @@ public class RideReadingsTest {
         assertFalse(new JSONObject(huge).getJSONObject("reply").getBoolean("ok"));
         assertEquals(List.of("Get Britto: https://britto.example/app"), shared);
     }
+
+    @Test
+    public void currentLocationIsAskedOnlyThroughTheAppAndOnlyARealPointGoesBack() throws Exception {
+        JSONObject ask = new JSONObject().put("id", 1).put("msg", new JSONObject().put("type", "here"));
+        assertNull("without the location part (a store page's bridge) the message is not answered", new SiteBridgeCore(null).handle(ask.toString()));
+        JSONObject[] next = {new JSONObject().put("name", "Current location").put("address", "Gate no. 3, Amity Rd, Sector 125, Noida").put("lat", 28.5442).put("lng", 77.3331)};
+        SiteBridgeCore core = new SiteBridgeCore(null).withHere(() -> next[0]);
+        JSONObject ok = new JSONObject(core.handle(ask.toString())).getJSONObject("reply");
+        assertTrue(ok.getBoolean("ok"));
+        assertEquals(28.5442, ok.getJSONObject("place").getDouble("lat"), 1e-9);
+        assertEquals("Gate no. 3, Amity Rd, Sector 125, Noida", ok.getJSONObject("place").getString("address"));
+        next[0] = new JSONObject().put("reason", "denied");
+        JSONObject denied = new JSONObject(core.handle(ask.toString())).getJSONObject("reply");
+        assertFalse(denied.getBoolean("ok"));
+        assertEquals("the shopper said no: the page says so", "denied", denied.getString("reason"));
+        next[0] = new JSONObject().put("lat", 128.0).put("lng", 77.3);
+        assertFalse("a point off the globe is not a place", new JSONObject(core.handle(ask.toString())).getJSONObject("reply").getBoolean("ok"));
+        next[0] = null;
+        JSONObject none = new JSONObject(core.handle(ask.toString())).getJSONObject("reply");
+        assertFalse(none.getBoolean("ok"));
+        assertEquals("none", none.getString("reason"));
+    }
 }
