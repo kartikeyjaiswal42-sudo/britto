@@ -19,48 +19,61 @@ const shot = (name) => writeFileSync(`${OUT}/${name}.png`, execFileSync('adb', [
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const results = [];
 let failed = 0;
+const steps = [];
+const step = (what) => { const line = `${new Date().toISOString().slice(11, 19)} ${what}`; steps.push(line); console.log(line); };
 const check = (name, ok, got) => {
   results.push({ name, ok: !!ok, got });
   if (!ok) failed++;
   console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}${ok ? '' : `  (got ${JSON.stringify(got)?.slice(0, 300)})`}`);
 };
 
+let ws = null;
+const errors = [];
+let send = null;
+let ev = null;
+async function main() {
+step('install');
 adb('install', '-r', apk);
 adb('reverse', `tcp:${port}`, `tcp:${port}`);
 // Amity University, Noida (gate 3): the emulator's GPS says the phone is there.
-adb('emu', 'geo', 'fix', '77.3331', '28.5442');
+try { step(`geo fix: ${adb('emu', 'geo', 'fix', '77.3331', '28.5442').trim()}`); } catch (e) { step(`geo fix failed: ${String(e).slice(0, 200)}`); }
 adb('shell', 'am', 'start', '-n', 'app.britto.dev/app.britto.MainActivity');
 
 // The WebView's DevTools socket (debug builds only).
+step('waiting for the app\'s WebView');
 let sock = null;
 for (let i = 0; i < 60 && !sock; i++) {
   await sleep(2000);
-  const pid = adb('shell', 'pidof', 'app.britto.dev').trim();
+  let pid = '';
+  try { pid = adb('shell', 'pidof', 'app.britto.dev').trim(); } catch { /* not started yet: pidof exits 1 */ }
   if (pid && adb('shell', 'cat', '/proc/net/unix').includes(`webview_devtools_remote_${pid}`)) sock = `webview_devtools_remote_${pid}`;
 }
 if (!sock) throw new Error('the app\'s WebView never opened');
 adb('forward', 'tcp:9223', `localabstract:${sock}`);
+step(`DevTools socket ${sock}`);
 let target = null;
+let lastList = [];
 for (let i = 0; i < 30 && !target; i++) {
   await sleep(2000);
-  const list = await (await fetch('http://127.0.0.1:9223/json')).json().catch(() => []);
+  const list = await fetch('http://127.0.0.1:9223/json').then((r) => r.json()).catch((e) => [{ error: String(e) }]);
+  lastList = list;
   target = list.find((t) => t.type === 'page' && t.url.startsWith(`http://127.0.0.1:${port}`));
 }
-if (!target) throw new Error('Britto\'s page never loaded in the app');
-const ws = new WebSocket(target.webSocketDebuggerUrl);
+if (!target) throw new Error(`Britto's page never loaded in the app; DevTools listed ${JSON.stringify(lastList).slice(0, 600)}`);
+step(`page ${target.url}`);
+ws = new WebSocket(target.webSocketDebuggerUrl);
 await new Promise((r, j) => { ws.onopen = r; ws.onerror = j; });
 let id = 0;
 const pending = new Map();
-const errors = [];
 ws.onmessage = (e) => {
   const m = JSON.parse(e.data);
   if (m.method === 'Runtime.exceptionThrown') errors.push(m.params.exceptionDetails?.exception?.description ?? m.params.exceptionDetails?.text);
   pending.get(m.id)?.(m);
   pending.delete(m.id);
 };
-const send = (method, params = {}) => new Promise((r) => { pending.set(++id, r); ws.send(JSON.stringify({ id, method, params })); });
+send = (method, params = {}) => new Promise((r) => { pending.set(++id, r); ws.send(JSON.stringify({ id, method, params })); });
 await send('Runtime.enable');
-const ev = async (expression) => {
+ev = async (expression) => {
   const r = await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
   if (r.result?.exceptionDetails) throw new Error(r.result.exceptionDetails.exception?.description ?? 'evaluate failed');
   return r.result?.result?.value;
@@ -89,7 +102,6 @@ function tapSystem(ids, texts) {
   return null;
 }
 
-try {
   await ev(`history.pushState(null, '', '/travel#cabs'); dispatchEvent(new PopStateEvent('popstate')); 1`);
   check('Travel opens on Cabs in the app, with pickup, drop and the ride apps', await until(`!!document.querySelector('#panel-cabs:not([hidden]) #ride-compare [name=pickup]') && document.querySelectorAll('#ride-apps li[data-app]').length === 2`, 20000));
   shot('01-cabs');
@@ -132,13 +144,18 @@ try {
   check('ride to the airport: an Uber link from the phone\'s location', /pickup=.*28\.54/.test(decodeURIComponent(rideLink ?? '')), rideLink);
   shot('05-airport');
   check('no script errors on Britto\'s page', errors.length === 0, errors);
+}
+
+try {
+  await main();
 } catch (e) {
   check('the run itself', false, String(e?.stack ?? e));
   try { shot('zz-error'); } catch { /* the phone is gone */ }
 } finally {
   writeFileSync(`${OUT}/results.json`, JSON.stringify(results, null, 2));
+  writeFileSync(`${OUT}/steps.txt`, steps.join('\n'));
   writeFileSync(`${OUT}/logcat.txt`, (() => { try { return adb('logcat', '-d', '-t', '3000'); } catch { return ''; } })());
-  ws.close();
+  ws?.close();
 }
 console.log(`\n${results.filter((r) => r.ok).length} ok, ${failed} failed`);
 process.exit(failed ? 1 : 0);

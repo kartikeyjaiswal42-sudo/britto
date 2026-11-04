@@ -45,9 +45,13 @@ if (existsSync(APK) && sdk) {
   const perms = [...badging.matchAll(/uses-permission: name='([^']+)'/g)].map((m) => m[1]);
   // Notifications (price alerts), network state (Android 14 refuses a job that waits for a network
   // without it: the app crashed on the emulator) and boot (the alert check survives a restart).
-  // No location, contacts, SMS, storage or accessibility: anything new here must be argued for.
-  const WANT = ['android.permission.INTERNET', 'android.permission.POST_NOTIFICATIONS', 'android.permission.ACCESS_NETWORK_STATE', 'android.permission.RECEIVE_BOOT_COMPLETED'];
-  check('APK: asks for the internet, notifications, network state and boot, nothing else (plus AndroidX\'s own signature permission)',
+  // Location (0.7.0, owner asked for rides "like BuyHatke"): a ride's pickup from where the phone
+  // is, asked by Android only when the shopper taps "Use my current location"; the place goes into
+  // the ride apps' pages on the phone, never to Britto's server (MainActivity.findHere).
+  // No contacts, SMS, storage or accessibility: anything new here must be argued for.
+  const WANT = ['android.permission.INTERNET', 'android.permission.POST_NOTIFICATIONS', 'android.permission.ACCESS_NETWORK_STATE', 'android.permission.RECEIVE_BOOT_COMPLETED',
+    'android.permission.ACCESS_COARSE_LOCATION', 'android.permission.ACCESS_FINE_LOCATION'];
+  check('APK: asks for the internet, notifications, network state, boot and location (on tap), nothing else (plus AndroidX\'s own signature permission)',
     isDeepStrictEqual(perms.filter((p) => !p.endsWith('.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION')).sort(), [...WANT].sort()), perms.join(', '));
   const manifest = execFileSync(join(tools, 'aapt2'), ['dump', 'xmltree', '--file', 'AndroidManifest.xml', APK], { encoding: 'utf8' });
   const store = manifest.slice(manifest.indexOf('"app.britto.StoreActivity"'), manifest.indexOf('"app.britto.StoreActivity"') + 400);

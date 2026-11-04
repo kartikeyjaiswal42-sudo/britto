@@ -281,15 +281,17 @@ async function productPage(key) {
           h('h2', {}, SALE_TITLE[view.sale.status]),
           h('p', {}, view.sale.explanation),
           view.sale.claimedPct != null ? h('p', { class: 'small' }, `Claimed: ${pct(view.sale.claimedPct)} off M.R.P. · Real: ${view.sale.realPct == null ? 'not known yet' : pct(view.sale.realPct) + ' vs usual'}`) : null)),
-      compareSection(view),
-      offersSection(view),
+      // The price history right under the verdict (what a shopper came for), then its numbers,
+      // the alert, and only then other stores and the store's own offers.
       h('section', {}, h('div', { class: 'chart-head' }, h('h2', {}, 'Price history'), rangeBar), chartHost),
-      alertBox(view),
       h('dl', { class: 'stats' },
         stat('Lowest', s.lowest ? `${rupees(s.lowest.price)}` : '—', s.lowest ? date(s.lowest.at) : ''),
         stat('Highest', s.highest ? `${rupees(s.highest.price)}` : '—', s.highest ? date(s.highest.at) : ''),
         stat('Usual (median)', rupees(s.median), 'time-weighted'),
         stat('Price changes', String(s.changes), `${Math.floor(s.daysTracked)} days watched`)),
+      alertBox(view),
+      compareSection(view),
+      offersSection(view),
       h('section', { id: 'similar' })));
   drawChart(chartHost, view, range);
   // Look-alikes (BLUEPRINT §10.3): shown only when there are some, and labelled for what they are.
