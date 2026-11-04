@@ -5,6 +5,7 @@
    "site": "ixigo", "sector": "flight", "verified": "2026-11-04",
    "page": "^https://www\\.ixigo\\.com/search/result/flight",
    "items": "[data-testid=flight-listing]",
+   "strip": { "items": "a[class*=\"cursor-pointer w-65\"]", "day": [{ "selector": ["p.body-xs"], "attribute": "innerText" }], "price": [{ "selector": ["p.body-sm"], "attribute": "innerText" }], "active": "[class*=border-subbrand-500]" },
    "label": [{ "selector": ["[data-testid=airline-number]"], "attribute": "innerText" }],
    "price": [{ "selector": ["[data-testid=pricing]"], "attribute": "innerText" }],
    "depart": [{ "selector": ["[data-testid=timing-tile]"], "attribute": "innerText", "regex": ["(\\d{1,2}:\\d{2})"] }],
@@ -19,6 +20,7 @@
    "site": "makemytrip", "sector": "flight", "verified": "2026-11-04",
    "page": "^https://www\\.makemytrip\\.com/flight/search",
    "items": "[data-testid=listing-flight-card]",
+   "strip": { "items": "div.flexiitemCal", "day": [{ "selector": [".flexiCalDate"], "attribute": "innerText" }], "price": [{ "selector": [".flexiCalPrice"], "attribute": "innerText" }], "active": ".flexiCalActive" },
    "label": [{ "selector": [".listingFlightCard__airlineName"], "attribute": "innerText" }],
    "price": [{ "selector": [".listingFlightCard__finalFare"], "attribute": "innerText" }],
    "depart": [{ "selector": ["[data-testid=listing-flight-card-dep-time]"], "attribute": "innerText" }],
@@ -33,6 +35,7 @@
    "site": "goibibo", "sector": "flight", "verified": "2026-11-04",
    "page": "^https://www\\.goibibo\\.com/flight/search",
    "items": "[data-test=component-cardBody]",
+   "strip": { "items": "div.flexiitemCal", "day": [{ "selector": [".flexiCalDate"], "attribute": "innerText" }], "price": [{ "selector": [".flexiCalPrice"], "attribute": "innerText" }], "active": ".flexiCalActive" },
    "label": [{ "selector": ["[data-test=component-airline-heading]"], "attribute": "innerText" }],
    "price": [{ "selector": ["[data-test=component-final-fare]"], "attribute": "innerText" }],
    "depart": [{ "selector": ["[data-test=component-dept-time]"], "attribute": "innerText" }],
@@ -68,6 +71,27 @@
    "check": ["are you a person or a robot", "verify you are human"],
    "login": ["uber journey login", "uber login loading"],
    "ask": ["which airline?"]
+  },
+  {
+   "site": "booking", "sector": "hotel", "verified": "2026-11-04", "per": "stay",
+   "page": "^https://www\\.booking\\.com/searchresults",
+   "items": "[data-testid=property-card]",
+   "label": [{ "selector": ["[data-testid=title]"], "attribute": "innerText" }],
+   "price": [{ "selector": ["[data-testid=price-and-discounted-price]"], "attribute": "innerText" }],
+   "area": [{ "selector": ["[data-testid=location]"], "attribute": "innerText" }],
+   "check": ["are you a robot", "verify you are human", "unusual traffic"],
+   "max": 40
+  },
+  {
+   "site": "cleartrip", "sector": "hotel", "verified": "2026-11-04", "per": "night",
+   "page": "^https://www\\.cleartrip\\.com/hotels/results",
+   "items": "[data-testid^=RESULTS_PAGE-UNIFIED_HOTEL_CARD-]",
+   "label": [{ "selector": ["[data-testid=RESULTS_PAGE-TYPOGRAPHY-NAME]"], "attribute": "innerText" }],
+   "price": [{ "selector": ["div"], "attribute": "innerText", "regex": ["(₹\\s?[\\d,]+)\\s*(?:₹\\s?[\\d,]+\\s*)?(?:\\d+% off\\s*)?\\+\\s*₹\\s?[\\d,]+ taxes"] }],
+   "area": [{ "selector": ["[data-testid=RESULTS_PAGE-TYPOGRAPHY-DESCRIPTION]"], "attribute": "innerText", "regex": ["\\bin ([^•]+?)\\s*(?:•|$)"] }],
+   "check": ["are you a robot", "verify you are human", "unusual traffic"],
+   "max": 40
   }
+
  ]
 }

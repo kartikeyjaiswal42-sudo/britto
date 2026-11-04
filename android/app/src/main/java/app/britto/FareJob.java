@@ -29,11 +29,15 @@ final class FareJob {
     static final int SAME_READS = 3;
     static final long TIMEOUT_MS = 45_000;
     static final Pattern SITE_ID = Pattern.compile("^[a-z]{2,20}$");
+    /** The searched day, which dates the site's fares-by-date strip (core/fares.ts readStrip). */
+    static final Pattern DAY = Pattern.compile("^20\\d{2}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$");
 
     static final class Site {
         final String id;
         final String url;
         final String recipe;
+        /** The searched day 'YYYY-MM-DD', or null (no strip). */
+        final String date;
         String state = "queued"; // queued | loading | done
         long startedAt;
         String status = "queued"; // the last reading's status, or queued / loading / failed
@@ -41,10 +45,20 @@ final class FareJob {
         String lastKey;
         int same;
 
-        Site(String id, String url, String recipe) {
+        Site(String id, String url, String recipe, String date) {
             this.id = id;
             this.url = url;
             this.recipe = recipe;
+            this.date = date;
+        }
+
+        /** The reader's second argument: {"date": …} or {}. */
+        String when() {
+            try {
+                return date == null ? "{}" : new JSONObject().put("date", date).toString();
+            } catch (JSONException e) {
+                throw new IllegalStateException(e);
+            }
         }
     }
 
@@ -69,8 +83,10 @@ final class FareJob {
             String id = s.optString("id", "");
             String url = s.optString("url", "");
             JSONObject recipe = s.optJSONObject("recipe");
+            String date = s.isNull("date") ? null : s.optString("date", "");
             if (!SITE_ID.matcher(id).matches() || !url.startsWith("https://") || !opensHere.test(url) || recipe == null || job.sites.containsKey(id)) return null;
-            job.sites.put(id, new Site(id, url, recipe.toString()));
+            if (date != null && !DAY.matcher(date).matches()) return null;
+            job.sites.put(id, new Site(id, url, recipe.toString(), date));
         }
         return job;
     }
@@ -113,7 +129,8 @@ final class FareJob {
         }
         String status = read == null ? null : read.optString("status", null);
         if (status != null && !status.equals("other_page")) {
-            String key = status + ":" + (read.optJSONArray("rows") == null ? 0 : read.optJSONArray("rows").length()) + ":" + read.optLong("cheapest", 0);
+            String key = status + ":" + (read.optJSONArray("rows") == null ? 0 : read.optJSONArray("rows").length()) + ":" + read.optLong("cheapest", 0)
+                    + ":" + (read.optJSONArray("strip") == null ? 0 : read.optJSONArray("strip").length());
             s.same = key.equals(s.lastKey) ? s.same + 1 : 0;
             s.lastKey = key;
             s.read = read;
@@ -146,7 +163,7 @@ final class FareJob {
         return true;
     }
 
-    /** {"job", "done", "sites": [{"id", "state", "status", "rows", "cheapest"}]} for the site's page. */
+    /** {"job", "done", "sites": [{"id", "state", "status", "rows", "cheapest", "strip"}]} for the site's page. */
     JSONObject toJson() {
         try {
             JSONArray list = new JSONArray();
@@ -154,6 +171,7 @@ final class FareJob {
                 JSONObject o = new JSONObject().put("id", s.id).put("state", s.state).put("status", s.status);
                 if (s.read != null && "fares".equals(s.status)) {
                     o.put("rows", s.read.optJSONArray("rows")).put("cheapest", s.read.optLong("cheapest"));
+                    if (s.read.optJSONArray("strip") != null) o.put("strip", s.read.optJSONArray("strip"));
                 }
                 list.put(o);
             }

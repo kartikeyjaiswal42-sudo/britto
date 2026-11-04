@@ -3,4 +3,5 @@
     <string name="app_name">Britto</string>
     <string name="alerts_channel">Price alerts</string>
     <string name="alerts_title">Price alert</string>
+    <string name="fare_alert_title">Flight fare dropped</string>
 </resources>

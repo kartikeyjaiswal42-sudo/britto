@@ -47,6 +47,42 @@ final class SiteBridgeCore {
         return this;
     }
 
+    /** The colours of the page's top bar and bottom tab bar, for the strips behind Android's bars. */
+    interface Bars {
+        void set(int top, int bottom);
+    }
+
+    private Bars bars;
+
+    SiteBridgeCore withBars(Bars b) {
+        this.bars = b;
+        return this;
+    }
+
+    /** Flight price alerts kept on this phone ({@link FareWatches}). */
+    interface FareAlerts {
+        /** {"ok": true, "id"} or {"ok": false, "reason"}. */
+        JSONObject watch(JSONObject msg);
+
+        JSONArray list();
+
+        boolean stop(String id);
+    }
+
+    private FareAlerts fareAlerts;
+
+    SiteBridgeCore withFareAlerts(FareAlerts f) {
+        this.fareAlerts = f;
+        return this;
+    }
+
+    private static final java.util.regex.Pattern COLOUR = java.util.regex.Pattern.compile("^#[0-9a-fA-F]{6}$");
+
+    /** "#1F5BFF" -> an opaque ARGB int, or null. */
+    static Integer colour(String s) {
+        return s != null && COLOUR.matcher(s).matches() ? 0xFF000000 | Integer.parseInt(s.substring(1), 16) : null;
+    }
+
     private final SpendStore spend;
     private final AlertWatch alerts;
     private final Runnable onWatch;
@@ -131,6 +167,26 @@ final class SiteBridgeCore {
                     if (fares == null) return null;
                     fares.stop();
                     reply = new JSONObject().put("ok", true);
+                    break;
+                case "bars": {
+                    if (bars == null) return null;
+                    Integer top = colour(msg.optString("top", null));
+                    Integer bottom = colour(msg.optString("bottom", null));
+                    if (top != null && bottom != null) bars.set(top, bottom);
+                    reply = new JSONObject().put("ok", top != null && bottom != null);
+                    break;
+                }
+                case "watchFare":
+                    if (fareAlerts == null) return null;
+                    reply = fareAlerts.watch(msg);
+                    break;
+                case "fareWatches":
+                    if (fareAlerts == null) return null;
+                    reply = new JSONObject().put("ok", true).put("watches", fareAlerts.list());
+                    break;
+                case "unwatchFare":
+                    if (fareAlerts == null) return null;
+                    reply = new JSONObject().put("ok", fareAlerts.stop(msg.optString("id", "")));
                     break;
                 default:
                     return null;

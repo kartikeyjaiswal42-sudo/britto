@@ -79,3 +79,81 @@ export function rideRows(sites) {
   return sites.flatMap((s) => (s.status === 'fares' ? (s.rows ?? []).filter((r) => !/^parcel\b/i.test(r.label)).map((r) => ({ ...r, site: s })) : []))
     .sort((a, b) => a.price - b.price || a.label.localeCompare(b.label));
 }
+
+/**
+ * The sites' date strips, merged: for each day, the lowest fare any site's strip printed for it
+ * and which site, days in date order. A strip is the site's own figure for that day (measured
+ * 2026-11-04: MakeMyTrip's strip said ₹7,116 for the day its list started at ₹7,016), not a fare
+ * read from its list, so the page shows it apart from the fares and says so.
+ */
+export function fareStrip(sites) {
+  const days = new Map();
+  for (const s of sites) {
+    if (s.status !== 'fares') continue;
+    for (const d of s.strip ?? []) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d?.date) || !Number.isInteger(d.price) || d.price <= 0) continue;
+      const have = days.get(d.date);
+      if (!have) days.set(d.date, { date: d.date, price: d.price, site: s.id, name: s.name, sites: 1 });
+      else {
+        have.sites++;
+        if (d.price < have.price) Object.assign(have, { price: d.price, site: s.id, name: s.name });
+      }
+    }
+  }
+  return [...days.values()].sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/**
+ * A round trip as two one-way tickets: the cheapest flight found each way (groupFlights output,
+ * cheapest first) and their sum, or null until both ways have a fare. The sites' own round-trip
+ * fares are not read (their round-trip pages were not measured), so the page links to them.
+ */
+export function tripTotal(onward, back) {
+  const a = onward?.[0];
+  const b = back?.[0];
+  return a && b ? { onward: a, back: b, total: a.best + b.best } : null;
+}
+
+const HOTEL_WORDS = new Set(['the', 'hotel', 'hotels', 'resort', 'resorts', 'and', 'spa', 'by', 'a', 'an', 'of', 'at', 'in']);
+/** A hotel's name for matching across sites: its words, lower-case, order-free, filler dropped; null when too little is left. */
+export function hotelKey(name) {
+  const words = String(name ?? '').toLowerCase().normalize('NFKD').replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter((w) => w && !HOTEL_WORDS.has(w));
+  const key = [...new Set(words)].sort().join(' ');
+  return key.replace(/ /g, '').length >= 6 ? key : null;
+}
+
+/**
+ * Hotels from every site, cheapest per night first. A site's recipe says whether it prints a
+ * price for one night or for the whole stay (measured: Booking.com "Price for 2 nights",
+ * Cleartrip "taxes & fees / night"), so each offer is put per night; prices are before taxes on
+ * both. The same hotel on two sites (hotelKey) gets both offers; otherwise each stays its own row.
+ * sites: [{ id, name, url, status, rows, recipe: { per } }]
+ */
+export function groupHotels(sites, nights) {
+  if (!Number.isInteger(nights) || nights < 1) return [];
+  const hotels = new Map();
+  for (const s of sites) {
+    const per = s.recipe?.per;
+    if (s.status !== 'fares' || (per !== 'night' && per !== 'stay')) continue;
+    for (const r of s.rows ?? []) {
+      if (!Number.isInteger(r.price) || r.price <= 0) continue;
+      const night = per === 'stay' ? Math.round(r.price / nights) : r.price;
+      const key = hotelKey(r.label) ?? `${s.id}|${r.label}`;
+      let h = hotels.get(key);
+      if (!h) {
+        h = { key, name: r.label, area: r.area ?? null, offers: [] };
+        hotels.set(key, h);
+      }
+      h.area ??= r.area ?? null;
+      const have = h.offers.find((o) => o.site === s.id);
+      if (!have) h.offers.push({ site: s.id, name: s.name, url: s.url, night, printed: r.price, per });
+      else if (night < have.night) Object.assign(have, { night, printed: r.price });
+    }
+  }
+  const out = [...hotels.values()].map((h) => {
+    h.offers.sort((a, b) => a.night - b.night || a.name.localeCompare(b.name));
+    return { ...h, best: h.offers[0].night };
+  });
+  out.sort((a, b) => a.best - b.best || a.name.localeCompare(b.name));
+  return out;
+}

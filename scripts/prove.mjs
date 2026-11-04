@@ -322,7 +322,26 @@ try {
   const busy = await j('/api/store-search?q=some%20words%20never%20cached', { headers: { 'cf-connecting-ip': '10.0.1.2' } });
   check('a network past its searches this hour gets "busy", and the store is not asked', busy.body?.stores?.find((x) => x.store === 'amazon')?.status === 'busy'
     && d1(`SELECT COUNT(*) AS n FROM search_cache WHERE q = 'some words never cached'`)[0].n === 0, busy.text.slice(0, 200));
+  // Abuse review (2026-11-04): a short link costs requests to the store, so it is limited first.
+  const shortNet = await netId('10.0.1.5');
+  d1(`INSERT INTO rate (bucket, count, expires) VALUES ('short:${shortNet}:${hourStart}', 30, ${hourStart + 3_600_000})`);
+  const short = await j('/api/products', { method: 'POST', headers: { 'content-type': 'application/json', 'cf-connecting-ip': '10.0.1.5' }, body: JSON.stringify({ url: 'https://amzn.in/d/aB3dEf9' }) });
+  check('a network past 30 short links this hour is refused before any is followed', short.status === 429 && short.body?.error?.code === 'rate_limited' && /short links/.test(short.body?.error?.message ?? ''), short.text.slice(0, 200));
+  // Views rank "popular": one per network per product per hour.
+  const views = () => d1(`SELECT views FROM products WHERE key = '${KEY}'`)[0]?.views;
+  const before = views();
+  for (let i = 0; i < 3; i++) await j(`/api/products/${encodeURIComponent(KEY)}`, { headers: { 'cf-connecting-ip': '10.0.1.6' } });
+  await j(`/api/products/${encodeURIComponent(KEY)}`, { headers: { 'cf-connecting-ip': '10.0.1.7' } });
+  await new Promise((r) => setTimeout(r, 500));
+  check('views: three loads from one network count once, another network once more', before != null && views() === before + 2, `${before} -> ${views()}`);
   }
+  // Link previews (api/meta.ts): WhatsApp/Telegram read the head only.
+  const shared = await j(`/p/${encodeURIComponent(KEY)}`);
+  const sharedTitle = /<title>([^<]*)<\/title>/.exec(shared.text)?.[1] ?? '';
+  const productTitle = (await j(`/api/products/${encodeURIComponent(KEY)}`)).body?.product?.title;
+  check('a shared product link carries its own title and preview tags', shared.status === 200 && !!productTitle && sharedTitle.endsWith(' | Britto') && sharedTitle !== 'Britto: price history and real discounts'
+    && shared.text.includes('<meta property="og:title"') && shared.text.includes('<script type="module" src="/app.js"></script>'), sharedTitle.slice(0, 120));
+  check('…and /travel its own', /<title>Compare flight, hotel and ride prices \| Britto<\/title>/.test((await j('/travel')).text));
   check('store search refuses one letter', (await j('/api/store-search?q=a')).status === 400);
   const stores = await j('/api/stores');
   check('stores list carries the measured lines', stores.body?.stores?.length === STORE_IDS.length && stores.body.stores.every((s) => s.measured.length > 20));

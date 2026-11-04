@@ -1,6 +1,6 @@
 package app.britto;
 
-import android.app.Activity;
+import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
@@ -16,6 +16,7 @@ import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
@@ -26,22 +27,26 @@ import java.util.function.Predicate;
  * Every 1.5 s the fare reader (assets/britto-fares.js) reads the page; {@link FareJob} decides
  * when a site is done, and its browser is then destroyed. Links that try to leave for an app are
  * not followed. Nothing is clicked, typed or booked on the sites.
+ * Without a layer (flight alerts, {@link FareAlertJob}) the browsers are not on any screen: each is
+ * laid out at the phone's own screen size, so the page lays out as it would under the app.
  */
 final class FareRunner {
     static final long POLL_MS = 1_500;
     static final long FIRST_POLL_MS = 2_500;
 
-    private final Activity activity;
+    private final Context context;
     private final FrameLayout layer;
     private final String engineJs;
     private final Predicate<String> opensHere;
     private final Handler ui = new Handler(Looper.getMainLooper());
     private final Map<String, WebView> views = new HashMap<>();
     private FareJob job;
+    private Consumer<JSONObject> onDone;
     private int seq;
 
-    FareRunner(Activity activity, FrameLayout layer, String engineJs, Predicate<String> opensHere) {
-        this.activity = activity;
+    /** layer: where the browsers sit (under the Britto page), or null for none on screen. */
+    FareRunner(Context context, FrameLayout layer, String engineJs, Predicate<String> opensHere) {
+        this.context = context;
         this.layer = layer;
         this.engineJs = engineJs;
         this.opensHere = opensHere;
@@ -49,9 +54,15 @@ final class FareRunner {
 
     /** From the bridge thread: start a compare (any earlier one stops). The job id, or null when refused. */
     synchronized String start(JSONArray sites) {
+        return start(sites, null);
+    }
+
+    /** As {@link #start(JSONArray)}; done (on the UI thread) gets the final state once every site is done. */
+    synchronized String start(JSONArray sites, Consumer<JSONObject> done) {
         FareJob next = FareJob.of("j" + (++seq), sites, opensHere);
         if (next == null) return null;
         job = next;
+        onDone = done;
         ui.post(() -> {
             closeAll();
             pump(next);
@@ -66,6 +77,7 @@ final class FareRunner {
 
     synchronized void stop() {
         job = null;
+        onDone = null;
         ui.post(this::closeAll);
     }
 
@@ -76,10 +88,20 @@ final class FareRunner {
             starting = j.toStart(SystemClock.elapsedRealtime());
         }
         for (FareJob.Site s : starting) open(j, s);
+        Consumer<JSONObject> done = null;
+        JSONObject state = null;
+        synchronized (this) {
+            if (job == j && onDone != null && j.done()) {
+                done = onDone;
+                onDone = null;
+                state = j.toJson();
+            }
+        }
+        if (done != null) done.accept(state);
     }
 
     private void open(FareJob j, FareJob.Site site) {
-        WebView w = new WebView(activity);
+        WebView w = new WebView(context);
         Ui.setUpWebView(w, null); // the site sees the phone's own WebView, unchanged
         w.setWebViewClient(new WebViewClient() {
             @Override
@@ -100,7 +122,14 @@ final class FareRunner {
             }
         });
         views.put(site.id, w);
-        layer.addView(w, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        if (layer != null) {
+            layer.addView(w, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        } else {
+            android.util.DisplayMetrics m = context.getResources().getDisplayMetrics();
+            w.measure(android.view.View.MeasureSpec.makeMeasureSpec(m.widthPixels, android.view.View.MeasureSpec.EXACTLY),
+                    android.view.View.MeasureSpec.makeMeasureSpec(m.heightPixels, android.view.View.MeasureSpec.EXACTLY));
+            w.layout(0, 0, m.widthPixels, m.heightPixels);
+        }
         w.loadUrl(site.url);
         ui.postDelayed(() -> poll(j, site, w), FIRST_POLL_MS);
         // A page that stops answering still ends: one more reading after the time limit.
@@ -109,7 +138,7 @@ final class FareRunner {
 
     private void poll(FareJob j, FareJob.Site site, WebView w) {
         if (views.get(site.id) != w) return;
-        String script = "(function(){" + engineJs + ";return __brittoFares.read(" + site.recipe + ");})()";
+        String script = "(function(){" + engineJs + ";return __brittoFares.read(" + site.recipe + "," + site.when() + ");})()";
         w.evaluateJavascript(script, value -> {
             String json = null;
             try {
@@ -136,7 +165,7 @@ final class FareRunner {
     private void finish(FareJob j, String siteId) {
         WebView w = views.remove(siteId);
         if (w != null) {
-            layer.removeView(w);
+            if (layer != null) layer.removeView(w);
             w.destroy();
         }
         pump(j);
@@ -144,7 +173,7 @@ final class FareRunner {
 
     private void closeAll() {
         for (WebView w : views.values()) {
-            layer.removeView(w);
+            if (layer != null) layer.removeView(w);
             w.destroy();
         }
         views.clear();

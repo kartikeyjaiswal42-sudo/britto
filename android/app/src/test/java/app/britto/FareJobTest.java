@@ -117,6 +117,30 @@ public class FareJobTest {
     }
 
     @Test
+    public void theSearchedDayIsCheckedAndTheSitesDateStripIsReported() throws Exception {
+        JSONArray dated = new JSONArray().put(site("ixigo", "https://www.ixigo.com/search/result/flight?from=DEL").put("date", "2026-11-20"));
+        FareJob job = FareJob.of("j1", dated, TRAVEL);
+        assertNotNull(job);
+        assertEquals("{\"date\":\"2026-11-20\"}", job.site("ixigo").when());
+        assertEquals("no day: no strip", "{}", FareJob.of("j", three(), TRAVEL).site("ixigo").when());
+        for (String bad : new String[] {"2026-13-01", "20-11-2026", "2026-11-20\");alert(1);//", ""}) {
+            assertNull("refused: " + bad, FareJob.of("j", new JSONArray().put(site("ixigo", "https://www.ixigo.com/x").put("date", bad)), TRAVEL));
+        }
+        job.toStart(0);
+        String noStrip = fares(6, 711600);
+        String withStrip = new JSONObject(noStrip).put("strip", new JSONArray().put(new JSONObject().put("date", "2026-11-20").put("price", 727900))).toString();
+        long t = FareJob.SETTLE_MS;
+        assertFalse(job.onRead("ixigo", noStrip, t));
+        assertFalse(job.onRead("ixigo", noStrip, t + 1_500));
+        assertFalse("the strip arrived: still changing", job.onRead("ixigo", withStrip, t + 3_000));
+        assertFalse(job.onRead("ixigo", withStrip, t + 4_500));
+        assertTrue(job.onRead("ixigo", withStrip, t + 6_000));
+        JSONObject ixigo = job.toJson().getJSONArray("sites").getJSONObject(0);
+        assertEquals(727900, ixigo.getJSONArray("strip").getJSONObject(0).getLong("price"));
+        assertEquals("2026-11-20", ixigo.getJSONArray("strip").getJSONObject(0).getString("date"));
+    }
+
+    @Test
     public void theSiteBridgeStartsAndReportsACompare() throws Exception {
         final FareJob[] last = new FareJob[1];
         SiteBridgeCore.Fares fares = new SiteBridgeCore.Fares() {

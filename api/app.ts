@@ -21,6 +21,7 @@ import { SEARCHES_PER_HOUR, searchWords, searchableStores, seedPopular, storeSea
 import { countReading, getReader, healthReport, type HealthSource } from './readers.ts';
 import { ADDS_PER_HOUR, addProduct, background, refresh, resolveLink } from './refresh.ts';
 import { handleTelegram } from './telegram.ts';
+import { metaFor, withMeta } from './meta.ts';
 import { allowedEndpoint, parseSubscription } from './webpush.ts';
 
 /** Products re-checked per scheduled run. Kept small: free Workers get 10 ms CPU per run,
@@ -74,9 +75,10 @@ async function track(request: Request, env: Env): Promise<Response> {
   const body = await readJson<{ url?: unknown }>(request);
   if (!body) return fail(400, 'bad_json', 'Send JSON: {"url": "<product link>"}.');
   if (typeof body.url !== 'string' || body.url.length > 2000) return fail(400, 'bad_url', 'Send a product link as "url".');
-  const link = await resolveLink(env, body.url);
+  const who = await clientId(request);
+  const link = await resolveLink(env, body.url, who, Date.now());
   if (!link.ok) return fail(link.status, link.code, link.message);
-  const added = await addProduct(env, link.link, await clientId(request), Date.now());
+  const added = await addProduct(env, link.link, who, Date.now());
   if (!added.ok) return fail(added.status, added.code, added.message);
   return json({ created: added.created, product: await productView(env.DB, added.row) }, added.created ? 201 : 200);
 }
@@ -405,7 +407,14 @@ async function api(request: Request, env: Env, ctx: Ctx, url: URL): Promise<Resp
     if (!parseKey(key)) return fail(400, 'bad_key', 'Not a product key.');
     const row = await getProduct(env.DB, key);
     if (!row) return fail(404, 'not_tracked', 'We are not tracking this product yet. Add it by its link.');
-    ctx.waitUntil(env.DB.prepare('UPDATE products SET views = views + 1 WHERE key = ?').bind(key).run());
+    // Views rank "popular" on the home page: one per network per product per hour, so a script
+    // cannot push a product there by reloading it (abuse review, 2026-11-04).
+    const viewer = await clientId(request);
+    ctx.waitUntil((async () => {
+      if (await rateLimit(env.DB, `view:${viewer}:${key}`, 1, 3_600_000, Date.now())) {
+        await env.DB.prepare('UPDATE products SET views = views + 1 WHERE key = ?').bind(key).run();
+      }
+    })());
     return json({ product: await productView(env.DB, row) });
   }
 
@@ -470,7 +479,24 @@ async function page(request: Request, env: Env, url: URL): Promise<Response> {
   // html_handling is "none" (wrangler.jsonc): with the default, a request for /index.html
   // is answered 307 -> "/", which sent every /p/<key> link to the home page.
   if (/^\/(|p\/[^/]+|search|deals|stores|alerts|browse|grocery|travel|spend|app)\/?$/.test(url.pathname)) {
-    return env.ASSETS.fetch(new Request(new URL('/index.html', url), request));
+    const shell = await env.ASSETS.fetch(new Request(new URL('/index.html', url), request));
+    if (!shell.ok || request.method !== 'GET') return shell;
+    // Link previews read the head only: write this page's own title and tags into it (api/meta.ts).
+    let product = null;
+    if (url.pathname.startsWith('/p/')) {
+      let key = '';
+      try {
+        key = decodeURIComponent(url.pathname.slice(3).replace(/\/$/, ''));
+      } catch {
+        key = '';
+      }
+      if (parseKey(key)) product = await getProduct(env.DB, key as ProductKey).catch(() => null);
+    }
+    const headers = new Headers(shell.headers);
+    headers.delete('etag');
+    headers.delete('content-length');
+    headers.set('cache-control', 'no-cache');
+    return new Response(withMeta(await shell.text(), metaFor(url.pathname, url.origin, product)), { status: 200, headers });
   }
   if (url.pathname === '/bot') return env.ASSETS.fetch(new Request(new URL('/bot.html', url), request));
   return env.ASSETS.fetch(request);

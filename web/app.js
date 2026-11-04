@@ -7,7 +7,7 @@ import {
 import { drawChart } from './chart.js';
 import { mergeOrders, summarize } from './spend.js';
 import { airportIndex, flightSearch, hotelSearch, MAX_DAYS_AHEAD, rideCompare, rideSearch, todayIST } from './travel.js';
-import { groupFlights, otherAirport, rideRows, siteSummary } from './compare.js';
+import { fareStrip, groupFlights, groupHotels, otherAirport, rideRows, siteSummary, tripTotal } from './compare.js';
 
 const app = document.getElementById('app');
 
@@ -374,15 +374,16 @@ const FARE_STATUS = {
 
 /**
  * True when the comparison started (inside the app, with at least one site it can read). `draw`
- * paints each state: (box, sites, state, others).
+ * paints each state: (box, sites, state, others). opts.date: the searched day (dates the sites'
+ * date strips); opts.onDone(sites with their readings) once every site is done.
  */
-async function liveFares(box, links, sector, draw) {
+async function liveFares(box, links, sector, draw, opts = {}) {
   const ask = inApp ? siteBridge() : null;
   if (!ask) return false;
   const recipes = await loadFareRecipes();
   const sites = links.filter((l) => l.prefilled).map((l) => ({ id: l.id, name: l.name, url: l.url, recipe: recipes.find((r) => r.site === l.id && r.sector === sector) })).filter((s) => s.recipe);
   if (!sites.length) return false;
-  const started = await ask({ type: 'compareFares', sites: sites.map(({ id, url, recipe }) => ({ id, url, recipe })) });
+  const started = await ask({ type: 'compareFares', sites: sites.map(({ id, url, recipe }) => ({ id, url, recipe, ...(opts.date ? { date: opts.date } : {}) })) });
   if (!started?.ok) return false;
   const others = links.filter((l) => !sites.some((s) => s.id === l.id));
   const run = ++fareRun;
@@ -392,13 +393,33 @@ async function liveFares(box, links, sector, draw) {
     if (!st?.ok || run !== fareRun) return;
     draw(box, sites, st, others);
     if (!st.done) setTimeout(tick, 1000);
+    else opts.onDone?.(sites.map((s) => ({ ...s, ...st.sites.find((x) => x.id === s.id) })));
   };
   put(box, h('p', { class: 'muted' }, `Opening ${sites.map((s) => s.name).join(', ')} on your phone…`));
   tick();
   return true;
 }
 
-function drawFares(box, sites, st, others, q, airports) {
+const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTH = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** '2026-11-20' -> 'Fri 20 Nov' */
+const dayName = (iso) => { const d = new Date(`${iso}T00:00:00Z`); return `${WEEKDAY[d.getUTCDay()]} ${d.getUTCDate()} ${MONTH[d.getUTCMonth()]}`; };
+
+/** The sites' date strips merged (web/compare.js fareStrip): tap a day to compare that day. */
+function drawStrip(read, day, pick) {
+  const today = todayIST();
+  const strip = fareStrip(read).filter((d) => d.date >= today);
+  if (strip.length < 2) return null;
+  const low = Math.min(...strip.map((d) => d.price));
+  return h('div', { class: 'fare-strip-wrap' },
+    h('p', { class: 'small muted' }, 'Lowest fare by date, as the sites\u2019 own date strips show it (their figure for each day, which can differ from the fares listed below). Tap a day to compare it.'),
+    h('div', { class: 'fare-strip' }, strip.map((d) => h('button', {
+      type: 'button', class: `strip-day${d.date === day ? ' active' : ''}${d.price === low ? ' low' : ''}`, 'data-date': d.date, title: `${d.name}: ${rupees(d.price)}`,
+      onclick: () => pick?.(d.date),
+    }, h('span', {}, dayName(d.date)), h('b', {}, rupees(d.price))))));
+}
+
+function drawFares(box, sites, st, others, q, airports, pick = null, watch = null) {
   const state = new Map(st.sites.map((x) => [x.id, x]));
   const read = sites.map((s) => ({ ...s, ...state.get(s.id) }));
   const finished = read.filter((s) => s.state === 'done').length;
@@ -414,6 +435,15 @@ function drawFares(box, sites, st, others, q, airports) {
       h('span', { class: 'small muted' }, 'Cheapest found'),
       h('strong', {}, `${rupees(best.best)} on ${best.offers[0].name}`),
       h('span', { class: 'small' }, `${best.airline}${best.number ? ` ${best.number}` : ''}, ${best.depart} → ${best.arrive}`)) : null,
+    st.done ? drawStrip(read, q.depart, pick) : null,
+    st.done && best && watch ? h('p', {}, h('button', { type: 'button', class: 'button secondary', id: 'fare-watch', onclick: async (e) => {
+      const b = e.currentTarget;
+      b.disabled = true;
+      const r = await watch(read, best);
+      b.replaceWith(h('span', { class: r?.ok ? 'notice' : 'error', id: 'fare-watch-result' }, r?.ok
+        ? `Fare alert set: Britto compares these sites again on this phone every few hours and tells you when a fare for ${q.from} \u2192 ${q.to} on ${dayName(q.depart)} is at least \u20b9100 below ${rupees(best.best)}.`
+        : r?.reason === 'full' ? 'You already watch three routes: stop one under Fare alerts first.' : 'This route cannot be watched.'));
+    } }, `Alert me if it gets cheaper than ${rupees(best.best)}`)) : null,
     h('ul', { class: 'fare-sites' }, siteSummary(read).map((s) => h('li', { 'data-site': s.id, 'data-status': s.status },
       h('span', { class: 'fare-site' }, s.name),
       s.cheapest != null ? h('span', {}, `from ${rupees(s.cheapest)}`, h('small', { class: 'muted' }, ` · ${s.rows.length} fares`)) : h('span', { class: 'small muted' }, FARE_STATUS[s.status] ?? FARE_STATUS.waiting),
@@ -431,6 +461,37 @@ function drawFares(box, sites, st, others, q, airports) {
           h('span', {}, o.name), h('b', {}, rupees(o.price))))));
     })),
     h('p', { class: 'small muted' }, 'Fares as each site showed them on this phone, before coupons and fees at checkout. Tap a site to book there; Britto never books or pays for you.'),
+    others.length ? [h('h3', {}, 'Also search on'), travelLinks(others)] : null);
+}
+
+/** Hotel compare: every site's hotels per night (web/compare.js groupHotels), cheapest first. */
+function drawHotels(box, sites, st, others, q) {
+  const state = new Map(st.sites.map((x) => [x.id, x]));
+  const read = sites.map((s) => ({ ...s, ...state.get(s.id) }));
+  const finished = read.filter((s) => s.state === 'done').length;
+  const nights = Math.round((Date.parse(`${q.checkOut}T00:00:00Z`) - Date.parse(`${q.checkIn}T00:00:00Z`)) / 86_400_000);
+  const hotels = groupHotels(read, nights);
+  const best = hotels[0];
+  const lowest = (id) => hotels.flatMap((x) => x.offers).filter((o) => o.site === id).reduce((m, o) => (m == null || o.night < m ? o.night : m), null);
+  const shown = (id) => hotels.filter((x) => x.offers.some((o) => o.site === id)).length;
+  const night = (o) => `${rupees(o.night)}/night${o.per === 'stay' ? ` (${rupees(o.printed)} for ${nights} night${nights > 1 ? 's' : ''})` : ''}`;
+  put(box,
+    h('p', { class: 'fare-progress small' }, st.done ? `Checked ${read.length} sites on your phone just now.` : `Checking hotels on your phone: ${finished} of ${read.length} sites done…`),
+    h('progress', { max: read.length, value: finished, class: 'fare-bar' }),
+    best ? h('div', { class: 'fare-best' },
+      h('span', { class: 'small muted' }, 'Cheapest found'),
+      h('strong', {}, `${rupees(best.best)} a night`),
+      h('span', { class: 'small' }, `${best.name}${best.area ? `, ${best.area}` : ''}, on ${best.offers[0].name}`)) : null,
+    h('ul', { class: 'fare-sites' }, read.map((s) => h('li', { 'data-site': s.id, 'data-status': s.status },
+      h('span', { class: 'fare-site' }, s.name),
+      lowest(s.id) != null ? h('span', {}, `from ${rupees(lowest(s.id))}/night`, h('small', { class: 'muted' }, ` · ${shown(s.id)} hotels`)) : h('span', { class: 'small muted' }, FARE_STATUS[s.status] ?? FARE_STATUS.waiting),
+      h('a', { class: 'button secondary small', href: s.url, rel: 'noopener' }, ['check', 'login', 'ask'].includes(s.status) ? `Open ${s.name}` : 'Open')))),
+    hotels.length ? h('h3', {}, `${hotels.length} hotels, cheapest per night first`) : null,
+    h('ol', { class: 'fare-list' }, hotels.slice(0, 40).map((x) => h('li', { 'data-hotel': x.key },
+      h('div', { class: 'fare-flight' }, h('strong', {}, x.name), x.area ? h('span', { class: 'small muted' }, x.area) : null),
+      h('div', { class: 'fare-offers' }, x.offers.map((o, i) => h('a', { class: i === 0 && x.offers.length > 1 ? 'offer best' : 'offer', href: o.url, rel: 'noopener', 'data-offer': o.site },
+        h('span', {}, o.name), h('b', {}, night(o)))))))),
+    h('p', { class: 'small muted' }, 'Prices as each site showed them on this phone, before taxes and fees, for the first hotels each one lists (in its own order). The same hotel on two sites is shown once with both prices. Tap a site to book there; Britto never books for you.'),
     others.length ? [h('h3', {}, 'Also search on'), travelLinks(others)] : null);
 }
 
@@ -482,17 +543,82 @@ async function travelPage() {
   const flightOut = out('flight-links');
   const flights = h('form', { class: 'travel-form', id: 'flights', onsubmit: (e) => {
     e.preventDefault();
-    const r = flightSearch({ from: airportCode(from.value), to: airportCode(to.value), depart: depart.value, ret: ret.value || null, adults: Number(adults.value), cabin: cabin.value }, airports);
+    const input = { from: airportCode(from.value), to: airportCode(to.value), depart: depart.value, ret: ret.value || null, adults: Number(adults.value), cabin: cabin.value };
+    const r = flightSearch(input, airports);
     fareRun++;
     if (r.ok) document.activeElement?.blur?.();
+    const again = (field) => (date) => { field.value = date; flights.requestSubmit(); };
+    if (r.ok && inApp && r.q.ret) return roundTrip(r, input);
     if (r.ok && inApp) {
-      liveFares(flightOut, r.links, 'flight', (box, sites, st, others) => drawFares(box, sites, st, others, r.q, airports)).then((live) => { if (!live) show(flightOut, r); });
+      liveFares(flightOut, r.links, 'flight', (box, sites, st, others) => drawFares(box, sites, st, others, r.q, airports, again(depart), watchFare(r.q)), { date: r.q.depart }).then((live) => { if (!live) show(flightOut, r); });
       return;
     }
     show(flightOut, r, r.ok ? h('p', { class: 'small' }, h('button', { type: 'button', class: 'link', onclick: () => { rideTo.value = from.value; document.getElementById('rides')?.scrollIntoView(); } }, `Need a ride to ${r.q.from}?`)) : null);
   } },
   h('div', { class: 'fields' }, field('From', from), field('To', to), field('Depart', depart), field('Return (optional)', ret), field('Adults', adults), field('Class', cabin)),
   h('button', { type: 'submit' }, inApp ? 'Compare fares' : 'Show flight searches'), flightOut);
+
+  // A round trip in the app: each way compared as a one-way search (the sites' measured pages),
+  // onward first, then the return, and the two cheapest added up. The sites' own round-trip
+  // fares (sometimes cheaper together) open from the links below; they are not read.
+  function roundTrip(r, input) {
+    const onward = flightSearch({ ...input, ret: null }, airports);
+    const back = flightSearch({ ...input, from: input.to, to: input.from, depart: input.ret, ret: null }, airports);
+    if (!onward.ok || !back.ok) return show(flightOut, r);
+    const total = h('div', { class: 'trip-total', id: 'trip-total' });
+    const onBox = h('div', { id: 'trip-onward' });
+    const backBox = h('div', { id: 'trip-return' }, h('p', { class: 'muted small' }, 'Compared after the onward flights.'));
+    put(flightOut, total,
+      h('h3', {}, `Onward: ${onward.q.from} \u2192 ${onward.q.to}, ${dayName(onward.q.depart)}`), onBox,
+      h('h3', {}, `Return: ${back.q.from} \u2192 ${back.q.to}, ${dayName(back.q.depart)}`), backBox,
+      h('h3', {}, 'Round-trip fares on the sites'),
+      h('p', { class: 'small muted' }, 'Some sites price a round trip below two one-way tickets. Britto does not read those pages yet: open them here.'),
+      travelLinks(r.links));
+    let onFlights = null;
+    const drawOn = (box, sites, st, others) => drawFares(box, sites, st, others, onward.q, airports, (d) => { depart.value = d; flights.requestSubmit(); }, watchFare(onward.q));
+    const drawBack = (box, sites, st, others) => drawFares(box, sites, st, others, back.q, airports, (d) => { ret.value = d; flights.requestSubmit(); }, watchFare(back.q));
+    const sum = (backFlights) => {
+      const t = tripTotal(onFlights, backFlights);
+      put(total, t
+        ? h('div', { class: 'fare-best' },
+          h('span', { class: 'small muted' }, 'Cheapest round trip found, as two one-way tickets'),
+          h('strong', {}, rupees(t.total)),
+          h('span', { class: 'small' }, `Onward ${rupees(t.onward.best)} on ${t.onward.offers[0].name} (${t.onward.airline} ${t.onward.depart}) + return ${rupees(t.back.best)} on ${t.back.offers[0].name} (${t.back.airline} ${t.back.depart})`))
+        : h('p', { class: 'muted small' }, 'No fare was found for one of the two ways.'));
+    };
+    const startBack = (readOn) => {
+      onFlights = groupFlights(readOn);
+      liveFares(backBox, back.links, 'flight', drawBack, { date: back.q.depart, onDone: (readBack) => sum(groupFlights(readBack)) })
+        .then((live) => { if (!live) put(backBox, travelLinks(back.links)); });
+    };
+    liveFares(onBox, onward.links, 'flight', drawOn, { date: onward.q.depart, onDone: startBack })
+      .then((live) => { if (!live) show(flightOut, r); });
+  }
+
+  // Flight price alerts, kept on this phone (android FareWatches, FareAlertJob): a one-way route
+  // and day, compared again on the phone every few hours. Britto's server never sees the route.
+  const watchList = h('div', { id: 'fare-watches' });
+  const watchFare = (q) => (read, best) => siteBridge()?.({
+    type: 'watchFare', from: q.from, to: q.to, date: q.depart, cheapest: best.best, site: best.offers[0].name,
+    sites: read.map(({ id, name, url, recipe }) => ({ id, name, url, recipe, date: q.depart })),
+  }).then((r) => { loadWatches(); return r; });
+  async function loadWatches() {
+    const r = inApp ? await siteBridge()?.({ type: 'fareWatches' }) : null;
+    if (!r?.ok) return put(watchList);
+    put(watchList, h('h3', {}, 'Fare alerts'), r.watches.length
+      ? h('ul', { class: 'fare-sites fare-watches' }, r.watches.map((w) => h('li', { 'data-watch': w.id },
+        h('span', { class: 'fare-site' }, `${w.from} \u2192 ${w.to}`),
+        h('span', { class: 'small' }, `${dayName(w.date)} \u00b7 lowest seen ${rupees(w.low)} on ${w.lowSite}`,
+          h('br'), h('small', { class: 'muted' }, `checked ${ago(w.checkedAt)}: ${rupees(w.last)} on ${w.lastSite}`)),
+        h('span', { class: 'watch-actions' },
+          h('button', { type: 'button', class: 'button secondary small', onclick: () => {
+            from.value = w.from; to.value = w.to; depart.value = w.date; ret.value = '';
+            flights.requestSubmit();
+            flights.scrollIntoView();
+          } }, 'Compare now'),
+          h('button', { type: 'button', class: 'button secondary small', onclick: async () => { await siteBridge()?.({ type: 'unwatchFare', id: w.id }); loadWatches(); } }, 'Stop')))))
+      : h('p', { class: 'small muted' }, 'No fare alerts yet. Compare a one-way flight, then tap \u201cAlert me if it gets cheaper\u201d.'));
+  }
 
   // Hotels
   const city = h('input', { name: 'city', placeholder: 'Goa', autocomplete: 'off', required: true });
@@ -502,10 +628,17 @@ async function travelPage() {
   const hotelOut = out('hotel-links');
   const hotels = h('form', { class: 'travel-form', id: 'hotels', onsubmit: (e) => {
     e.preventDefault();
-    show(hotelOut, hotelSearch({ city: city.value, checkIn: checkIn.value, checkOut: checkOut.value, adults: Number(guests.value) }));
+    const r = hotelSearch({ city: city.value, checkIn: checkIn.value, checkOut: checkOut.value, adults: Number(guests.value) });
+    fareRun++;
+    if (r.ok) document.activeElement?.blur?.();
+    if (r.ok && inApp) {
+      liveFares(hotelOut, r.links, 'hotel', (box, sites, st, others) => drawHotels(box, sites, st, others, r.q)).then((live) => { if (!live) show(hotelOut, r); });
+      return;
+    }
+    show(hotelOut, r);
   } },
   h('div', { class: 'fields' }, field('City', city), field('Check-in', checkIn), field('Check-out', checkOut), field('Guests (one room)', guests)),
-  h('button', { type: 'submit' }, 'Show hotel searches'), hotelOut);
+  h('button', { type: 'submit' }, inApp ? 'Compare hotels' : 'Show hotel searches'), hotelOut);
 
   // Ride compare (app only): places from the phone's own place search, fares from Uber's own page.
   const pickup = h('input', { name: 'pickup', placeholder: 'Connaught Place, New Delhi', autocomplete: 'off', required: true });
@@ -554,13 +687,14 @@ async function travelPage() {
 
   put(app, h('h1', {}, 'Travel'),
     h('p', { class: 'muted' }, inApp
-      ? 'Enter your trip once. Britto opens MakeMyTrip, ixigo, Goibibo and EaseMyTrip on this phone, reads the fares each one shows, and lists them side by side. Britto\u2019s server never sees your search, and nothing is booked.'
+      ? 'Enter your trip once. Britto opens MakeMyTrip, ixigo, Goibibo and EaseMyTrip (flights), Booking.com and Cleartrip (hotels) and Uber (rides) on this phone, reads the prices each one shows, and lists them side by side. Britto\u2019s server never sees your search, and nothing is booked.'
       : 'Enter your trip once and open the same search on each site. In the Britto Android app, Britto also reads the fares each site shows and compares them for you.'),
     list,
     inApp ? h('section', {}, h('h2', {}, 'Rides'), rideCmp) : null,
-    h('section', {}, h('h2', {}, 'Flights'), flights),
+    h('section', {}, h('h2', {}, 'Flights'), flights, watchList),
     h('section', {}, h('h2', {}, 'Hotels'), hotels),
     h('section', {}, h('h2', {}, 'Ride to the airport'), ridesForm));
+  loadWatches();
 }
 
 function stat(label, value, note) {
@@ -761,9 +895,13 @@ async function appWatchesAlerts() {
   } catch { return null; }
 }
 
+// ONE sender for the whole page: the bridge has a single onmessage, so a second sender with its
+// own numbering would take the first one's replies (a running fare compare would hang).
+let bridgeAsk = null;
 function siteBridge() {
   const bridge = window.BrittoBridge;
   if (!bridge) return null;
+  if (bridgeAsk) return bridgeAsk;
   const pending = new Map();
   let seq = 0;
   bridge.onmessage = (event) => {
@@ -771,11 +909,12 @@ function siteBridge() {
     pending.get(id)?.(reply);
     pending.delete(id);
   };
-  return (msg) => new Promise((resolve) => {
+  bridgeAsk = (msg) => new Promise((resolve) => {
     const id = ++seq;
     pending.set(id, resolve);
     bridge.postMessage(JSON.stringify({ id, msg }));
   });
+  return bridgeAsk;
 }
 
 /**
@@ -1040,12 +1179,32 @@ navigator.serviceWorker?.addEventListener('message', (e) => {
   if (e.data?.type === 'britto-push' && location.pathname === '/alerts') alertsPage();
 });
 
+// In the app, Android's status bar sits over the page's top bar: the app paints the strip behind
+// it in the top bar's colour, and behind the navigation bar the tab bar's (SiteBridgeCore "bars").
+let barsSent = '';
+function reportBars() {
+  const ask = inApp ? siteBridge() : null;
+  if (!ask) return;
+  const hex = (sel) => {
+    const el = document.querySelector(sel);
+    const m = el && /^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)$/.exec(getComputedStyle(el).backgroundColor);
+    return m && (m[4] === undefined || Number(m[4]) === 1) ? `#${[m[1], m[2], m[3]].map((n) => Number(n).toString(16).padStart(2, '0')).join('')}` : null;
+  };
+  const top = hex('.top');
+  const bottom = hex('.tabbar') ?? hex('body');
+  if (!top || !bottom || top + bottom === barsSent) return;
+  barsSent = top + bottom;
+  ask({ type: 'bars', top, bottom });
+}
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', reportBars);
+
 function route() {
   const { pathname, search } = location;
   window.scrollTo(0, 0);
   // The tab (and desktop nav link) for this page, by its first path segment.
   const section = `/${pathname.split('/')[1] ?? ''}`;
   document.documentElement.classList.toggle('is-home', section === '/');
+  reportBars();
   document.querySelectorAll('.tabbar a, .top nav a').forEach((a) => {
     if (a.getAttribute('href') === section) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');

@@ -18,6 +18,46 @@ of any product link, or send the link to the Telegram bot, and see:
 
 Status and roadmap: `PLAN.md`. API: `CONTRACT.md`. Development record: `HISTORY.md`.
 
+## Case study: what was hard, and how it was decided
+
+**The problem.** Indian store pages print a discount against an M.R.P. the product never sold
+at. BuyHatke-style tools answer "is this really cheap?" from price history. Britto does the
+same, on the constraint that it never pretends to be a person: its server identifies itself as
+`BrittoBot`, and when a store refuses it, Britto does not work around the refusal.
+
+**Most stores refuse an honest server: measured, not assumed.** Amazon.in, Vijay Sales, Nykaa
+and ShopClues answer from Cloudflare. Flipkart answers "E002", Myntra never answers, Croma 403s,
+and every grocery app refuses. So the readers run **where the shopper already is**: in a
+browser extension, and in the Android app's in-app browser ("Super Browse"), on the page the
+shopper opened. All three clients (Worker, extension, app) run **one interpreter over JSON
+reader configs** (`core/interpret.ts`), served by the Worker, so a store that changes its page
+is fixed by publishing a config, never by shipping an app.
+
+**A reading from a browser is a claim.** A 40% move needs a second network to agree; a report
+can never rename a product; on a store the server can read, only the server's own reading
+fires an alert (`core/trust.ts`).
+
+**Travel compare without a fare API.** No travel site offers a free, permitted fare API. The
+app opens each site's own results page in hidden browsers on the phone, reads what the page
+shows with the same selector engine (recipes in `web/fares.json`), and lists the results side
+by side. Britto's server never sees the search. Measured on 2026-11-04 in the app: Delhi to
+Mumbai on 4 sites in about 32 s, 40 flights grouped per flight with each site's fare, and
+Hindon / Navi Mumbai flights flagged (sites mix them into "Delhi" and "Mumbai"). Hotels:
+Booking.com prices the whole stay and Cleartrip one night, so both are put per night before
+they are compared. Sites that ask "are you a person?" (Skyscanner) are shown to the shopper to
+answer, never worked around.
+
+**Proving it.** Every reader is checked against pages saved from real stores
+(`test/fixtures/`). Every test suite is **proved able to fail**: `npm run mutate` breaks the
+code in 107 deliberate ways, and each must turn exactly its own checks red (the mutation run
+has caught tests that passed while asserting nothing). "Verified live" means checked in the
+production database, not a fixture.
+
+**What it does not do (yet).** No Play Store listing; Flipkart's reader is off until a real
+page is saved; round trips are compared as two one-way tickets (the sites' own round-trip pages
+are not read); Rapido, Ola and MakeMyTrip hotels are links only. The record of every decision
+and measurement is `HISTORY.md`.
+
 ## Without the extension (phone or laptop)
 
 Everything on the website works in any browser, with nothing to install:
@@ -85,16 +125,31 @@ change, never a new extension release**.
   shoppers in the last 30 days". Britto never invents codes and never stores offer text sent
   by a browser.
 
-## Travel (P9)
+## Travel (P9, P11)
 
-`/travel`: enter a flight (or a hotel stay) once and open the same search on each site. Britto
-shows no fares there, because no travel site lets it read them for free. Every link says
-how far it was checked: **checked on the site** (Cleartrip flights and hotels: the site
-showed the search filled in), **from the site's own documentation** (Skyscanner), **not
-checked yet** (MakeMyTrip, ixigo, Booking.com: they refuse Britto's test network), or just the
-site's front page (IndiGo, Air India, Goibibo, …). **Ride to the airport** puts your location
-into an Uber link on your phone (Britto never receives it), for airports Uber was seen to
-recognise; Ola, Rapido and Namma Yatri open their own sites.
+`/travel`: enter a trip once.
+
+- **In the Android app, Britto compares the prices** (P11). It opens each site's own results
+  page on the phone, under the Britto page, and reads what that page shows:
+  - **Flights:** MakeMyTrip, ixigo, Goibibo and EaseMyTrip, side by side per flight, with
+    nearby airports flagged.
+    - A **fare strip by date**, taken from the sites' own date strips. Tap a day to compare it.
+    - **Round trips**, compared as two one-way tickets.
+    - **Fare alerts:** up to three routes, compared again on the phone every few hours. A
+      notification comes when a fare drops at least ₹100 (and 1%) below the lowest seen.
+  - **Hotels:** Booking.com and Cleartrip, per night, before taxes.
+  - **Rides:** Uber's rides with their fares, after you log in to Uber once in the app.
+
+  Nothing is clicked or booked on the sites, and Britto's server never sees the search.
+- **In a browser,** the same search opens on each site instead. Every link says how far it
+  was checked:
+  - **checked in the Britto app:** the four flight sites, Booking.com, Cleartrip hotels and
+    Uber;
+  - **checked on the site:** Cleartrip flights;
+  - **from the site's own documentation:** Skyscanner;
+  - or just the site's front page: IndiGo, Air India, MakeMyTrip hotels, Rapido and others.
+- **Ride to the airport** puts your location into an Uber link on your phone (Britto never
+  receives it), for airports Uber was seen to recognise.
 
 ## Rules
 

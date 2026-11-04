@@ -501,6 +501,102 @@ export const MUTANTS = [
     file: 'extension/src/reader.ts', find: '    if (sessionStorage.getItem(RELOADED) === key) return false;\n', replace: '',
     run: APP, expect: [/never in a loop/],
   },
+  // ---- P11 part 2b: date strip, round trip, hotels, fare alerts, bar colours
+  {
+    name: 'strip: a printed weekday is not checked',
+    file: 'core/fares.ts', find: '  if (wd && WEEKDAYS.indexOf(wd[1]!) !== d.getUTCDay()) return false;\n', replace: '',
+    run: FARES, expect: [/a printed day that does not fit/],
+  },
+  {
+    name: 'strip: dated from its first day, not the searched one',
+    file: 'core/fares.ts', find: 'const date = plusDays(when, i - at);', replace: 'const date = plusDays(when, i);',
+    run: FARES, expect: [/dated from the searched day/, /strips merged by day/],
+  },
+  {
+    name: 'strip: two days marked as the searched one are accepted',
+    file: 'core/fares.ts', find: 'if (at < 0 || days.filter((d) => d.active).length !== 1) return [];', replace: 'if (at < 0) return [];',
+    run: FARES, expect: [/a printed day that does not fit/],
+  },
+  {
+    name: 'compare: a day of the strip keeps the first site’s figure',
+    file: 'web/compare.js', find: '        if (d.price < have.price) Object.assign(have, { price: d.price, site: s.id, name: s.name });\n', replace: '',
+    run: FARES, expect: [/strips merged by day/],
+  },
+  {
+    name: 'compare: a round trip counts one way only',
+    file: 'web/compare.js', find: 'total: a.best + b.best', replace: 'total: a.best',
+    run: FARES, expect: [/strips merged by day/],
+  },
+  {
+    name: 'hotels: a whole-stay price taken as one night',
+    file: 'web/compare.js', find: "const night = per === 'stay' ? Math.round(r.price / nights) : r.price;", replace: 'const night = r.price;',
+    run: FARES, expect: [/hotel compare: per night/],
+  },
+  {
+    name: 'hotels: two hotels matched by their first word',
+    file: 'web/compare.js', find: "const key = [...new Set(words)].sort().join(' ');", replace: "const key = words.slice(0, 1).join(' ');",
+    run: FARES, expect: [/hotel compare: per night/],
+  },
+  {
+    name: 'hotels: a recipe that does not say per night or per stay is accepted',
+    file: 'core/fares.ts', find: "if (r.sector === 'hotel' && r.per !== 'night' && r.per !== 'stay') errs.push(", replace: 'if (false) errs.push(',
+    run: FARES, expect: [/Booking.com prices the whole stay/],
+  },
+  {
+    name: 'hotels: Cleartrip read at its struck-out price',
+    file: 'web/fares.json', find: '(₹\\\\s?[\\\\d,]+)\\\\s*(?:₹\\\\s?[\\\\d,]+\\\\s*)?', replace: '(?:₹\\\\s?[\\\\d,]+\\\\s*)?(₹\\\\s?[\\\\d,]+)\\\\s*',
+    run: FARES, expect: [/Booking.com prices the whole stay/],
+  },
+  {
+    name: 'fare alert for any lower fare',
+    file: 'android/app/src/main/java/app/britto/FareWatches.java', find: 'if (low - cheapest >= Math.max(MIN_DROP_PAISE, low / 100)) {', replace: 'if (cheapest < low) {',
+    run: GRADLE_TEST, expect: [/anAlertOnlyForARealDropBelowTheLowestSeen/],
+  },
+  {
+    name: 'fare alerts: a fourth route is watched',
+    file: 'android/app/src/main/java/app/britto/FareWatches.java', find: 'if (next.length() >= MAX) return', replace: 'if (false) return',
+    run: GRADLE_TEST, expect: [/theSameRouteReplacesItselfAndAtMostThreeAreWatched/],
+  },
+  {
+    name: 'fare compare takes any text as the searched day',
+    file: 'android/app/src/main/java/app/britto/FareJob.java', find: '            if (date != null && !DAY.matcher(date).matches()) return null;\n', replace: '',
+    run: GRADLE_TEST, expect: [/theSearchedDayIsCheckedAndTheSitesDateStripIsReported/],
+  },
+  {
+    name: 'fare compare settles before the strip arrives',
+    file: 'android/app/src/main/java/app/britto/FareJob.java', find: '\n                    + ":" + (read.optJSONArray("strip") == null ? 0 : read.optJSONArray("strip").length());', replace: ';',
+    run: GRADLE_TEST, expect: [/theSearchedDayIsCheckedAndTheSitesDateStripIsReported/],
+  },
+  {
+    name: 'fare alert job keeps the recipes saved with the watch',
+    file: 'android/app/src/main/java/app/britto/FareAlertJob.java', find: ' s.put("recipe", r);', replace: ' { }',
+    run: GRADLE_TEST, expect: [/theJobComparesWithTodaysRecipesAndFindsTheCheapestSite/],
+  },
+  {
+    name: 'the bridge paints any text as a bar colour',
+    file: 'android/app/src/main/java/app/britto/SiteBridgeCore.java', find: 'return s != null && COLOUR.matcher(s).matches() ? 0xFF000000 | Integer.parseInt(s.substring(1), 16) : null;', replace: 'return s != null ? 0xFF000000 | (s.hashCode() & 0xFFFFFF) : null;',
+    run: GRADLE_TEST, expect: [/theBridgeKeepsAlertsAndBarColours/],
+  },
+  {
+    name: 'link previews: a product title written in unescaped',
+    file: 'api/meta.ts', find: "const esc = (s: string) => s.replace(/&/g, '&amp;')", replace: "const esc = (s: string) => s || s.replace(/&/g, '&amp;')",
+    run: ['node', ['--test', 'api/meta.test.ts']], expect: [/everything escaped/],
+  },
+  {
+    name: 'link previews: "$&" in a title read as a replacement pattern',
+    file: 'api/meta.ts', find: '.replace(/<title>[^<]*<\\/title>/, () => `<title>${esc(meta.title)}</title>`)', replace: '.replace(/<title>[^<]*<\\/title>/, `<title>${esc(meta.title)}</title>`)',
+    run: ['node', ['--test', 'api/meta.test.ts']], expect: [/everything escaped/],
+  },
+  {
+    name: 'abuse: short links followed without their hourly limit',
+    file: 'api/refresh.ts', find: 'if (!(await rateLimit(env.DB, `short:${limiter}`, SHORT_LINKS_PER_HOUR, 3_600_000, now))) {', replace: 'if (false) {',
+    run: PROVE, expect: [/past 30 short links/], timeout: 900_000,
+  },
+  {
+    name: 'abuse: every load counts as a view',
+    file: 'api/app.ts', find: 'if (await rateLimit(env.DB, `view:${viewer}:${key}`, 1, 3_600_000, Date.now())) {', replace: 'if (viewer) {',
+    run: PROVE, expect: [/views: three loads/], timeout: 900_000,
+  },
 ];
 
 const only = process.argv[2];

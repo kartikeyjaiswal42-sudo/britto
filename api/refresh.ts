@@ -13,6 +13,9 @@ export const WORKER_READER = 'worker';
 
 /** New products one client (a network, or a Telegram chat) may add per hour. */
 export const ADDS_PER_HOUR = 30;
+/** Short links (amzn.in/d/…) followed for one network or chat in an hour: each costs requests to
+ * the store, so they are limited before any is made (abuse review, 2026-11-04). */
+export const SHORT_LINKS_PER_HOUR = 30;
 
 /**
  * Read now, if this store lets our server read it. Failure is recorded, not thrown. A product
@@ -52,10 +55,13 @@ export type LinkOutcome =
 export const STORE_LIST = STORE_IDS.map((s) => STORES[s].name).join(', ');
 
 /** A pasted link to a product key, following a store's own short links (amzn.in). */
-export async function resolveLink(env: Env, input: string): Promise<LinkOutcome> {
+export async function resolveLink(env: Env, input: string, limiter: string, now: number): Promise<LinkOutcome> {
   const parsed = parseProductLink(input);
   if (parsed.ok) return parsed;
   if (parsed.reason === 'short_link') {
+    if (!(await rateLimit(env.DB, `short:${limiter}`, SHORT_LINKS_PER_HOUR, 3_600_000, now))) {
+      return { ok: false, status: 429, code: 'rate_limited', message: `At most ${SHORT_LINKS_PER_HOUR} short links an hour. Paste the full product link instead.` };
+    }
     const resolved = await resolveShortLink(parsed.store, parsed.url, env.SITE_URL);
     if (resolved) return { ok: true, link: resolved };
     return { ok: false, status: 422, code: 'short_link_unresolved', message: 'We could not follow that short link to a product page. Paste the full product link instead.' };

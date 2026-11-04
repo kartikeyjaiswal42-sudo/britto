@@ -81,7 +81,7 @@ test('hotels: one city and dates; check-out after check-in; a city is a name', (
   const s = hotelSearch({ city: '  Goa ', checkIn: '2026-11-27', checkOut: '2026-11-29', adults: 2 }, NOW);
   assert.ok(s.ok);
   assert.equal(by(s.links, 'cleartrip').url, 'https://www.cleartrip.com/hotels/results?city=Goa&chk_in=27%2F11%2F2026&chk_out=29%2F11%2F2026&adults1=2&children1=0&num_rooms=1');
-  assert.deepEqual([by(s.links, 'cleartrip').checked, by(s.links, 'booking').checked, by(s.links, 'makemytrip').prefilled], ['opened', null, false]);
+  assert.deepEqual([by(s.links, 'cleartrip').checked, by(s.links, 'booking').checked, by(s.links, 'makemytrip').prefilled], ['app', 'app', false], 'both opened in the app with prices (2026-11-04); MakeMyTrip needs a city code');
   for (const [bad, want] of [
     [{ checkOut: '2026-11-27' }, /Check-out: must be after/], [{ checkOut: '2027-01-10' }, /30 nights/], [{ city: '<script>' }, /City/],
     [{ city: 'G' }, /City/], [{ adults: 9 }, /1 to 8/],

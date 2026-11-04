@@ -61,11 +61,14 @@ const FLIGHTS = [
   ['yatra', null, null], ['indigo', null, null], ['airindia', null, null],
 ];
 
+// Both opened in the Britto app on 2026-11-04 (Goa, 20-22 Nov, 2 adults) with their hotels and
+// prices, which web/fares.json reads. MakeMyTrip's hotel list needs its own city code in the
+// address (a city name alone gave an empty page, measured), so it opens its front page.
 const HOTELS = [
-  ['cleartrip', 'opened', (q) => `https://www.cleartrip.com/hotels/results?${qs({
+  ['cleartrip', 'app', (q) => `https://www.cleartrip.com/hotels/results?${qs({
     city: q.city, chk_in: dmy(q.checkIn), chk_out: dmy(q.checkOut), adults1: q.adults, children1: 0, num_rooms: 1,
   })}`],
-  ['booking', null, (q) => `https://www.booking.com/searchresults.html?${qs({
+  ['booking', 'app', (q) => `https://www.booking.com/searchresults.html?${qs({
     ss: q.city, checkin: q.checkIn, checkout: q.checkOut, group_adults: q.adults, no_rooms: 1, group_children: 0,
   })}`],
   ['makemytrip', null, null], ['goibibo', null, null], ['yatra', null, null],

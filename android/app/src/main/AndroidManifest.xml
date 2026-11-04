@@ -43,6 +43,12 @@
             android:exported="false"
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
+        <!-- Flight price alerts: the watched routes compared again on this phone (FareAlertJob). -->
+        <service
+            android:name=".FareAlertJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
         <!-- Super Browse: one store in an in-app browser, with the Britto panel. -->
         <activity
             android:name=".StoreActivity"

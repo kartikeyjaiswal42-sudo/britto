@@ -87,7 +87,7 @@ export async function handleUpdate(env: Env, u: TgUpdate, now: number): Promise<
   let lastProblem: string | null = null;
   for (const t of tokens) {
     // Only a store's own short link (amzn.in) costs a request; everything else is parsed locally.
-    const link = await resolveLink(env, t);
+    const link = await resolveLink(env, t, `tg:${chat}`, now);
     if (!link.ok) { lastProblem = link.message; continue; }
     const added = await addProduct(env, link.link, `tg:${chat}`, now);
     if (!added.ok) return void (await say(env, chat, added.message));

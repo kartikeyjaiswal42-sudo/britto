@@ -6,6 +6,8 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.Gravity;
+import android.view.View;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -14,6 +16,10 @@ import android.widget.LinearLayout;
 
 import androidx.activity.ComponentActivity;
 import androidx.activity.EdgeToEdge;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.webkit.WebViewCompat;
 import androidx.webkit.WebViewFeature;
 
@@ -33,13 +39,27 @@ public class MainActivity extends ComponentActivity {
     private WebView web;
     private Bridge siteBridge;
     private FareRunner fares;
+    private FrameLayout frame;
+    private View statusStrip;
+
+    /** Only travel sites Britto opens in its own browser (core/services.ts) are read. */
+    private boolean opensHere(String url) {
+        Stores.Store at = Stores.forUrl(this, url);
+        return at != null && at.service;
+    }
 
     @Override
     protected void onCreate(Bundle saved) {
         super.onCreate(saved);
         EdgeToEdge.enable(this);
+        // `frame` holds the strip behind Android's status bar (coloured like the page's own top
+        // bar, which the page reports: SiteBridgeCore "bars") and the app, padded clear of the bars.
+        frame = new FrameLayout(this);
+        statusStrip = new View(this);
+        frame.addView(statusStrip, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, 0, Gravity.TOP));
         // Fare compare's travel-site browsers sit in `under`, below the Britto page (FareRunner).
         FrameLayout root = new FrameLayout(this);
+        frame.addView(root, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
         FrameLayout under = new FrameLayout(this);
         root.addView(under, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
         LinearLayout column = new LinearLayout(this);
@@ -58,10 +78,7 @@ public class MainActivity extends ComponentActivity {
         column.addView(web, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
         try {
             // Only travel sites Britto opens in its own browser (core/services.ts) are read.
-            fares = new FareRunner(this, under, Stores.Assets.text(this, "britto-fares.js"), url -> {
-                Stores.Store at = Stores.forUrl(this, url);
-                return at != null && at.service;
-            });
+            fares = new FareRunner(this, under, Stores.Assets.text(this, "britto-fares.js"), this::opensHere);
         } catch (IOException e) {
             fares = null; // a build without the fare reader: the site then shows links only
         }
@@ -86,12 +103,21 @@ public class MainActivity extends ComponentActivity {
             };
             siteBridge = new Bridge(new SiteBridgeCore(SpendStore.inDirectory(getFilesDir()), AlertWatch.inDirectory(getFilesDir()),
                     () -> runOnUiThread(this::watchAlerts), () -> AlertJob.notificationsAllowed(this), System::currentTimeMillis, bridgeFares)
-                    .withPlaces(this::findPlaces)::handle);
+                    .withPlaces(this::findPlaces)
+                    .withBars((top, bottom) -> runOnUiThread(() -> paintBars(top, bottom)))
+                    .withFareAlerts(fareAlerts())::handle);
             WebViewCompat.addWebMessageListener(web, "BrittoBridge", Collections.singleton(siteOrigin()), siteBridge);
         }
         // The site draws the design's tab bar (Home, Deals, Tracker, Shop, Travel) itself.
-        Ui.padForSystemBars(root);
-        setContentView(root);
+        ViewCompat.setOnApplyWindowInsetsListener(frame, (v, insets) -> {
+            Insets i = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.ime() | WindowInsetsCompat.Type.displayCutout());
+            root.setPadding(i.left, i.top, i.right, i.bottom);
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) statusStrip.getLayoutParams();
+            lp.height = i.top;
+            statusStrip.setLayoutParams(lp);
+            return WindowInsetsCompat.CONSUMED;
+        });
+        setContentView(frame);
         Ui.backGoesBackInWeb(this, web);
         if (saved != null && web.restoreState(saved) != null) return;
         if (!handle(getIntent())) web.loadUrl(BuildConfig.SITE + "/");
@@ -125,10 +151,61 @@ public class MainActivity extends ComponentActivity {
     /** The site handed over its alert token: check every 15 minutes, and ask once to notify. */
     private void watchAlerts() {
         AlertJob.schedule(this);
+        askToNotify();
+        checkAlertsNow();
+    }
+
+    private void askToNotify() {
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[] {Manifest.permission.POST_NOTIFICATIONS}, 1);
         }
-        checkAlertsNow();
+    }
+
+    /**
+     * The strip behind the status bar takes the page's top-bar colour, the rest behind the
+     * navigation bar its tab bar's; the bars' icons turn dark on a light colour, light on a dark one.
+     */
+    private void paintBars(int top, int bottom) {
+        statusStrip.setBackgroundColor(top);
+        frame.setBackgroundColor(bottom);
+        androidx.core.view.WindowInsetsControllerCompat c = WindowCompat.getInsetsController(getWindow(), frame);
+        c.setAppearanceLightStatusBars(light(top));
+        c.setAppearanceLightNavigationBars(light(bottom));
+    }
+
+    static boolean light(int argb) {
+        int r = (argb >> 16) & 0xFF, g = (argb >> 8) & 0xFF, b = argb & 0xFF;
+        return 0.299 * r + 0.587 * g + 0.114 * b > 160;
+    }
+
+    /** Flight price alerts on this phone: kept by FareWatches, checked by FareAlertJob. */
+    private SiteBridgeCore.FareAlerts fareAlerts() {
+        FareWatches watches = FareWatches.inDirectory(getFilesDir());
+        return new SiteBridgeCore.FareAlerts() {
+            @Override
+            public org.json.JSONObject watch(org.json.JSONObject msg) {
+                org.json.JSONObject r = watches.add(msg, MainActivity.this::opensHere, FareAlertJob.today(), System.currentTimeMillis());
+                if (r.optBoolean("ok")) {
+                    runOnUiThread(() -> {
+                        FareAlertJob.schedule(MainActivity.this);
+                        askToNotify();
+                    });
+                }
+                return r;
+            }
+
+            @Override
+            public org.json.JSONArray list() {
+                return watches.summaries();
+            }
+
+            @Override
+            public boolean stop(String id) {
+                boolean gone = watches.remove(id);
+                if (watches.all().length() == 0) FareAlertJob.cancel(MainActivity.this);
+                return gone;
+            }
+        };
     }
 
     private void checkAlertsNow() {

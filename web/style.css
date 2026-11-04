@@ -296,3 +296,12 @@ table.spend td.num { text-align: right; font-variant-numeric: tabular-nums; whit
 .fare-offers .offer { display: inline-flex; gap: 6px; align-items: baseline; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; color: var(--ink); text-decoration: none; font-size: .9rem; }
 .fare-offers .offer.best { border-color: var(--good); background: var(--good-bg); }
 .fare-offers .offer b { white-space: nowrap; }
+.fare-strip-wrap { margin: 12px 0; min-width: 0; }
+.fare-strip { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 6px; scrollbar-width: thin; }
+.strip-day { flex: 0 0 auto; display: grid; gap: 2px; justify-items: center; min-width: 5.6em; padding: 6px 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--ink); font: inherit; font-size: .8rem; cursor: pointer; }
+.strip-day b { font-size: .9rem; }
+.strip-day.low b { color: var(--good); }
+.strip-day.active { border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+.trip-total:empty { display: none; }
+.fare-watches li { grid-template-columns: minmax(6.5em, auto) 1fr; }
+.fare-watches .watch-actions { grid-column: 1 / -1; display: flex; gap: 8px; }
