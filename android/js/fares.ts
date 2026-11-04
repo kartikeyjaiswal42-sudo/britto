@@ -24,9 +24,11 @@ export function read(recipe: FareRecipe, when?: { date?: string }): string {
     const strip = recipe.strip ? all(recipe.strip.items, 62) : [];
     const html = cards.length
       ? `<html><body><div class="britto-strip">${strip.map((c) => c.outerHTML).join('')}</div><div class="britto-items">${cards.map((c) => c.outerHTML).join('')}</div></body></html>`
-      : document.documentElement.outerHTML;
+      : document.documentElement?.outerHTML ?? ''; // no document yet while the first page loads
     return JSON.stringify(readFares(recipe, html, location.href, when?.date));
-  } catch {
-    return JSON.stringify({ status: 'waiting', rows: [] });
+  } catch (e) {
+    // Still "waiting" for the rules (FareJob), but the app logs the error: a reader that throws
+    // must never pass for a page with no fares.
+    return JSON.stringify({ status: 'waiting', rows: [], error: String((e as Error)?.message ?? e).slice(0, 160) });
   }
 }

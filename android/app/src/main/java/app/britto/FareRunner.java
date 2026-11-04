@@ -146,6 +146,13 @@ final class FareRunner {
             } catch (Exception e) {
                 json = null;
             }
+            if (json != null && json.contains("\"error\"")) {
+                try {
+                    android.util.Log.w("BrittoFares", site.id + " reader error: " + new org.json.JSONObject(json).optString("error"));
+                } catch (org.json.JSONException e) {
+                    android.util.Log.w("BrittoFares", site.id + " reader error");
+                }
+            }
             if (!read(j, site, json) && views.get(site.id) == w) ui.postDelayed(() -> poll(j, site, w), POLL_MS);
         });
     }
