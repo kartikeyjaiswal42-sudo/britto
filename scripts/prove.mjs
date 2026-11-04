@@ -3,6 +3,7 @@
 // read-mostly: it adds at most two products and never touches the database directly).
 // It makes one real request to amazon.in per run (the product being tracked).
 import { spawn, execFileSync } from 'node:child_process';
+import { SERVICES } from '../core/services.ts';
 import { createServer } from 'node:net';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -326,7 +327,7 @@ try {
   const stores = await j('/api/stores');
   check('stores list carries the measured lines', stores.body?.stores?.length === STORE_IDS.length && stores.body.stores.every((s) => s.measured.length > 20));
   check('…and each store\'s number and https front page (Super Browse opens it)', stores.body?.stores?.every((s) => Number.isInteger(s.num) && /^https:\/\/[^/]+\/$/.test(s.home) && s.hosts.includes(new URL(s.home).hostname)), JSON.stringify(stores.body?.stores?.map((s) => [s.num, s.home])));
-  check('…and one service per sector (rides, flights, hotels) for the app\'s Super Browse', JSON.stringify(stores.body?.services?.map((s) => s.sector)) === JSON.stringify(['ride', 'flight', 'hotel']) && stores.body.services.every((s) => s.hosts.includes(new URL(s.home).hostname)), JSON.stringify(stores.body?.services?.map((s) => s.id)));
+  check('…and the travel services (rides, flights, hotels, core/services.ts) for the app\'s Super Browse', JSON.stringify(stores.body?.services?.map((s) => [s.id, s.sector])) === JSON.stringify(SERVICES.map((s) => [s.id, s.sector])) && stores.body.services.every((s) => s.hosts.includes(new URL(s.home).hostname)), JSON.stringify(stores.body?.services?.map((s) => s.id)));
   check('recent and deals answer', (await j('/api/recent')).status === 200 && (await j('/api/deals')).status === 200);
   const rh = await j('/api/health/readers');
   check('reader health answers for every store', rh.status === 200 && rh.body?.stores?.length === STORE_IDS.length && Array.isArray(rh.body?.warnings), rh.text.slice(0, 200));

@@ -32,6 +32,19 @@ await build({
   legalComments: 'none',
   logLevel: 'warning',
 });
+// The fare reader (android/js/fares.ts): one expression-free script that defines a local
+// `__brittoFares` when the app wraps it in a function (FareRunner.java), so nothing leaks onto
+// the travel site's page.
+await build({
+  entryPoints: [join(ROOT, 'android/js/fares.ts')],
+  outfile: join(out, 'britto-fares.js'),
+  bundle: true,
+  format: 'iife',
+  globalName: '__brittoFares',
+  target: 'es2020',
+  legalComments: 'none',
+  logLevel: 'warning',
+});
 // Services (core/services.ts) open in the in-app browser too, but get no reader and no bridge.
 writeFileSync(join(out, 'stores.json'), JSON.stringify([
   ...STORE_IDS.map((id) => {

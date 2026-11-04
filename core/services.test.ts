@@ -3,8 +3,11 @@ import assert from 'node:assert/strict';
 import { SECTOR_NAMES, SERVICES } from './services.ts';
 import { STORES, STORE_IDS } from './stores.ts';
 
-test('services: one per sector, each opening on one of its own hosts', () => {
-  assert.deepEqual(SERVICES.map((s) => s.sector).sort(), Object.keys(SECTOR_NAMES).sort(), 'exactly one service per sector');
+test('services: every sector has one, listed sector by sector, each opening on one of its own hosts', () => {
+  const sectors = SERVICES.map((s) => s.sector);
+  assert.deepEqual([...new Set(sectors)], Object.keys(SECTOR_NAMES), 'every sector, in the order Super Browse shows them');
+  assert.deepEqual(sectors, [...sectors].sort((a, b) => Object.keys(SECTOR_NAMES).indexOf(a) - Object.keys(SECTOR_NAMES).indexOf(b)), 'grouped by sector');
+  assert.equal(new Set(SERVICES.flatMap((s) => s.hosts)).size, SERVICES.flatMap((s) => s.hosts).length, 'a host belongs to one service');
   assert.equal(new Set(SERVICES.map((s) => s.id)).size, SERVICES.length);
   const storeHosts = new Set(STORE_IDS.flatMap((id) => [...STORES[id].hosts, ...STORES[id].shortHosts]));
   for (const s of SERVICES) {

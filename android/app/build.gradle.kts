@@ -45,8 +45,8 @@ android {
         applicationId = "app.britto"
         minSdk = 29 // Android 10: saving to Downloads needs no storage permission
         targetSdk = 36
-        versionCode = 4
-        versionName = "0.3.1"
+        versionCode = 5
+        versionName = "0.4.0"
         buildConfigField("String", "SITE", "\"${brittoSite.get()}\"")
     }
 
@@ -70,6 +70,13 @@ android {
     }
 
     buildTypes {
+        // A debug build is its own app (app.britto.dev), so it installs beside the signed one
+        // without replacing it or its logins; it is debuggable, so its WebViews can be driven
+        // over DevTools (scripts/android-cdp.mjs) to measure sites inside the app.
+        debug {
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+        }
         release {
             // R8 drops the unused parts of the libraries (measured: 5.8 MB unshrunk). Nothing
             // here is reached by reflection: activities are kept through the manifest, and the

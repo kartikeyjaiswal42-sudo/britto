@@ -3,6 +3,8 @@
 // source. Links are built on the shopper's device (a ride link carries their location, which
 // never goes to Britto). How each site's link format was checked:
 //   'opened'      opened in a real browser from Britto's test network; the site showed the search
+//   'app'         opened inside the Britto Android app on a home network in India (2026-11-04):
+//                 the results page showed the search and its fares (web/fares.json reads them)
 //   'documented'  from the site's own developer documentation; not opened (it refused our network)
 //   null          not checked yet: the link may open the site without the search filled in
 // A site with no link format for a search opens its front page (prefilled: false).
@@ -41,14 +43,22 @@ const FLIGHTS = [
     origin: q.from, destination: q.to, outboundDate: q.depart, ...(q.ret ? { inboundDate: q.ret } : {}), adultsv2: q.adults,
     cabinclass: { economy: 'economy', premium: 'premiumeconomy', business: 'business', first: 'first' }[q.cabin], market: 'IN', locale: 'en-GB', currency: 'INR',
   })}`],
-  // Not checked (both refused our network): one-way economy only, the simplest form of each.
-  ['makemytrip', null, (q) => (q.ret || q.cabin !== 'economy' ? null : `https://www.makemytrip.com/flight/search?${qs({
+  // Opened in the Britto app (they refuse our test network): one-way economy only, the form
+  // that was seen working; anything else opens the site's front page.
+  ['makemytrip', 'app', (q) => (q.ret || q.cabin !== 'economy' ? null : `https://www.makemytrip.com/flight/search?${qs({
     itinerary: `${q.from}-${q.to}-${dmy(q.depart)}`, tripType: 'O', paxType: `A-${q.adults}_C-0_I-0`, intl: String(q.intl), cabinClass: 'E', lang: 'eng',
   })}`)],
-  ['ixigo', null, (q) => (q.ret || q.cabin !== 'economy' ? null : `https://www.ixigo.com/search/result/flight?${qs({
+  ['ixigo', 'app', (q) => (q.ret || q.cabin !== 'economy' ? null : `https://www.ixigo.com/search/result/flight?${qs({
     from: q.from, to: q.to, date: dmy(q.depart, ''), adults: q.adults, children: 0, infants: 0, class: 'e',
   })}`)],
-  ['goibibo', null, null], ['easemytrip', null, null], ['yatra', null, null], ['indigo', null, null], ['airindia', null, null],
+  ['goibibo', 'app', (q) => (q.ret || q.cabin !== 'economy' ? null : `https://www.goibibo.com/flight/search?${qs({
+    itinerary: `${q.from}-${q.to}-${dmy(q.depart)}`, tripType: 'O', paxType: `A-${q.adults}_C-0_I-0`, intl: String(q.intl), cabinClass: 'E', lang: 'eng',
+  })}`)],
+  // EaseMyTrip: India only (its address names the country); the city words are as it prints them.
+  ['easemytrip', 'app', (q) => (q.ret || q.cabin !== 'economy' || q.intl ? null : `https://flight.easemytrip.com/FlightList/Index?srch=${[q.fromPlace, q.toPlace].map((p) => `${p.iata}-${encodeURIComponent(p.city.replace(/[^A-Za-z ]/g, '').trim())}-India`).join('|')}|${dmy(q.depart)}&${qs({
+    px: `${q.adults}-0-0`, cbn: 0, ar: 'undefined', isow: 'true', isdm: 'true', lang: 'en-us', IsDoubleSeat: 'false', CCODE: 'IN', curr: 'INR', apptype: 'B2C',
+  })}`)],
+  ['yatra', null, null], ['indigo', null, null], ['airindia', null, null],
 ];
 
 const HOTELS = [
@@ -112,7 +122,7 @@ export function flightSearch(input, airports, now = Date.now()) {
   const cabin = input.cabin ?? 'economy';
   if (!CABINS.includes(cabin)) return { ok: false, reason: 'Unknown cabin class' };
   const q = { from: from.iata, to: to.iata, depart: input.depart, ret: input.ret || null, adults, cabin, intl: from.country !== 'IN' || to.country !== 'IN' };
-  return { ok: true, q, links: links(FLIGHTS, q) };
+  return { ok: true, q, links: links(FLIGHTS, { ...q, fromPlace: from, toPlace: to }) };
 }
 
 export function hotelSearch(input, now = Date.now()) {
@@ -146,4 +156,23 @@ export function rideSearch(input, airports, uberAirports = {}) {
   const q = { pickup: { lat: round(p.lat), lng: round(p.lng), name: 'My location' }, drop: seen ? { lat: seen.lat, lng: seen.lng, name: seen.name } : { lat: airport.lat, lng: airport.lng, name: airport.name } };
   const table = seen ? RIDES : RIDES.map(([id, checked, build]) => (id === 'uber' ? [id, null, null] : [id, checked, build]));
   return { ok: true, q, links: links(table, q) };
+}
+
+/**
+ * Ride compare in the Britto app: pickup and drop found by the phone's own place search. Uber
+ * opens with the trip (its documented link) and its ride list is read on the phone (web/fares.json);
+ * Rapido opens its own web app, where the shopper logs in and enters the trip (no link format for
+ * a trip, and its fare page has not been seen, so nothing of it is read).
+ */
+export function rideCompare(pickup, drop) {
+  if (!isCoord(pickup?.lat, pickup?.lng)) return { ok: false, reason: 'Pickup: pick a place from the list' };
+  if (!isCoord(drop?.lat, drop?.lng)) return { ok: false, reason: 'Drop: pick a place from the list' };
+  const round = (x) => Math.round(x * 1e5) / 1e5;
+  const named = (p) => ({ lat: round(p.lat), lng: round(p.lng), name: String(p.name ?? '').slice(0, 80) || 'Pinned place' });
+  const q = { pickup: named(pickup), drop: named(drop) };
+  if (q.pickup.lat === q.drop.lat && q.pickup.lng === q.drop.lng) return { ok: false, reason: 'Pickup and drop are the same place' };
+  return { ok: true, q, links: [
+    { id: 'uber', name: TRAVEL_SITES.uber.name, url: RIDES[0][2](q), prefilled: true, checked: 'app' },
+    { id: 'rapido', name: TRAVEL_SITES.rapido.name, url: 'https://m.rapido.bike/', prefilled: false, checked: null },
+  ] };
 }

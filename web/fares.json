@@ -1,0 +1,72 @@
+{
+ "about": "Fare recipes (core/fares.ts): how the Britto app reads the fares a travel site's own results page shows on the shopper's phone. Each was checked on a page saved inside the app on its 'verified' day (test/fixtures/fares-*.html).",
+ "recipes": [
+  {
+   "site": "ixigo", "sector": "flight", "verified": "2026-11-04",
+   "page": "^https://www\\.ixigo\\.com/search/result/flight",
+   "items": "[data-testid=flight-listing]",
+   "label": [{ "selector": ["[data-testid=airline-number]"], "attribute": "innerText" }],
+   "price": [{ "selector": ["[data-testid=pricing]"], "attribute": "innerText" }],
+   "depart": [{ "selector": ["[data-testid=timing-tile]"], "attribute": "innerText", "regex": ["(\\d{1,2}:\\d{2})"] }],
+   "arrive": [{ "selector": ["[data-testid=timing-tile]"], "attribute": "innerText", "regex": ["(\\d{1,2}:\\d{2})"], "match": 1 }],
+   "origin": [{ "selector": ["[data-testid=timing-tile]"], "attribute": "innerText", "regex": ["\\d{1,2}:\\d{2} ([A-Z]{3})\\b"] }],
+   "destination": [{ "selector": ["[data-testid=timing-tile]"], "attribute": "innerText", "regex": ["\\d{1,2}:\\d{2} ([A-Z]{3})\\b"], "match": 1 }],
+   "duration": [{ "selector": ["[data-testid=timing-tile]"], "attribute": "innerText", "regex": ["(\\d+h(?: \\d+m)?|\\d+m)"] }],
+   "stops": [{ "selector": ["[data-testid=timing-tile]"], "attribute": "innerText", "regex": ["(Non-stop|\\d+ stops?)"] }],
+   "check": ["are you a person or a robot", "verify you are human", "unusual traffic"]
+  },
+  {
+   "site": "makemytrip", "sector": "flight", "verified": "2026-11-04",
+   "page": "^https://www\\.makemytrip\\.com/flight/search",
+   "items": "[data-testid=listing-flight-card]",
+   "label": [{ "selector": [".listingFlightCard__airlineName"], "attribute": "innerText" }],
+   "price": [{ "selector": [".listingFlightCard__finalFare"], "attribute": "innerText" }],
+   "depart": [{ "selector": ["[data-testid=listing-flight-card-dep-time]"], "attribute": "innerText" }],
+   "arrive": [{ "selector": ["[data-testid=listing-flight-card-arr-time]"], "attribute": "innerText" }],
+   "origin": [{ "selector": ["[data-testid=listing-flight-card-journey]"], "attribute": "innerText", "regex": ["\\b([A-Z]{3})\\b"] }],
+   "destination": [{ "selector": ["[data-testid=listing-flight-card-journey]"], "attribute": "innerText", "regex": ["\\b([A-Z]{3})\\b"], "match": 1 }],
+   "duration": [{ "selector": ["[data-testid=listing-flight-card-duration]"], "attribute": "innerText" }],
+   "stops": [{ "selector": ["[data-testid=listing-flight-card-stops]"], "attribute": "innerText" }],
+   "check": ["are you a person or a robot", "verify you are human", "unusual traffic"]
+  },
+  {
+   "site": "goibibo", "sector": "flight", "verified": "2026-11-04",
+   "page": "^https://www\\.goibibo\\.com/flight/search",
+   "items": "[data-test=component-cardBody]",
+   "label": [{ "selector": ["[data-test=component-airline-heading]"], "attribute": "innerText" }],
+   "price": [{ "selector": ["[data-test=component-final-fare]"], "attribute": "innerText" }],
+   "depart": [{ "selector": ["[data-test=component-dept-time]"], "attribute": "innerText" }],
+   "arrive": [{ "selector": ["[data-test=component-arr-time]"], "attribute": "innerText" }],
+   "origin": [{ "selector": ["[data-test=component-dept-city]"], "attribute": "innerText" }],
+   "destination": [{ "selector": ["[data-test=component-arr-city]"], "attribute": "innerText" }],
+   "duration": [{ "selector": ["[data-test=component-duration]"], "attribute": "innerText" }],
+   "stops": [{ "selector": ["[data-test=component-stops-txt]"], "attribute": "innerText" }, { "selector": ["[data-test=component-non-stop]"], "attribute": "innerText" }],
+   "check": ["are you a person or a robot", "verify you are human", "unusual traffic"]
+  },
+  {
+   "site": "easemytrip", "sector": "flight", "verified": "2026-11-04",
+   "page": "^https://flight\\.easemytrip\\.com/FlightList/",
+   "items": ".fligt-cntnr",
+   "label": [{ "selector": [".fl-num"], "attribute": "innerText", "regex": ["^(.*?\\d{2,5})(?:\\s|$)"] }],
+   "price": [{ "selector": [".fl_cost span.ttl_b_amt"], "attribute": "innerText" }],
+   "depart": [{ "selector": [".fl_deprt"], "attribute": "innerText" }],
+   "arrive": [{ "selector": [".fl_arive"], "attribute": "innerText" }],
+   "origin": [{ "selector": [".owsectr"], "attribute": "innerText", "regex": ["\\b([A-Z]{3})\\b"] }],
+   "destination": [{ "selector": [".owsectr"], "attribute": "innerText", "regex": ["\\b([A-Z]{3})\\b"], "match": 1 }],
+   "duration": [{ "selector": [".duratn-bdr .text_gray"], "attribute": "innerText" }],
+   "stops": [{ "selector": [".owsectr .text_gray_n"], "attribute": "innerText" }],
+   "check": ["are you a person or a robot", "verify you are human", "unusual traffic"],
+   "max": 40
+  },
+  {
+   "site": "uber", "sector": "ride", "verified": "2026-11-04",
+   "page": "^https://m\\.uber\\.com/",
+   "items": "li[data-testid=\"product_selector.list_item\"]",
+   "label": [{ "selector": ["p"], "attribute": "innerText", "regex": ["^(.*?)(?:\\s+\\d{1,2})?$"] }],
+   "price": [{ "selector": ["li"], "attribute": "innerText", "regex": ["(₹\\s?[\\d,]+(?:\\.\\d{1,2})?)"] }],
+   "eta": [{ "selector": ["[data-testid=\"product_selector.list_item.eta_string\"]"], "attribute": "innerText" }],
+   "check": ["are you a person or a robot", "verify you are human"],
+   "login": ["uber journey login", "uber login loading"]
+  }
+ ]
+}

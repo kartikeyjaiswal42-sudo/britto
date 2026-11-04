@@ -6,7 +6,8 @@ import {
 } from './api.js';
 import { drawChart } from './chart.js';
 import { mergeOrders, summarize } from './spend.js';
-import { airportIndex, flightSearch, hotelSearch, MAX_DAYS_AHEAD, rideSearch, todayIST } from './travel.js';
+import { airportIndex, flightSearch, hotelSearch, MAX_DAYS_AHEAD, rideCompare, rideSearch, todayIST } from './travel.js';
+import { groupFlights, otherAirport, siteSummary } from './compare.js';
 
 const app = document.getElementById('app');
 
@@ -341,6 +342,7 @@ function votesText(v) {
 // here, on the device; Britto shows no fares (no free, permitted source) and stores nothing.
 const LINK_NOTE = {
   opened: 'Opens with your search filled in (checked on the site).',
+  app: 'Opens with your search filled in (checked in the Britto app).',
   documented: (n) => `Link format from ${n}\u2019s own documentation.`,
   unchecked: 'Not checked yet: it may open without your search filled in.',
   home: 'Opens the site: enter your trip there.',
@@ -350,7 +352,106 @@ function travelLinks(links) {
   return h('ul', { class: 'travel-links' }, links.map((l) => h('li', { 'data-site': l.id },
     h('a', { class: l.prefilled && l.checked ? 'button' : 'button secondary', href: l.url, target: '_blank', rel: 'noopener noreferrer' },
       l.prefilled ? `Search on ${l.name}` : `Open ${l.name}`),
-    h('span', { class: 'small muted' }, !l.prefilled ? LINK_NOTE.home : l.checked === 'opened' ? LINK_NOTE.opened : l.checked === 'documented' ? LINK_NOTE.documented(l.name) : LINK_NOTE.unchecked))));
+    h('span', { class: 'small muted' }, !l.prefilled ? LINK_NOTE.home : l.checked === 'opened' ? LINK_NOTE.opened : l.checked === 'app' ? LINK_NOTE.app : l.checked === 'documented' ? LINK_NOTE.documented(l.name) : LINK_NOTE.unchecked))));
+}
+
+// ---- Live fares, in the Britto app only (core/fares.ts, android FareRunner): each site's own
+// results page opens on this phone, under this page, and its fares are read from what it shows.
+// Britto's server never asks a travel site anything, and nothing is booked or clicked there.
+let fareRecipes = null;
+let fareRun = 0;
+const loadFareRecipes = () => (fareRecipes ??= fetch('/fares.json').then((r) => r.json()).then((j) => j.recipes ?? []).catch(() => { fareRecipes = null; return []; }));
+
+const FARE_STATUS = {
+  queued: 'Waiting…',
+  loading: 'Checking…',
+  check: 'asks you to confirm you are a person. Open it, answer it there, then search again.',
+  login: 'shows fares only after you log in. Open it and log in once.',
+  waiting: 'showed no fares for this search.',
+  failed: 'did not open.',
+};
+
+/**
+ * True when the comparison started (inside the app, with at least one site it can read). `draw`
+ * paints each state: (box, sites, state, others).
+ */
+async function liveFares(box, links, sector, draw) {
+  const ask = inApp ? siteBridge() : null;
+  if (!ask) return false;
+  const recipes = await loadFareRecipes();
+  const sites = links.filter((l) => l.prefilled).map((l) => ({ id: l.id, name: l.name, url: l.url, recipe: recipes.find((r) => r.site === l.id && r.sector === sector) })).filter((s) => s.recipe);
+  if (!sites.length) return false;
+  const started = await ask({ type: 'compareFares', sites: sites.map(({ id, url, recipe }) => ({ id, url, recipe })) });
+  if (!started?.ok) return false;
+  const others = links.filter((l) => !sites.some((s) => s.id === l.id));
+  const run = ++fareRun;
+  const tick = async () => {
+    if (run !== fareRun || !box.isConnected) { if (run === fareRun) ask({ type: 'compareStop' }); return; }
+    const st = await ask({ type: 'compareStatus', job: started.job });
+    if (!st?.ok || run !== fareRun) return;
+    draw(box, sites, st, others);
+    if (!st.done) setTimeout(tick, 1000);
+  };
+  put(box, h('p', { class: 'muted' }, `Opening ${sites.map((s) => s.name).join(', ')} on your phone…`));
+  tick();
+  return true;
+}
+
+function drawFares(box, sites, st, others, q, airports) {
+  const state = new Map(st.sites.map((x) => [x.id, x]));
+  const read = sites.map((s) => ({ ...s, ...state.get(s.id) }));
+  const finished = read.filter((s) => s.state === 'done').length;
+  const flights = groupFlights(read);
+  const fromCity = airports.get(q.from)?.city ?? null;
+  const toCity = airports.get(q.to)?.city ?? null;
+  const best = flights[0];
+  const open = (url, label, cls = 'button') => h('a', { class: cls, href: url, rel: 'noopener' }, label);
+  put(box,
+    h('p', { class: 'fare-progress small' }, st.done ? `Checked ${read.length} sites on your phone just now.` : `Checking fares on your phone: ${finished} of ${read.length} sites done…`),
+    h('progress', { max: read.length, value: finished, class: 'fare-bar' }),
+    best ? h('div', { class: 'fare-best' },
+      h('span', { class: 'small muted' }, 'Cheapest found'),
+      h('strong', {}, `${rupees(best.best)} on ${best.offers[0].name}`),
+      h('span', { class: 'small' }, `${best.airline}${best.number ? ` ${best.number}` : ''}, ${best.depart} → ${best.arrive}`)) : null,
+    h('ul', { class: 'fare-sites' }, siteSummary(read).map((s) => h('li', { 'data-site': s.id, 'data-status': s.status },
+      h('span', { class: 'fare-site' }, s.name),
+      s.cheapest != null ? h('span', {}, `from ${rupees(s.cheapest)}`, h('small', { class: 'muted' }, ` · ${s.rows.length} fares`)) : h('span', { class: 'small muted' }, FARE_STATUS[s.status] ?? FARE_STATUS.waiting),
+      open(s.url, s.status === 'check' || s.status === 'login' ? `Open ${s.name}` : 'Open', 'button secondary small')))),
+    flights.length ? h('h3', {}, `${flights.length} flights, cheapest first`) : null,
+    h('ol', { class: 'fare-list' }, flights.slice(0, 25).map((f) => {
+      const away = otherAirport(f.from, q.from, fromCity) || otherAirport(f.to, q.to, toCity);
+      return h('li', { 'data-flight': f.key },
+        h('div', { class: 'fare-flight' },
+          h('strong', {}, `${f.depart} → ${f.arrive}`),
+          h('span', {}, `${f.airline}${f.number ? ` ${f.number}` : ''}`),
+          h('span', { class: 'small muted' }, [f.duration, f.stops].filter(Boolean).join(' · ')),
+          away ? h('span', { class: 'small warn' }, `Airports: ${f.from.join('/') || '?'} → ${f.to.join('/') || '?'}`) : null),
+        h('div', { class: 'fare-offers' }, f.offers.map((o, i) => h('a', { class: i === 0 ? 'offer best' : 'offer', href: o.url, rel: 'noopener', 'data-offer': o.site },
+          h('span', {}, o.name), h('b', {}, rupees(o.price))))));
+    })),
+    h('p', { class: 'small muted' }, 'Fares as each site showed them on this phone, before coupons and fees at checkout. Tap a site to book there; Britto never books or pays for you.'),
+    others.length ? [h('h3', {}, 'Also search on'), travelLinks(others)] : null);
+}
+
+function drawRides(box, sites, st, others) {
+  const state = new Map(st.sites.map((x) => [x.id, x]));
+  const read = sites.map((s) => ({ ...s, ...state.get(s.id) }));
+  const rides = read.flatMap((s) => (s.status === 'fares' ? s.rows.map((r) => ({ ...r, site: s })) : [])).sort((a, b) => a.price - b.price);
+  put(box,
+    h('p', { class: 'fare-progress small' }, st.done ? `Checked on your phone just now.` : 'Checking ride fares on your phone…'),
+    st.done ? null : h('progress', { class: 'fare-bar' }),
+    h('ul', { class: 'fare-sites' }, read.map((s) => h('li', { 'data-site': s.id, 'data-status': s.status },
+      h('span', { class: 'fare-site' }, s.name),
+      s.status === 'fares' ? h('span', {}, `${s.rows.length} rides from ${rupees(Math.min(...s.rows.map((r) => r.price)))}`) : h('span', { class: 'small muted' }, FARE_STATUS[s.status] ?? FARE_STATUS.waiting),
+      h('a', { class: 'button secondary small', href: s.url, rel: 'noopener' }, `Open ${s.name}`)))),
+    rides.length ? h('ol', { class: 'fare-list' }, rides.map((r) => h('li', { 'data-ride': r.label },
+      h('div', { class: 'fare-flight' }, h('strong', {}, r.label), h('span', { class: 'small muted' }, r.eta ? `pickup ${r.eta}` : '')),
+      h('div', { class: 'fare-offers' }, h('a', { class: 'offer', href: r.site.url, rel: 'noopener', 'data-offer': r.site.id }, h('span', {}, r.site.name), h('b', {}, rupees(r.price))))))) : null,
+    others.length ? h('ul', { class: 'fare-sites' }, others.map((l) => h('li', { 'data-site': l.id, 'data-status': 'link' },
+      h('span', { class: 'fare-site' }, l.name),
+      h('span', { class: 'small muted' }, 'Britto cannot read its fares yet: open it, log in with your number once, and enter the trip there.'),
+      h('a', { class: 'button secondary small', href: l.url, rel: 'noopener' }, `Open ${l.name}`)))) : null,
+    h('p', { class: 'small muted' }, 'Fares as each app\u2019s own page showed them on this phone. Tap one to book it there; Britto never books a ride.'));
 }
 
 const addDaysISO = (iso, n) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
@@ -379,10 +480,16 @@ async function travelPage() {
   const flights = h('form', { class: 'travel-form', id: 'flights', onsubmit: (e) => {
     e.preventDefault();
     const r = flightSearch({ from: airportCode(from.value), to: airportCode(to.value), depart: depart.value, ret: ret.value || null, adults: Number(adults.value), cabin: cabin.value }, airports);
+    fareRun++;
+    if (r.ok) document.activeElement?.blur?.();
+    if (r.ok && inApp) {
+      liveFares(flightOut, r.links, 'flight', (box, sites, st, others) => drawFares(box, sites, st, others, r.q, airports)).then((live) => { if (!live) show(flightOut, r); });
+      return;
+    }
     show(flightOut, r, r.ok ? h('p', { class: 'small' }, h('button', { type: 'button', class: 'link', onclick: () => { rideTo.value = from.value; document.getElementById('rides')?.scrollIntoView(); } }, `Need a ride to ${r.q.from}?`)) : null);
   } },
   h('div', { class: 'fields' }, field('From', from), field('To', to), field('Depart', depart), field('Return (optional)', ret), field('Adults', adults), field('Class', cabin)),
-  h('button', { type: 'submit' }, 'Show flight searches'), flightOut);
+  h('button', { type: 'submit' }, inApp ? 'Compare fares' : 'Show flight searches'), flightOut);
 
   // Hotels
   const city = h('input', { name: 'city', placeholder: 'Goa', autocomplete: 'off', required: true });
@@ -396,6 +503,31 @@ async function travelPage() {
   } },
   h('div', { class: 'fields' }, field('City', city), field('Check-in', checkIn), field('Check-out', checkOut), field('Guests (one room)', guests)),
   h('button', { type: 'submit' }, 'Show hotel searches'), hotelOut);
+
+  // Ride compare (app only): places from the phone's own place search, fares from Uber's own page.
+  const pickup = h('input', { name: 'pickup', placeholder: 'Connaught Place, New Delhi', autocomplete: 'off', required: true });
+  const drop = h('input', { name: 'drop', placeholder: 'Delhi Airport Terminal 3', autocomplete: 'off', required: true });
+  const rideCmpOut = out('ride-compare-out');
+  const rideCmp = h('form', { class: 'travel-form', id: 'ride-compare', onsubmit: async (e) => {
+    e.preventDefault();
+    document.activeElement?.blur?.();
+    fareRun++;
+    const ask = siteBridge();
+    if (!ask) return put(rideCmpOut, h('p', { class: 'error' }, 'Ride compare works in the Britto app.'));
+    put(rideCmpOut, h('p', { class: 'muted small' }, 'Finding the places…'));
+    const [a, b] = await Promise.all([ask({ type: 'places', q: pickup.value }), ask({ type: 'places', q: drop.value })]);
+    const p = a?.places?.[0];
+    const d = b?.places?.[0];
+    if (!p || !d) return put(rideCmpOut, h('p', { class: 'error' }, `${!p ? 'Pickup' : 'Drop'}: no such place found. Try a landmark and the city.`));
+    const r = rideCompare(p, d);
+    if (!r.ok) return put(rideCmpOut, h('p', { class: 'error' }, r.reason));
+    const live = h('div', {});
+    put(rideCmpOut, h('p', { class: 'small' }, h('b', {}, 'From '), p.address, h('br'), h('b', {}, 'To '), d.address), live);
+    if (!(await liveFares(live, r.links, 'ride', drawRides))) put(live, travelLinks(r.links));
+  } },
+  h('div', { class: 'fields' }, field('Pickup', pickup), field('Drop', drop)),
+  h('p', { class: 'small muted' }, 'Places are found by your phone. Uber opens with the trip on this phone and Britto reads its fares; log in to Uber once in the app first.'),
+  h('button', { type: 'submit' }, 'Compare rides'), rideCmpOut);
 
   // Rides to the airport: the shopper's location goes into the Uber link only, never to Britto.
   const rideTo = h('input', { name: 'rideTo', list: 'airport-list', placeholder: 'DEL · New Delhi', autocomplete: 'off', required: true });
@@ -418,8 +550,11 @@ async function travelPage() {
   h('button', { type: 'submit' }, 'Use my location'), rideOut);
 
   put(app, h('h1', {}, 'Travel'),
-    h('p', { class: 'muted' }, 'Enter your trip once and open the same search on each site. Britto shows no fares here: no travel site lets us read them for free, so compare on their pages. Every link says whether we checked it.'),
+    h('p', { class: 'muted' }, inApp
+      ? 'Enter your trip once. Britto opens MakeMyTrip, ixigo, Goibibo and EaseMyTrip on this phone, reads the fares each one shows, and lists them side by side. Britto\u2019s server never sees your search, and nothing is booked.'
+      : 'Enter your trip once and open the same search on each site. In the Britto Android app, Britto also reads the fares each site shows and compares them for you.'),
     list,
+    inApp ? h('section', {}, h('h2', {}, 'Rides'), rideCmp) : null,
     h('section', {}, h('h2', {}, 'Flights'), flights),
     h('section', {}, h('h2', {}, 'Hotels'), hotels),
     h('section', {}, h('h2', {}, 'Ride to the airport'), ridesForm));

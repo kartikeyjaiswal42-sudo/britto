@@ -122,7 +122,7 @@ try {
     const tiles = await page.locator('a.store-tile[data-store]').evaluateAll((as) => as.map((a) => [a.dataset.store, a.getAttribute('href')]));
     check('Super Browse lists every store with its front page', JSON.stringify(tiles) === JSON.stringify(STORE_IDS.map((id) => [id, STORES[id].home])), JSON.stringify(tiles));
     const services = await page.locator('a.store-tile[data-service]').evaluateAll((as) => as.map((a) => [a.dataset.service, a.getAttribute('href'), a.closest('.store-grid')?.previousElementSibling?.textContent]));
-    check('…and one service per sector under its own heading (Rides, Flights, Hotels), opening its own site', JSON.stringify(services) === JSON.stringify(SERVICES.map((s) => [s.id, s.home, SECTOR_NAMES[s.sector]])), JSON.stringify(services));
+    check('…and the travel services under their sector headings (Rides, Flights, Hotels), each opening its own site', JSON.stringify(services) === JSON.stringify(SERVICES.map((s) => [s.id, s.home, SECTOR_NAMES[s.sector]])), JSON.stringify(services));
     const tileBox = await page.locator('a.store-tile').first().boundingBox();
     check('…tiles are large enough to tap (≥ 44 px tall)', (tileBox?.height ?? 0) >= 44, JSON.stringify(tileBox));
     check('…the header links to it ("Shop")', (await page.locator('.top nav a', { hasText: 'Shop' }).getAttribute('href')) === '/browse');
@@ -196,7 +196,11 @@ try {
     const got = await page.locator('#flight-links li').evaluateAll((lis) => lis.map((li) => [li.dataset.site, li.querySelector('a').href, li.querySelector('a').textContent, li.querySelector('span').textContent]));
     check('…flights: every site, the link web/travel.js builds, checked ones first', want.ok && JSON.stringify(got.map((g) => [g[0], g[1]])) === JSON.stringify(want.links.map((l) => [l.id, l.url])), JSON.stringify(got.slice(0, 3)));
     check('…each link says how far it was checked', got[0][2] === 'Search on Cleartrip' && /checked on the site/.test(got[0][3]) && /documentation/.test(got[1][3])
-      && got.some((g) => g[0] === 'makemytrip' && /Not checked yet/.test(g[3])) && got.some((g) => g[0] === 'indigo' && g[2] === 'Open IndiGo' && /enter your trip there/.test(g[3])), JSON.stringify(got.map((g) => g[3])));
+      && ['makemytrip', 'ixigo', 'goibibo', 'easemytrip'].every((id) => got.some((g) => g[0] === id && /checked in the Britto app/.test(g[3])))
+      && got.some((g) => g[0] === 'indigo' && g[2] === 'Open IndiGo' && /enter your trip there/.test(g[3])), JSON.stringify(got.map((g) => g[3])));
+    // In a browser (not the app) there is no fare reading: links only, and the page says where fares are read.
+    check('…in a browser: links only, and fares are said to be read in the Android app', await page.locator('#flight-links .fare-sites, #ride-compare').count() === 0
+      && /Android app, Britto also reads the fares/.test(await page.locator('#app > p.muted').first().innerText()));
     check('…and every link opens in a new tab without telling the site where you came from', (await page.locator('#flight-links a').evaluateAll((as) => as.every((a) => a.target === '_blank' && /noreferrer/.test(a.rel)))));
     await page.fill('#hotels [name=city]', 'Goa');
     await page.fill('#hotels [name=checkIn]', when);

@@ -1,6 +1,6 @@
 // Types for web/travel.js (plain JS, run by the site in the browser), for TypeScript callers.
 export type Cabin = 'economy' | 'premium' | 'business' | 'first';
-export type Checked = 'opened' | 'documented' | null;
+export type Checked = 'opened' | 'app' | 'documented' | null;
 export interface Airport { iata: string; name: string; city: string; country: string; lat: number; lng: number }
 export interface TravelLink { id: string; name: string; url: string; prefilled: boolean; checked: Checked }
 export type Search<Q> = { ok: true; q: Q; links: TravelLink[] } | { ok: false; reason: string };
@@ -20,3 +20,4 @@ export function flightSearch(
 ): Search<FlightQuery>;
 export function hotelSearch(input: { city?: string; checkIn?: string; checkOut?: string; adults?: number }, now?: number): Search<HotelQuery>;
 export function rideSearch(input: { to?: string; pickup?: { lat?: number; lng?: number } }, airports: Map<string, Airport>, uberAirports?: Record<string, { lat: number; lng: number; name: string; from: string }>): Search<RideQuery>;
+export function rideCompare(pickup: Partial<Place> | null | undefined, drop: Partial<Place> | null | undefined): Search<RideQuery>;

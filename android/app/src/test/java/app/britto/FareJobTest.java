@@ -1,0 +1,151 @@
+package app.britto;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.RobolectricTestRunner;
+
+import java.util.List;
+import java.util.function.Predicate;
+
+/** The rules of a fare compare on the phone (FareJob): what is accepted, how many load at once, when a site is done. */
+@RunWith(RobolectricTestRunner.class)
+public class FareJobTest {
+    private static final Predicate<String> TRAVEL = (url) -> url.startsWith("https://www.ixigo.com/") || url.startsWith("https://www.makemytrip.com/") || url.startsWith("https://www.goibibo.com/");
+
+    private static JSONObject site(String id, String url) throws Exception {
+        return new JSONObject().put("id", id).put("url", url).put("recipe", new JSONObject().put("site", id));
+    }
+
+    private static JSONArray three() throws Exception {
+        return new JSONArray().put(site("ixigo", "https://www.ixigo.com/search/result/flight?from=DEL"))
+                .put(site("makemytrip", "https://www.makemytrip.com/flight/search?itinerary=DEL-BOM"))
+                .put(site("goibibo", "https://www.goibibo.com/flight/search?itinerary=DEL-BOM"));
+    }
+
+    private static String fares(int rows, long cheapest) throws Exception {
+        JSONArray list = new JSONArray();
+        for (int i = 0; i < rows; i++) list.put(new JSONObject().put("label", "IndiGo").put("price", cheapest + i));
+        return new JSONObject().put("status", "fares").put("rows", list).put("cheapest", cheapest).toString();
+    }
+
+    private static String status(String s) throws Exception {
+        return new JSONObject().put("status", s).put("rows", new JSONArray()).toString();
+    }
+
+    @Test
+    public void onlyWholeListsOfKnownTravelSitesAreAccepted() throws Exception {
+        assertNotNull(FareJob.of("j1", three(), TRAVEL));
+        assertNull("nothing to compare", FareJob.of("j", new JSONArray(), TRAVEL));
+        assertNull("a site Britto does not open", FareJob.of("j", new JSONArray().put(site("evil", "https://evil.example/")), TRAVEL));
+        assertNull("not https", FareJob.of("j", new JSONArray().put(site("ixigo", "http://www.ixigo.com/x")), TRAVEL));
+        assertNull("a bad id", FareJob.of("j", new JSONArray().put(site("Ixigo<", "https://www.ixigo.com/x")), TRAVEL));
+        assertNull("no recipe", FareJob.of("j", new JSONArray().put(new JSONObject().put("id", "ixigo").put("url", "https://www.ixigo.com/x")), TRAVEL));
+        assertNull("the same site twice", FareJob.of("j", new JSONArray().put(site("ixigo", "https://www.ixigo.com/a")).put(site("ixigo", "https://www.ixigo.com/b")), TRAVEL));
+        JSONArray eleven = new JSONArray();
+        for (int i = 0; i < 11; i++) eleven.put(site("ixigo" + (char) ('a' + i), "https://www.ixigo.com/" + i));
+        assertNull("at most ten sites", FareJob.of("j", eleven, TRAVEL));
+        assertNull("one bad site refuses all of them", FareJob.of("j", three().put(site("evil", "https://evil.example/")), TRAVEL));
+    }
+
+    @Test
+    public void twoSitesLoadAtOnceAndTheNextStartsWhenOneIsDone() throws Exception {
+        FareJob job = FareJob.of("j1", three(), TRAVEL);
+        List<FareJob.Site> first = job.toStart(0);
+        assertEquals(2, first.size());
+        assertEquals("ixigo", first.get(0).id);
+        assertTrue("no third while two load", job.toStart(1).isEmpty());
+        // check: not done before the settle time even when it repeats ...
+        assertFalse(job.onRead("ixigo", status("check"), 1_000));
+        assertFalse(job.onRead("ixigo", status("check"), 2_500));
+        assertFalse(job.onRead("ixigo", status("check"), 4_000));
+        // ... and done once it has repeated after it.
+        assertTrue(job.onRead("ixigo", status("check"), FareJob.SETTLE_MS + 1));
+        List<FareJob.Site> next = job.toStart(FareJob.SETTLE_MS + 2);
+        assertEquals(1, next.size());
+        assertEquals("goibibo", next.get(0).id);
+        assertEquals("check", new JSONObject(job.toJson().getJSONArray("sites").get(0).toString()).getString("status"));
+    }
+
+    @Test
+    public void faresAreDoneOnlyWhenTheyStopChangingAfterTheSettleTime() throws Exception {
+        FareJob job = FareJob.of("j1", three(), TRAVEL);
+        job.toStart(0);
+        long t = FareJob.SETTLE_MS;
+        assertFalse(job.onRead("ixigo", fares(6, 711600), t));
+        assertFalse(job.onRead("ixigo", fares(6, 711600), t + 1_500));
+        assertFalse("still arriving: the list grew", job.onRead("ixigo", fares(9, 711600), t + 3_000));
+        assertFalse(job.onRead("ixigo", fares(9, 711600), t + 4_500));
+        assertTrue("three readings in a row agree", job.onRead("ixigo", fares(9, 711600), t + 6_000));
+        JSONObject ixigo = job.toJson().getJSONArray("sites").getJSONObject(0);
+        assertEquals("done", ixigo.getString("state"));
+        assertEquals("fares", ixigo.getString("status"));
+        assertEquals(9, ixigo.getJSONArray("rows").length());
+        assertEquals(711600, ixigo.getLong("cheapest"));
+    }
+
+    @Test
+    public void aPageWithoutFaresEndsAtTheTimeLimitAsWhatItLastShowed() throws Exception {
+        FareJob job = FareJob.of("j1", three(), TRAVEL);
+        job.toStart(0);
+        for (long t = 2_500; t < FareJob.TIMEOUT_MS; t += 1_500) assertFalse("waiting never settles early", job.onRead("ixigo", status("waiting"), t));
+        assertTrue(job.onRead("ixigo", null, FareJob.TIMEOUT_MS));
+        assertEquals("waiting", job.toJson().getJSONArray("sites").getJSONObject(0).getString("status"));
+        assertFalse(job.onRead("makemytrip", "not json", 5_000));
+        assertTrue("never answered at all", job.onRead("makemytrip", null, FareJob.TIMEOUT_MS));
+        assertEquals("failed", job.toJson().getJSONArray("sites").getJSONObject(1).getString("status"));
+        assertFalse(job.toJson().getBoolean("done"));
+    }
+
+    @Test
+    public void aLoadErrorEndsOnlyASiteThatShowedNothing() throws Exception {
+        FareJob job = FareJob.of("j1", three(), TRAVEL);
+        job.toStart(0);
+        assertFalse(job.onRead("ixigo", status("waiting"), 3_000));
+        assertFalse("ixigo already showed a page: its redirects' errors do not end it", job.failed("ixigo"));
+        assertEquals("loading", job.site("ixigo").state);
+        assertTrue(job.failed("makemytrip"));
+        assertEquals("failed", job.toJson().getJSONArray("sites").getJSONObject(1).getString("status"));
+        assertFalse("a site is ended once", job.failed("makemytrip"));
+    }
+
+    @Test
+    public void theSiteBridgeStartsAndReportsACompare() throws Exception {
+        final FareJob[] last = new FareJob[1];
+        SiteBridgeCore.Fares fares = new SiteBridgeCore.Fares() {
+            @Override
+            public String start(JSONArray sites) {
+                last[0] = FareJob.of("j7", sites, TRAVEL);
+                return last[0] == null ? null : last[0].id;
+            }
+
+            @Override
+            public JSONObject status(String job) {
+                return last[0] != null && last[0].id.equals(job) ? last[0].toJson() : null;
+            }
+
+            @Override
+            public void stop() {
+                last[0] = null;
+            }
+        };
+        SiteBridgeCore site = new SiteBridgeCore(SpendStore.inDirectory(new java.io.File(System.getProperty("java.io.tmpdir"))), null, () -> {}, () -> false, () -> 0L, fares);
+        JSONObject started = new JSONObject(site.handle(new JSONObject().put("id", 1).put("msg", new JSONObject().put("type", "compareFares").put("sites", three())).toString())).getJSONObject("reply");
+        assertTrue(started.getBoolean("ok"));
+        assertEquals("j7", started.getString("job"));
+        JSONObject st = new JSONObject(site.handle("{\"id\":2,\"msg\":{\"type\":\"compareStatus\",\"job\":\"j7\"}}")).getJSONObject("reply");
+        assertTrue(st.getBoolean("ok"));
+        assertEquals(3, st.getJSONArray("sites").length());
+        assertFalse(new JSONObject(site.handle("{\"id\":3,\"msg\":{\"type\":\"compareStatus\",\"job\":\"j1\"}}")).getJSONObject("reply").getBoolean("ok"));
+        JSONObject refused = new JSONObject(site.handle(new JSONObject().put("id", 4).put("msg", new JSONObject().put("type", "compareFares").put("sites", new JSONArray().put(site("evil", "https://evil.example/")))).toString())).getJSONObject("reply");
+        assertFalse(refused.getBoolean("ok"));
+        assertNull("no compare in a build without it", new SiteBridgeCore(SpendStore.inDirectory(new java.io.File(System.getProperty("java.io.tmpdir")))).handle("{\"id\":5,\"msg\":{\"type\":\"compareStatus\",\"job\":\"j7\"}}"));
+    }
+}

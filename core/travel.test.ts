@@ -27,13 +27,16 @@ test('flights: one search, each site with it filled in; checked formats first', 
   const s = flightSearch({ from: 'del', to: 'BOM', depart: '2026-11-27', adults: 1, cabin: 'economy' }, airports, NOW);
   assert.ok(s.ok);
   assert.deepEqual(s.links.map((l) => [l.id, l.prefilled, l.checked]), [
-    ['cleartrip', true, 'opened'], ['skyscanner', true, 'documented'], ['makemytrip', true, null], ['ixigo', true, null],
-    ['goibibo', false, null], ['easemytrip', false, null], ['yatra', false, null], ['indigo', false, null], ['airindia', false, null],
+    ['cleartrip', true, 'opened'], ['skyscanner', true, 'documented'], ['makemytrip', true, 'app'], ['ixigo', true, 'app'],
+    ['goibibo', true, 'app'], ['easemytrip', true, 'app'], ['yatra', false, null], ['indigo', false, null], ['airindia', false, null],
   ]);
   assert.equal(by(s.links, 'cleartrip').url, 'https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=27%2F11%2F2026&from=DEL&to=BOM&intl=n');
   assert.equal(by(s.links, 'skyscanner').url, 'https://www.skyscanner.net/g/referrals/v1/flights/day-view?origin=DEL&destination=BOM&outboundDate=2026-11-27&adultsv2=1&cabinclass=economy&market=IN&locale=en-GB&currency=INR');
   assert.equal(by(s.links, 'makemytrip').url, 'https://www.makemytrip.com/flight/search?itinerary=DEL-BOM-27%2F11%2F2026&tripType=O&paxType=A-1_C-0_I-0&intl=false&cabinClass=E&lang=eng');
   assert.equal(by(s.links, 'ixigo').url, 'https://www.ixigo.com/search/result/flight?from=DEL&to=BOM&date=27112026&adults=1&children=0&infants=0&class=e');
+  // Goibibo and EaseMyTrip: the forms that showed fares inside the Britto app on 2026-11-04.
+  assert.equal(by(s.links, 'goibibo').url, 'https://www.goibibo.com/flight/search?itinerary=DEL-BOM-27%2F11%2F2026&tripType=O&paxType=A-1_C-0_I-0&intl=false&cabinClass=E&lang=eng');
+  assert.equal(by(s.links, 'easemytrip').url, 'https://flight.easemytrip.com/FlightList/Index?srch=DEL-New%20Delhi-India|BOM-Mumbai-India|27/11/2026&px=1-0-0&cbn=0&ar=undefined&isow=true&isdm=true&lang=en-us&IsDoubleSeat=false&CCODE=IN&curr=INR&apptype=B2C');
   assert.equal(by(s.links, 'indigo').url, 'https://www.goindigo.in/', 'no link format: the front page, said so');
 });
 
@@ -46,6 +49,10 @@ test('flights: round trip, cabin and international; unchecked formats are never 
   assert.deepEqual([sky.get('inboundDate'), sky.get('adultsv2'), sky.get('cabinclass')], ['2026-11-30', '2', 'business']);
   assert.equal(by(s.links, 'makemytrip').prefilled, false, 'MakeMyTrip: only the one-way economy form, until checked');
   assert.equal(by(s.links, 'ixigo').prefilled, false);
+  assert.equal(by(s.links, 'goibibo').prefilled, false);
+  assert.equal(by(s.links, 'easemytrip').prefilled, false, 'EaseMyTrip: India one-way economy only');
+  const dxb = flightSearch({ from: 'DEL', to: 'DXB', depart: '2026-11-27', adults: 1, cabin: 'economy' }, airports, NOW);
+  assert.ok(dxb.ok && by(dxb.links, 'makemytrip').prefilled && !by(dxb.links, 'easemytrip').prefilled, 'abroad: not EaseMyTrip\u2019s India-only form');
   const premium = flightSearch({ from: 'DEL', to: 'BOM', depart: '2026-11-27', cabin: 'premium' }, airports, NOW);
   assert.ok(premium.ok && new URL(by(premium.links, 'skyscanner').url).searchParams.get('cabinclass') === 'premiumeconomy');
 });

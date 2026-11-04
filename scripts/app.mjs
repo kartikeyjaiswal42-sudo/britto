@@ -64,7 +64,7 @@ if (existsSync(APK) && sdk) {
   const stores = JSON.parse(execFileSync('unzip', ['-p', APK, 'assets/stores.json'], { encoding: 'utf8' }));
   const shops = stores.filter((s) => !s.service);
   check('APK: store hosts are core/stores.ts\'s', isDeepStrictEqual(shops.map((s) => s.id), STORE_IDS) && shops.every((s) => isDeepStrictEqual(s.hosts, STORES[s.id].hosts)));
-  check('APK: one service per sector opens in the app (core/services.ts), marked as a service', isDeepStrictEqual(stores.filter((s) => s.service).map((s) => [s.id, s.hosts]), SERVICES.map((s) => [s.id, s.hosts])));
+  check('APK: every travel service opens in the app (core/services.ts), marked as a service', isDeepStrictEqual(stores.filter((s) => s.service).map((s) => [s.id, s.hosts]), SERVICES.map((s) => [s.id, s.hosts])));
 } else {
   console.log(`SKIP  APK checks — NOT verified: no ${existsSync(APK) ? 'Android SDK' : 'APK'} (cd android && ./gradlew assembleRelease)`);
 }

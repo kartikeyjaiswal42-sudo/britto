@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
 import androidx.activity.ComponentActivity;
@@ -16,6 +17,7 @@ import androidx.activity.EdgeToEdge;
 import androidx.webkit.WebViewCompat;
 import androidx.webkit.WebViewFeature;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,13 +32,19 @@ public class MainActivity extends ComponentActivity {
     private static final Pattern LINK = Pattern.compile("https?://[^\\s<>\"']+");
     private WebView web;
     private Bridge siteBridge;
+    private FareRunner fares;
 
     @Override
     protected void onCreate(Bundle saved) {
         super.onCreate(saved);
         EdgeToEdge.enable(this);
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
+        // Fare compare's travel-site browsers sit in `under`, below the Britto page (FareRunner).
+        FrameLayout root = new FrameLayout(this);
+        FrameLayout under = new FrameLayout(this);
+        root.addView(under, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+        LinearLayout column = new LinearLayout(this);
+        column.setOrientation(LinearLayout.VERTICAL);
+        root.addView(column, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
         web = new WebView(this);
         // " BrittoApp/<version>": tells OUR site it runs in the app (it then offers Telegram for
         // alerts, since an Android WebView cannot receive web push). Store pages never see it.
@@ -47,11 +55,38 @@ public class MainActivity extends ComponentActivity {
                 return route(request.getUrl());
             }
         });
-        root.addView(web, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
+        column.addView(web, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
+        try {
+            // Only travel sites Britto opens in its own browser (core/services.ts) are read.
+            fares = new FareRunner(this, under, Stores.Assets.text(this, "britto-fares.js"), url -> {
+                Stores.Store at = Stores.forUrl(this, url);
+                return at != null && at.service;
+            });
+        } catch (IOException e) {
+            fares = null; // a build without the fare reader: the site then shows links only
+        }
         // Spend Lens: the Britto site (and nothing else) may read the orders kept on this phone.
         if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
+            final FareRunner f = fares;
+            SiteBridgeCore.Fares bridgeFares = f == null ? null : new SiteBridgeCore.Fares() {
+                @Override
+                public String start(org.json.JSONArray sites) {
+                    return f.start(sites);
+                }
+
+                @Override
+                public org.json.JSONObject status(String job) {
+                    return f.status(job);
+                }
+
+                @Override
+                public void stop() {
+                    f.stop();
+                }
+            };
             siteBridge = new Bridge(new SiteBridgeCore(SpendStore.inDirectory(getFilesDir()), AlertWatch.inDirectory(getFilesDir()),
-                    () -> runOnUiThread(this::watchAlerts), () -> AlertJob.notificationsAllowed(this), System::currentTimeMillis)::handle);
+                    () -> runOnUiThread(this::watchAlerts), () -> AlertJob.notificationsAllowed(this), System::currentTimeMillis, bridgeFares)
+                    .withPlaces(this::findPlaces)::handle);
             WebViewCompat.addWebMessageListener(web, "BrittoBridge", Collections.singleton(siteOrigin()), siteBridge);
         }
         // The site draws the design's tab bar (Home, Deals, Tracker, Shop, Travel) itself.
@@ -60,6 +95,31 @@ public class MainActivity extends ComponentActivity {
         Ui.backGoesBackInWeb(this, web);
         if (saved != null && web.restoreState(saved) != null) return;
         if (!handle(getIntent())) web.loadUrl(BuildConfig.SITE + "/");
+    }
+
+    /**
+     * Ride compare's place search: the phone's own Geocoder (no permission; it does not use the
+     * phone's location), limited to India. Runs on the bridge's thread (it waits for the network).
+     */
+    @SuppressWarnings("deprecation") // the listener form needs Android 13; this runs off the UI thread
+    private org.json.JSONArray findPlaces(String query) throws IOException {
+        if (!android.location.Geocoder.isPresent()) return null;
+        java.util.List<android.location.Address> found = new android.location.Geocoder(this, new java.util.Locale("en", "IN"))
+                .getFromLocationName(query, 5, 6.5, 68.0, 37.5, 97.5);
+        org.json.JSONArray out = new org.json.JSONArray();
+        if (found == null) return out;
+        try {
+            for (android.location.Address a : found) {
+                if (!a.hasLatitude() || !a.hasLongitude()) continue;
+                String line = a.getMaxAddressLineIndex() >= 0 ? a.getAddressLine(0) : null;
+                String name = a.getFeatureName() != null && !a.getFeatureName().matches("[0-9-]+") ? a.getFeatureName() : query;
+                out.put(new org.json.JSONObject().put("name", name).put("address", line == null ? name : line)
+                        .put("lat", a.getLatitude()).put("lng", a.getLongitude()));
+            }
+        } catch (org.json.JSONException e) {
+            throw new IllegalStateException(e);
+        }
+        return out;
     }
 
     /** The site handed over its alert token: check every 15 minutes, and ask once to notify. */
@@ -127,6 +187,7 @@ public class MainActivity extends ComponentActivity {
     /** The Britto site's origin ("https://host" or "http://127.0.0.1:port" in test builds). */
     @Override
     protected void onDestroy() {
+        if (fares != null) fares.stop();
         if (siteBridge != null) siteBridge.close();
         super.onDestroy();
     }

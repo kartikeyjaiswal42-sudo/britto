@@ -1,5 +1,6 @@
 package app.britto;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -15,21 +16,55 @@ import java.util.function.LongSupplier;
  * Alerts: the site hands over its device token ({@code watchAlerts}) so the app can show this
  * phone's alerts as notifications ({@link AlertWatch}, {@link AlertJob}); {@code alertStatus}
  * says whether it is watching and whether Android lets it notify.
+ * Fare compare: {@code compareFares} hands over the travel sites to read on this phone
+ * ({@link FareRunner}), {@code compareStatus} says how far it got, {@code compareStop} ends it;
+ * {@code places} looks a typed place up on the phone (ride compare), nothing leaves for Britto.
  * In: {"id": n, "msg": {...}}. Out: {"id": n, "reply": {...}}, or null to drop the message.
  */
 final class SiteBridgeCore {
+    /** Fare compare on this phone ({@link FareRunner}); absent where the app cannot run one. */
+    interface Fares {
+        /** The job id, or null when the sites were refused. */
+        String start(JSONArray sites);
+
+        /** The job's state, or null for an unknown job. */
+        JSONObject status(String job);
+
+        void stop();
+    }
+
+    /** Places by name, from the phone's own place search (android.location.Geocoder). */
+    interface Places {
+        /** [{name, address, lat, lng}], or null when the phone has no place search. */
+        JSONArray find(String query) throws java.io.IOException;
+    }
+
+    private Places places;
+
+    /** Adds the place search (MainActivity); without it {@code places} is not answered. */
+    SiteBridgeCore withPlaces(Places p) {
+        this.places = p;
+        return this;
+    }
+
     private final SpendStore spend;
     private final AlertWatch alerts;
     private final Runnable onWatch;
     private final BooleanSupplier notificationsAllowed;
     private final LongSupplier clock;
+    private final Fares fares;
 
     SiteBridgeCore(SpendStore spend) {
         this(spend, null, () -> {}, () -> false, System::currentTimeMillis);
     }
 
-    /** onWatch: schedule the checks and ask Android for permission to notify (MainActivity). */
     SiteBridgeCore(SpendStore spend, AlertWatch alerts, Runnable onWatch, BooleanSupplier notificationsAllowed, LongSupplier clock) {
+        this(spend, alerts, onWatch, notificationsAllowed, clock, null);
+    }
+
+    /** onWatch: schedule the checks and ask Android for permission to notify (MainActivity). */
+    SiteBridgeCore(SpendStore spend, AlertWatch alerts, Runnable onWatch, BooleanSupplier notificationsAllowed, LongSupplier clock, Fares fares) {
+        this.fares = fares;
         this.spend = spend;
         this.alerts = alerts;
         this.onWatch = onWatch;
@@ -63,6 +98,39 @@ final class SiteBridgeCore {
                     if (alerts == null) return null;
                     reply = new JSONObject().put("ok", true).put("watching", alerts.token() != null)
                             .put("notifications", notificationsAllowed.getAsBoolean());
+                    break;
+                case "compareFares": {
+                    if (fares == null) return null;
+                    String job = fares.start(msg.optJSONArray("sites"));
+                    reply = new JSONObject().put("ok", job != null).put("job", job == null ? JSONObject.NULL : job);
+                    break;
+                }
+                case "compareStatus": {
+                    if (fares == null) return null;
+                    JSONObject state = fares.status(msg.optString("job", ""));
+                    reply = state == null ? new JSONObject().put("ok", false) : state.put("ok", true);
+                    break;
+                }
+                case "places": {
+                    if (places == null) return null;
+                    String q = msg.optString("q", "").trim();
+                    if (q.length() < 3 || q.length() > 100) {
+                        reply = new JSONObject().put("ok", false);
+                        break;
+                    }
+                    JSONArray found;
+                    try {
+                        found = places.find(q);
+                    } catch (java.io.IOException e) {
+                        found = null; // offline, or the phone's place search did not answer
+                    }
+                    reply = new JSONObject().put("ok", found != null).put("places", found == null ? new JSONArray() : found);
+                    break;
+                }
+                case "compareStop":
+                    if (fares == null) return null;
+                    fares.stop();
+                    reply = new JSONObject().put("ok", true);
                     break;
                 default:
                     return null;

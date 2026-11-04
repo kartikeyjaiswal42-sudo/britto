@@ -19,6 +19,7 @@ const UNIT2 = ['node', ['--test', 'core/sales.test.ts']];
 const GROCERY = ['node', ['--test', 'core/grocery.test.ts']];
 const TRAVEL = ['node', ['--test', 'core/travel.test.ts']];
 const LISTING = ['node', ['--test', 'api/listing.test.ts']];
+const FARES = ['node', ['--test', 'core/fares.test.ts']];
 // The slow ones (a real Worker; prove also makes its real amazon.in requests): run them by name.
 const PROVE = ['node', ['scripts/prove.mjs']];
 const EXTENSION = ['node', ['scripts/extension.mjs']];
@@ -395,6 +396,36 @@ export const MUTANTS = [
     run: LISTING, expect: [/list addresses must be on the store's own site/],
   },
   {
+    name: 'fares: MakeMyTrip read from the whole price block (struck-out fare first)',
+    file: 'web/fares.json', find: '"selector": [".listingFlightCard__finalFare"]', replace: '"selector": ["[data-testid=listing-flight-card-price]"]',
+    run: FARES, expect: [/MakeMyTrip: the final fare/, /one flight across four sites/],
+  },
+  {
+    name: 'fares: a person-check page is read as "no fares"',
+    file: 'core/fares.ts', find: "if (recipe.check.some((c) => text.includes(c.toLowerCase()))) return { status: 'check', rows: [] };", replace: '',
+    run: FARES, expect: [/pages without fares say why/],
+  },
+  {
+    name: "fares: a recipe reads any site's page",
+    file: 'core/fares.ts', find: "if (!new RegExp(recipe.page).test(url)) return { status: 'other_page', rows: [] };", replace: '',
+    run: FARES, expect: [/pages without fares say why/],
+  },
+  {
+    name: 'compare: airlines matched only when spelt the same',
+    file: 'web/compare.js', find: "const airlineKey = (a) => a.toLowerCase().replace(/[^a-z]/g, '');", replace: 'const airlineKey = (a) => a;',
+    run: FARES, expect: [/names and times as the sites print them/, /one flight across four sites/],
+  },
+  {
+    name: 'compare: a printed city is never another airport',
+    file: 'web/compare.js', find: 'city != null && p.toLowerCase() !== city.toLowerCase()', replace: 'false',
+    run: FARES, expect: [/one flight across four sites/],
+  },
+  {
+    name: 'compare: a site keeps the dearer of two fares for a flight',
+    file: 'web/compare.js', find: 'else if (r.price < have.price) have.price = r.price;', replace: '',
+    run: FARES, expect: [/names and times as the sites print them/],
+  },
+  {
     name: 'Amazon search reads the struck-out M.R.P. as the price',
     file: 'readers/amazon.desktop.json', find: '".a-price[data-a-color=base]"', replace: '".a-price.a-text-price"',
     run: CHECK, expect: [/^amazon-search-(boat-earbuds|cello-technotip-paise|iphone-15-brands)\.html /],
@@ -431,6 +462,22 @@ export const MUTANTS = [
     name: 'the site bridge takes any text as an alert token',
     file: 'android/app/src/main/java/app/britto/AlertWatch.java', find: 'if (token == null || !TOKEN.matcher(token).matches()) return false;', replace: 'if (token == null) return false;',
     run: GRADLE_TEST, expect: [/tokenRules/, /siteBridgeHandsOverTheTokenAndSaysTheStatus/],
+  },
+  // ---- fare compare on the phone (FareJob)
+  {
+    name: 'fare compare opens every site at once',
+    file: 'android/app/src/main/java/app/britto/FareJob.java', find: '            if (loading >= PARALLEL) break;\n', replace: '',
+    run: GRADLE_TEST, expect: [/twoSitesLoadAtOnceAndTheNextStartsWhenOneIsDone/],
+  },
+  {
+    name: 'fare compare ends a site at its first fares after the settle time',
+    file: 'android/app/src/main/java/app/britto/FareJob.java', find: 'boolean settled = s.same >= SAME_READS - 1 && ', replace: 'boolean settled = ',
+    run: GRADLE_TEST, expect: [/faresAreDoneOnlyWhenTheyStopChangingAfterTheSettleTime/],
+  },
+  {
+    name: 'fare compare gives up a site on any load error',
+    file: 'android/app/src/main/java/app/britto/FareJob.java', find: 'if (s == null || !s.state.equals("loading") || s.read != null) return false;', replace: 'if (s == null || !s.state.equals("loading")) return false;',
+    run: GRADLE_TEST, expect: [/aLoadErrorEndsOnlyASiteThatShowedNothing/],
   },
   // ---- a product opened in place from a search page (Flipkart, Myntra): loaded once for real
   {
