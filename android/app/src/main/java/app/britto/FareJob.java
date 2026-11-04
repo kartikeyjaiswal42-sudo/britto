@@ -31,6 +31,22 @@ final class FareJob {
     static final Pattern SITE_ID = Pattern.compile("^[a-z]{2,20}$");
     /** The searched day, which dates the site's fares-by-date strip (core/fares.ts readStrip). */
     static final Pattern DAY = Pattern.compile("^20\\d{2}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$");
+    /** A place the shopper typed (a ride's pickup or drop): printable, at most 80 characters. */
+    static final Pattern PLACE = Pattern.compile("^[^\\p{Cntrl}]{2,80}$");
+    static final Pattern STAGE = Pattern.compile("^(done|failed|(pickup|drop)-(open|typed)-\\d{1,2})$");
+
+    /** {"pickup", "drop"} when both are acceptable places, else null. */
+    static JSONObject trip(JSONObject t) {
+        if (t == null) return null;
+        String p = t.optString("pickup", "");
+        String d = t.optString("drop", "");
+        if (!(t.opt("pickup") instanceof String) || !(t.opt("drop") instanceof String) || !PLACE.matcher(p).matches() || !PLACE.matcher(d).matches()) return null;
+        try {
+            return new JSONObject().put("pickup", p).put("drop", d);
+        } catch (JSONException e) {
+            return null;
+        }
+    }
 
     static final class Site {
         final String id;
@@ -38,6 +54,10 @@ final class FareJob {
         final String recipe;
         /** The searched day 'YYYY-MM-DD', or null (no strip). */
         final String date;
+        /** A ride typed on the site's own page (recipe.fill: Rapido): {"pickup", "drop"}, or null. */
+        final JSONObject trip;
+        /** How far the reader got entering the trip (android/js/fill.ts), handed back each reading. */
+        String stage = "";
         String state = "queued"; // queued | loading | done
         long startedAt;
         String status = "queued"; // the last reading's status, or queued / loading / failed
@@ -46,16 +66,24 @@ final class FareJob {
         int same;
 
         Site(String id, String url, String recipe, String date) {
+            this(id, url, recipe, date, null);
+        }
+
+        Site(String id, String url, String recipe, String date, JSONObject trip) {
             this.id = id;
             this.url = url;
             this.recipe = recipe;
             this.date = date;
+            this.trip = trip;
         }
 
-        /** The reader's second argument: {"date": …} or {}. */
+        /** The reader's second argument: {"date": …, "trip": …, "stage": …}, or {}. */
         String when() {
             try {
-                return date == null ? "{}" : new JSONObject().put("date", date).toString();
+                JSONObject w = new JSONObject();
+                if (date != null) w.put("date", date);
+                if (trip != null) w.put("trip", trip).put("stage", stage);
+                return w.toString();
             } catch (JSONException e) {
                 throw new IllegalStateException(e);
             }
@@ -86,7 +114,12 @@ final class FareJob {
             String date = s.isNull("date") ? null : s.optString("date", "");
             if (!SITE_ID.matcher(id).matches() || !url.startsWith("https://") || !opensHere.test(url) || recipe == null || job.sites.containsKey(id)) return null;
             if (date != null && !DAY.matcher(date).matches()) return null;
-            job.sites.put(id, new Site(id, url, recipe.toString(), date));
+            JSONObject trip = null;
+            if (!s.isNull("trip") && s.has("trip")) {
+                trip = trip(s.optJSONObject("trip"));
+                if (trip == null) return null;
+            }
+            job.sites.put(id, new Site(id, url, recipe.toString(), date, trip));
         }
         return job;
     }
@@ -136,6 +169,8 @@ final class FareJob {
             s.read = read;
             s.status = status;
         }
+        String stage = read == null ? null : read.optString("stage", null);
+        if (s.trip != null && stage != null && STAGE.matcher(stage).matches()) s.stage = stage;
         boolean settled = s.same >= SAME_READS - 1 && now - s.startedAt >= SETTLE_MS && !"waiting".equals(s.status) && !"loading".equals(s.status);
         if (settled || now - s.startedAt >= TIMEOUT_MS) {
             s.state = "done";
@@ -172,7 +207,9 @@ final class FareJob {
                 if (s.read != null && "fares".equals(s.status)) {
                     o.put("rows", s.read.optJSONArray("rows")).put("cheapest", s.read.optLong("cheapest"));
                     if (s.read.optJSONArray("strip") != null) o.put("strip", s.read.optJSONArray("strip"));
+                    if (s.read.optJSONArray("places") != null) o.put("places", s.read.optJSONArray("places"));
                 }
+                if (s.trip != null) o.put("stage", s.stage);
                 list.put(o);
             }
             return new JSONObject().put("job", id).put("done", done()).put("sites", list);

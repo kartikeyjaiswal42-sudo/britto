@@ -381,9 +381,9 @@ async function liveFares(box, links, sector, draw, opts = {}) {
   const ask = inApp ? siteBridge() : null;
   if (!ask) return false;
   const recipes = await loadFareRecipes();
-  const sites = links.filter((l) => l.prefilled).map((l) => ({ id: l.id, name: l.name, url: l.url, recipe: recipes.find((r) => r.site === l.id && r.sector === sector) })).filter((s) => s.recipe);
+  const sites = links.filter((l) => l.prefilled).map((l) => ({ id: l.id, name: l.name, url: l.url, trip: l.trip, recipe: recipes.find((r) => r.site === l.id && r.sector === sector) })).filter((s) => s.recipe);
   if (!sites.length) return false;
-  const started = await ask({ type: 'compareFares', sites: sites.map(({ id, url, recipe }) => ({ id, url, recipe, ...(opts.date ? { date: opts.date } : {}) })) });
+  const started = await ask({ type: 'compareFares', sites: sites.map(({ id, url, recipe, trip }) => ({ id, url, recipe, ...(opts.date ? { date: opts.date } : {}), ...(trip ? { trip } : {}) })) });
   if (!started?.ok) return false;
   const others = links.filter((l) => !sites.some((s) => s.id === l.id));
   const run = ++fareRun;
@@ -539,15 +539,20 @@ const clock = (ms) => new Date(ms).toLocaleTimeString('en-IN', { hour: 'numeric'
 
 function drawRides(box, sites, st, others) {
   rideDraws.set(box, [sites, st, others]);
-  const readable = inApp ? others.filter((l) => READ_WHILE_OPEN.has(l.id)) : [];
+  const readable = inApp ? [...sites, ...others].filter((l) => READ_WHILE_OPEN.has(l.id)) : [];
   if (readable.length && !box.dataset.rideWatch) {
     box.dataset.rideWatch = '1';
     watchRideReads(box, readable.map((l) => l.id));
   }
   const state = new Map(st.sites.map((x) => [x.id, x]));
-  const opened = readable.filter((l) => rideReads.has(l.id)).map((l) => ({ ...l, ...rideReads.get(l.id), opened: true }));
-  const read = [...sites.map((s) => ({ ...s, ...state.get(s.id) })), ...opened];
+  // A site read in the background that showed no fares (not logged in, or its place list did not
+  // match) falls back to a reading the shopper made by opening it (Open Rapido), when fresh.
+  const auto = sites.map((s) => ({ ...s, ...state.get(s.id) }))
+    .map((s) => (s.status !== 'fares' && rideReads.has(s.id) ? { ...s, ...rideReads.get(s.id), opened: true } : s));
+  const opened = others.filter((l) => READ_WHILE_OPEN.has(l.id) && rideReads.has(l.id)).map((l) => ({ ...l, ...rideReads.get(l.id), opened: true }));
+  const read = [...auto, ...opened];
   const rest = others.filter((l) => !opened.some((o) => o.id === l.id));
+  const tripOf = read.filter((s) => s.status === 'fares' && s.places?.filter(Boolean).length === 2);
   const rides = rideRows(read);
   const openButton = (l) => (READ_WHILE_OPEN.has(l.id) && inApp
     ? h('button', { type: 'button', class: 'button secondary small', 'data-read': l.id, onclick: () => openToRead(l) }, `Open ${l.name}`)
@@ -560,9 +565,11 @@ function drawRides(box, sites, st, others) {
       s.status === 'fares' && rides.some((r) => r.site.id === s.id)
         ? h('span', {}, `${rides.filter((r) => r.site.id === s.id).length} rides from ${rupees(rides.find((r) => r.site.id === s.id).price)}`,
           s.opened ? h('span', { class: 'small muted' }, ` · read at ${clock(s.at)}`) : null)
-        : h('span', { class: 'small muted' }, FARE_STATUS[s.status] ?? FARE_STATUS.waiting),
-      s.opened ? openButton(s) : h('a', { class: 'button secondary small', href: s.url, rel: 'noopener' }, `Open ${s.name}`)))),
-    opened.map((s) => h('p', { class: 'small muted', 'data-trip': s.id }, `${s.name}\u2019s prices are for the trip entered on its own page${s.places?.filter(Boolean).length === 2 ? `: ${s.places.map(shortPlace).join(' \u2192 ')}` : ''}. Check it is the same trip.`)),
+        : h('span', { class: 'small muted' }, s.stage === 'failed'
+          ? 'did not list the same place, so Britto stopped. Open it and enter the trip there: Britto reads its prices while you look.'
+          : FARE_STATUS[s.status] ?? FARE_STATUS.waiting),
+      openButton(s)))),
+    tripOf.map((s) => h('p', { class: 'small muted', 'data-trip': s.id }, `${s.name}\u2019s prices are for the trip in its own boxes: ${s.places.map(shortPlace).join(' \u2192 ')}. Check it is the same trip.`)),
     rides.length ? h('ol', { class: 'fare-list' }, rides.map((r) => h('li', { 'data-ride': r.label },
       h('div', { class: 'fare-flight' }, h('strong', {}, r.label), h('span', { class: 'small muted' }, r.eta ? `pickup ${r.eta}` : '')),
       h('div', { class: 'fare-offers' }, h('a', { class: 'offer', href: r.site.url, rel: 'noopener', 'data-offer': r.site.id }, h('span', {}, r.site.name), h('b', {}, rupees(r.price))))))) : null,
@@ -712,14 +719,14 @@ async function travelPage() {
     const p = a?.places?.[0];
     const d = b?.places?.[0];
     if (!p || !d) return put(rideCmpOut, h('p', { class: 'error' }, `${!p ? 'Pickup' : 'Drop'}: no such place found. Try a landmark and the city.`));
-    const r = rideCompare(p, d);
+    const r = rideCompare(p, d, { pickup: pickup.value, drop: drop.value });
     if (!r.ok) return put(rideCmpOut, h('p', { class: 'error' }, r.reason));
     const live = h('div', {});
     put(rideCmpOut, h('p', { class: 'small' }, h('b', {}, 'From '), p.address, h('br'), h('b', {}, 'To '), d.address), live);
     if (!(await liveFares(live, r.links, 'ride', drawRides))) put(live, travelLinks(r.links));
   } },
   h('div', { class: 'fields' }, field('Pickup', pickup), field('Drop', drop)),
-  h('p', { class: 'small muted' }, 'Places are found by your phone. Uber opens with the trip on this phone and Britto reads its fares; log in to Uber once in the app first.'),
+  h('p', { class: 'small muted' }, 'Places are found by your phone. Britto opens Uber with the trip, types the same places into Rapido\u2019s own boxes and picks Rapido\u2019s matching place, then reads both apps\u2019 fares on this phone. Log in to each once in the app first (Open Uber, Open Rapido). Britto never books.'),
   h('button', { type: 'submit' }, 'Compare rides'), rideCmpOut);
 
   // Rides to the airport: the shopper's location goes into the Uber link only, never to Britto.
@@ -744,7 +751,7 @@ async function travelPage() {
 
   put(app, h('h1', {}, 'Travel'),
     h('p', { class: 'muted' }, inApp
-      ? 'Enter your trip once. Britto opens MakeMyTrip, ixigo, Goibibo and EaseMyTrip (flights), Booking.com and Cleartrip (hotels) and Uber (rides) on this phone, reads the prices each one shows, and lists them side by side. Rapido\u2019s prices are read when you open it from Rides and enter the trip there. Britto\u2019s server never sees your search, and nothing is booked.'
+      ? 'Enter your trip once. Britto opens MakeMyTrip, ixigo, Goibibo and EaseMyTrip (flights), Booking.com and Cleartrip (hotels) and Uber and Rapido (rides) on this phone, reads the prices each one shows, and lists them side by side. Britto\u2019s server never sees your search, and nothing is booked.'
       : 'Enter your trip once and open the same search on each site. In the Britto Android app, Britto also reads the fares each site shows and compares them for you.'),
     list,
     inApp ? h('section', {}, h('h2', {}, 'Rides'), rideCmp) : null,

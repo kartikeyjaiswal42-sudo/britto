@@ -120,6 +120,10 @@ test('Rapido: every ride type with its fare, read from the ride list its own pag
   assert.equal(readFares(recipe('rapido'), home, 'https://m.rapido.bike/home').status, 'ask');
   assert.equal(readFares(recipe('rapido'), p.html, 'https://www.rapido.bike/').status, 'other_page');
   assert.match(checkFareRecipe({ ...recipe('rapido'), sector: 'flight' }).join(), /places: rides only/);
+  assert.match(checkFareRecipe({ ...recipe('rapido'), sector: 'flight' }).join(), /fill: rides only/);
+  assert.match(checkFareRecipe({ ...recipe('rapido'), fill: { ...recipe('rapido').fill!, boxes: ['input'] } }).join(), /fill.boxes: two selectors/);
+  assert.match(checkFareRecipe({ ...recipe('rapido'), fill: { ...recipe('rapido').fill!, suggestions: 'div:hover' } }).join(), /fill.suggestions/);
+  assert.match(checkFareRecipe({ ...recipe('rapido'), fill: { ...recipe('rapido').fill!, button: 'button.next-button' } }).join(), /fill: unknown key button/);
   assert.match(checkFareRecipe({ ...recipe('rapido'), places: 'input:focus' }).join(), /places/);
   // In the app the cards reach the reader without their page: read them that way too.
   const cards = [...p.html.matchAll(/<div _ngcontent-ucj-c66="" class="card-wrap">[\s\S]*?₹ \d+<\/div><!----><!----><\/div>/g)].map((m) => m[0]);

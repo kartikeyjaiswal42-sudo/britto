@@ -39,7 +39,8 @@
 >   link previews for shared links; abuse review (`ABUSE.md`: short links and views limited);
 >   README case study (HISTORY "P11 part 2b").
 > **P11 part 3 (first part) done 2026-11-04**: Rapido read in the app while the shopper looks
-> (app 0.6.0), "Send Britto to a friend", the app reader's page-words fix (HISTORY).
+> (app 0.6.0), "Send Britto to a friend", the app reader's page-words fix; second part: Rapido
+> filled in like Uber (app 0.6.1) (HISTORY).
 > **Next: P11 part 4**: photo search ("Lens", Workers AI: the owner allowed it on AMITY
 > 2026-11-04; measure neurons per search and cap it per day before switching it on); check
 > MakeMyTrip/Goibibo again from a phone (they refused the test emulator after many searches);

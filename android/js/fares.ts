@@ -11,6 +11,7 @@
 // A ride site whose trip is typed on its own page (recipe.places: Rapido) also says what its
 // pickup and drop boxes hold, so the Britto page can show which trip the fares are for.
 import { readFares, type FareRecipe } from '../../core/fares.ts';
+import { fillStep, type Trip } from './fill.ts';
 
 const all = (selector: string, max: number): Element[] => {
   try {
@@ -20,7 +21,7 @@ const all = (selector: string, max: number): Element[] => {
   }
 };
 
-export function read(recipe: FareRecipe, when?: { date?: string }): string {
+export function read(recipe: FareRecipe, when?: { date?: string; trip?: Trip; stage?: string }): string {
   try {
     const cards = all(recipe.items, (recipe.max ?? 40) * 2);
     const strip = recipe.strip ? all(recipe.strip.items, 62) : [];
@@ -33,6 +34,21 @@ export function read(recipe: FareRecipe, when?: { date?: string }): string {
       // visible text too, its start only (a log-in or a question is at the top).
       const words = (document.body?.innerText ?? '').slice(0, 20_000).replace(/&/g, '&amp;').replace(/</g, '&lt;');
       reading = { ...readFares(recipe, only(`<div class="britto-text">${words}</div>`), location.href, when?.date) };
+    }
+    // A ride whose trip is typed on its own page (recipe.fill): fares count only once Britto has
+    // entered the shopper's trip (a page can still show an earlier trip's fares); until then each
+    // reading takes one step towards it (android/js/fill.ts).
+    const trip = when?.trip;
+    if (recipe.fill && trip && typeof trip.pickup === 'string' && typeof trip.drop === 'string') {
+      const stage = typeof when?.stage === 'string' ? when.stage : '';
+      if (stage !== 'done' && reading.status !== 'login' && reading.status !== 'check' && reading.status !== 'other_page') {
+        const step = fillStep(recipe.fill, trip, stage);
+        reading = step.stage === 'failed'
+          ? { status: 'ask', rows: [], stage: 'failed', failed: step.failed }
+          : { status: 'waiting', rows: [], stage: step.stage };
+      } else if (stage === 'done' && reading.status !== 'fares') {
+        reading = { ...reading, status: reading.status === 'ask' ? 'waiting' : reading.status, stage }; // its fares are on the way
+      } else reading.stage = stage;
     }
     if (recipe.places) {
       reading.places = all(recipe.places, 2).map((e) => String((e as HTMLInputElement).value ?? '').replace(/\s+/g, ' ').trim().slice(0, 120));

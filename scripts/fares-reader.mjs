@@ -65,6 +65,74 @@ try {
   const home = '<html><body><h1>Welcome to Rapido!</h1><p>Book your hassle-free trip with Rapido</p><input class="form-control location-ip" placeholder="Enter pickup location here"><input class="form-control location-ip" placeholder="Enter drop location here"></body></html>';
   const r4 = await readAt('https://m.rapido.bike/home', home, 'rapido');
   check('Rapido before a trip is entered: "enter the trip", empty boxes', r4.status === 'ask' && JSON.stringify(r4.places) === '["",""]', r4);
+
+  // Entering the trip (android/js/fill.ts) on a stand-in for Rapido's page: its real box and
+  // search placeholders, its real ride list (the fixture's cards), suggestions that appear only
+  // after a key is released (as on Rapido, measured), and a Book button that counts presses.
+  const cardsHtml = rapido.html.replace(/^[\s\S]*?<body>/, '').replace(/<\/body>[\s\S]*$/, '');
+  const standIn = (dropPlaces, asButtons = false, prior = false) => `<html><body>
+<div id="home"><h1>Welcome to Rapido!</h1><p>Book your hassle-free trip with Rapido</p>
+<input class="form-control location-ip" placeholder="Enter pickup location here">
+<input class="form-control location-ip" placeholder="Enter drop location here"></div>
+<div id="p0" hidden><input placeholder="Enter pickup location"><div class="suggestion-result"></div></div>
+<div id="p1" hidden><input placeholder="Enter drop location"><div class="suggestion-result"></div></div>
+<div id="fares" ${prior ? '' : 'hidden'}>${cardsHtml}</div>
+<button class="next-button" id="book">Book Bike</button>
+<script>
+  window.booked = 0; window.buttonTaps = 0;
+  document.getElementById('book').onclick = () => { window.booked++; };
+  const boxes = document.querySelectorAll('#home input');
+  const places = [['Amity Road, Sector 44, Noida, Uttar Pradesh', 'Amity University Noida Gate No. 3, Amity Road, Sector 125, Noida'], ${JSON.stringify(dropPlaces)}];
+  if (${prior}) { boxes[0].value = 'Botanical Garden Metro, Noida'; boxes[1].value = 'DLF Mall of India, Noida'; }
+  boxes.forEach((b, i) => b.addEventListener('click', () => { document.getElementById('p' + i).hidden = false; }));
+  [0, 1].forEach((i) => {
+    const panel = document.getElementById('p' + i);
+    panel.querySelector('input').addEventListener('keyup', () => setTimeout(() => {
+      const list = panel.querySelector('.suggestion-result');
+      list.innerHTML = places[i].map((t) => (${asButtons ? 'i === 1' : 'false'} ? '<button><div class="location-item">' + t + '</div></button>' : '<div class="location-item">' + t + '</div>')).join('');
+      list.querySelectorAll('.location-item').forEach((it) => it.addEventListener('click', () => {
+        if (it.closest('button')) window.buttonTaps++;
+        boxes[i].value = it.textContent; panel.hidden = true; list.innerHTML = '';
+        if (boxes[0].value && boxes[1].value) { document.getElementById('fares').hidden = false; document.querySelector('#home h1').hidden = true; document.querySelector('#home p').hidden = true; }
+      }));
+    }, 300));
+  });
+</script></body></html>`;
+  const live = await browser.newContext({ viewport: { width: 412, height: 915 } });
+  async function fillAt(html, trip) {
+    const page = await live.newPage();
+    const url = 'https://m.rapido.bike/home';
+    await page.route('**/*', (route) => (route.request().url() === url ? route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: html }) : route.abort()));
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    let stage = '';
+    const stages = [];
+    let r = null;
+    for (let i = 0; i < 40; i++) {
+      r = JSON.parse(await page.evaluate(`(function(){${engine};return __brittoFares.read(${JSON.stringify(recipe('rapido'))},${JSON.stringify({ trip, stage })});})()`));
+      if (r.stage && r.stage !== stage) stages.push(r.stage);
+      stage = r.stage ?? stage;
+      if (r.status === 'fares' || stage === 'failed') break;
+      await page.waitForTimeout(400);
+    }
+    const taps = await page.evaluate('({ booked: window.booked, buttonTaps: window.buttonTaps, boxes: [...document.querySelectorAll("#home input")].map((b) => b.value) })');
+    await page.close();
+    return { r, stages, ...taps };
+  }
+  const trip = { pickup: 'Amity University Noida', drop: 'Noida Sector 18 Metro Station' };
+  const ok = await fillAt(standIn(['Noida Sector 18 Metro Station, Captain Vijyant Thapar Marg, Noida', 'Sector 18, Noida, Uttar Pradesh']), trip);
+  check('Rapido filled like a person: pickup, then drop, then its ride list read', ok.r?.status === 'fares' && ok.r.rows.length === 4 && ok.stages.at(-1) === 'done' && ok.stages.includes('pickup-typed-0') && ok.stages.includes('drop-open-0'), ok);
+  check('the suggestion that names the place is picked, not simply the first one', ok.boxes[0] === 'Amity University Noida Gate No. 3, Amity Road, Sector 125, Noida' && ok.boxes[1].startsWith('Noida Sector 18 Metro Station'), ok.boxes);
+  check('the trip read back from its boxes for the Britto page', ok.r?.places?.[0] === ok.boxes[0] && ok.r?.places?.[1] === ok.boxes[1], ok.r?.places);
+  check('Book was never pressed', ok.booked === 0, ok.booked);
+  const prior = await fillAt(standIn(['Noida Sector 18 Metro Station, Captain Vijyant Thapar Marg, Noida'], false, true), trip);
+  check('an earlier trip\'s fares on screen are not taken: the trip is entered first', prior.r?.status === 'fares' && prior.stages.includes('pickup-typed-0') && prior.r?.places?.[0]?.startsWith('Amity University Noida') && prior.booked === 0, prior);
+  const none = await fillAt(standIn(['Greater Noida West, Gaur City', 'Ghaziabad Railway Station']), trip);
+  check('no listed place matches the drop: Britto stops (ask), Book never pressed', none.r?.status === 'ask' && none.r?.stage === 'failed' && /none of the site's places matched/.test(none.r?.failed) && none.booked === 0, none);
+  const asButtons = await fillAt(standIn(['Noida Sector 18 Metro Station, Captain Vijyant Thapar Marg, Noida'], true), trip);
+  check('a matching suggestion inside a button is never tapped: Britto stops', asButtons.buttonTaps === 0 && asButtons.booked === 0 && asButtons.r?.stage === 'failed' && /drop: refused to tap it/.test(asButtons.r?.failed ?? '') && asButtons.boxes[0] !== '', asButtons);
+  const plain = await readAt(rapido.url, rapido.html, 'rapido');
+  check('without a trip, the ride list is read as before (no filling)', plain.status === 'fares' && plain.stage === undefined, plain);
+  await live.close();
 } finally {
   await browser.close();
 }

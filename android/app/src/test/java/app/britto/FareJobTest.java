@@ -172,4 +172,39 @@ public class FareJobTest {
         assertFalse(refused.getBoolean("ok"));
         assertNull("no compare in a build without it", new SiteBridgeCore(SpendStore.inDirectory(new java.io.File(System.getProperty("java.io.tmpdir")))).handle("{\"id\":5,\"msg\":{\"type\":\"compareStatus\",\"job\":\"j7\"}}"));
     }
+
+    @Test
+    public void aRideTripIsTwoShortPlacesAndItsStepGoesBackToTheReader() throws Exception {
+        java.util.function.Predicate<String> rides = (url) -> url.startsWith("https://m.rapido.bike/");
+        JSONObject recipe = new JSONObject().put("site", "rapido").put("sector", "ride");
+        java.util.function.Function<Object, JSONArray> withTrip = (trip) -> {
+            try {
+                return new JSONArray().put(new JSONObject().put("id", "rapido").put("url", "https://m.rapido.bike/").put("recipe", recipe).put("trip", trip));
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        };
+        FareJob job = FareJob.of("j1", withTrip.apply(new JSONObject().put("pickup", "Amity University Noida").put("drop", "Noida Sector 18 Metro Station")), rides);
+        assertNotNull(job);
+        FareJob.Site s = job.site("rapido");
+        JSONObject when = new JSONObject(s.when());
+        assertEquals("Amity University Noida", when.getJSONObject("trip").getString("pickup"));
+        assertEquals("the first reading starts from the beginning", "", when.getString("stage"));
+        job.toStart(0);
+        job.onRead("rapido", new JSONObject().put("status", "waiting").put("rows", new JSONArray()).put("stage", "pickup-typed-0").toString(), 1_000);
+        assertEquals("pickup-typed-0", new JSONObject(s.when()).getString("stage"));
+        job.onRead("rapido", new JSONObject().put("status", "waiting").put("rows", new JSONArray()).put("stage", "evil\");alert(1);//").toString(), 2_000);
+        assertEquals("a step the app does not know is not kept", "pickup-typed-0", new JSONObject(s.when()).getString("stage"));
+        assertEquals("pickup-typed-0", job.toJson().getJSONArray("sites").getJSONObject(0).getString("stage"));
+        Object[] refused = {
+            new JSONObject().put("pickup", "Amity").put("drop", "x".repeat(81)),   // too long
+            new JSONObject().put("pickup", "Amity\nNoida").put("drop", "Sector 18"), // a control character
+            new JSONObject().put("pickup", 42).put("drop", "Sector 18"),            // not text
+            new JSONObject().put("pickup", "Amity"),                                 // no drop
+            "Amity to Sector 18",                                                    // not an object
+        };
+        for (Object t : refused) assertNull(String.valueOf(t), FareJob.of("j2", withTrip.apply(t), rides));
+        JSONObject flight = new JSONObject(FareJob.of("j3", three(), TRAVEL).site("ixigo").when());
+        assertFalse("a flight has no trip and no step", flight.has("trip") || flight.has("stage"));
+    }
 }

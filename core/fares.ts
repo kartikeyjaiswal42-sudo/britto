@@ -48,6 +48,11 @@ export interface FareRecipe {
    * the boxes holding the pickup and the drop, in that order. Only the app reads what they hold
    * (a saved page keeps no typed text), so Britto can show which trip the fares are for. */
   places?: string;
+  /** Rides whose trip is typed on the site's own page (Rapido): how the app enters the trip the
+   * shopper gave Britto, as a person would: tap the pickup box, type, pick the site's own
+   * suggestion that best matches, then the same for the drop. Only these boxes and suggestion
+   * items are ever touched (never a button: android/js/fares.ts refuses one). */
+  fill?: FareFill;
   /** Literal texts (any one, case-insensitive, in the page's visible text) of a person check. */
   check: string[];
   /** Literal texts meaning the fares show only after the shopper logs in (rides). */
@@ -71,6 +76,16 @@ export interface FareStrip {
   price: Field[];
   /** A selector the searched day's element (or something inside it) matches, and no other day's. */
   active: string;
+}
+
+/** How the app types a ride's trip into the site's own page (FareRecipe.fill). */
+export interface FareFill {
+  /** The trip page's pickup box and drop box. */
+  boxes: [string, string];
+  /** The search box each one opens (pickup, drop). */
+  search: [string, string];
+  /** The site's place suggestions under an open search box. */
+  suggestions: string;
 }
 
 /** One day of a site's date strip: the lowest fare the site printed for that day. */
@@ -199,7 +214,7 @@ export function readFares(recipe: FareRecipe, html: string, url: string, when?: 
 }
 
 const FIELD_KEYS = new Set(['selector', 'attribute', 'regex', 'match', 'squash', 'replace', 'sub_regex']);
-const RECIPE_KEYS = new Set(['site', 'sector', 'verified', 'page', 'items', 'label', 'price', 'depart', 'arrive', 'origin', 'destination', 'duration', 'stops', 'eta', 'check', 'login', 'ask', 'max', 'strip', 'area', 'per', 'places']);
+const RECIPE_KEYS = new Set(['site', 'sector', 'verified', 'page', 'items', 'label', 'price', 'depart', 'arrive', 'origin', 'destination', 'duration', 'stops', 'eta', 'check', 'login', 'ask', 'max', 'strip', 'area', 'per', 'places', 'fill']);
 const STRIP_KEYS = new Set(['items', 'day', 'price', 'active']);
 
 /** Everything wrong with a recipe ([] = usable). A recipe that fails is never run. */
@@ -246,6 +261,20 @@ export function checkFareRecipe(input: unknown): string[] {
   if (r.places !== undefined) {
     if (r.sector !== 'ride') errs.push('places: rides only');
     else selector('places', r.places);
+  }
+  if (r.fill !== undefined) {
+    const f = r.fill as Record<string, unknown> | null;
+    if (r.sector !== 'ride') errs.push('fill: rides only');
+    else if (!f || typeof f !== 'object') errs.push('fill: an object');
+    else {
+      for (const k of Object.keys(f)) if (!['boxes', 'search', 'suggestions'].includes(k)) errs.push(`fill: unknown key ${k}`);
+      for (const k of ['boxes', 'search'] as const) {
+        const pair = f[k];
+        if (!Array.isArray(pair) || pair.length !== 2) errs.push(`fill.${k}: two selectors (pickup, drop)`);
+        else pair.forEach((v, i) => selector(`fill.${k}[${i}]`, v));
+      }
+      selector('fill.suggestions', f.suggestions);
+    }
   }
   if (r.strip !== undefined) {
     const st = r.strip as Record<string, unknown>;

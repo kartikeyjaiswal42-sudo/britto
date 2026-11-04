@@ -163,19 +163,22 @@ export function rideSearch(input, airports, uberAirports = {}) {
 
 /**
  * Ride compare in the Britto app: pickup and drop found by the phone's own place search. Uber
- * opens with the trip (its documented link) and its ride list is read on the phone (web/fares.json);
- * Rapido opens its own web app, where the shopper logs in and enters the trip (no link format for
- * a trip): the app reads its ride list while the shopper looks (web/app.js READ_WHILE_OPEN).
+ * opens with the trip (its documented link) and its ride list is read on the phone (web/fares.json).
+ * Rapido has no link format for a trip: the app types the places the shopper typed (`typed`, else
+ * the place names) into Rapido's own two boxes and picks Rapido's matching suggestion
+ * (web/fares.json rapido "fill", android/js/fill.ts), then reads its ride list the same way.
  */
-export function rideCompare(pickup, drop) {
+export function rideCompare(pickup, drop, typed = {}) {
   if (!isCoord(pickup?.lat, pickup?.lng)) return { ok: false, reason: 'Pickup: pick a place from the list' };
   if (!isCoord(drop?.lat, drop?.lng)) return { ok: false, reason: 'Drop: pick a place from the list' };
   const round = (x) => Math.round(x * 1e5) / 1e5;
   const named = (p) => ({ lat: round(p.lat), lng: round(p.lng), name: String(p.name ?? '').slice(0, 80) || 'Pinned place' });
   const q = { pickup: named(pickup), drop: named(drop) };
   if (q.pickup.lat === q.drop.lat && q.pickup.lng === q.drop.lng) return { ok: false, reason: 'Pickup and drop are the same place' };
+  const said = (t, p) => String(t ?? '').replace(/\s+/g, ' ').trim().slice(0, 80) || p.name;
+  const trip = { pickup: said(typed.pickup, q.pickup), drop: said(typed.drop, q.drop) };
   return { ok: true, q, links: [
     { id: 'uber', name: TRAVEL_SITES.uber.name, url: RIDES[0][2](q), prefilled: true, checked: 'app' },
-    { id: 'rapido', name: TRAVEL_SITES.rapido.name, url: 'https://m.rapido.bike/', prefilled: false, checked: null },
+    { id: 'rapido', name: TRAVEL_SITES.rapido.name, url: 'https://m.rapido.bike/', prefilled: true, checked: 'app', trip },
   ] };
 }

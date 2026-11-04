@@ -20,4 +20,4 @@ export function flightSearch(
 ): Search<FlightQuery>;
 export function hotelSearch(input: { city?: string; checkIn?: string; checkOut?: string; adults?: number }, now?: number): Search<HotelQuery>;
 export function rideSearch(input: { to?: string; pickup?: { lat?: number; lng?: number } }, airports: Map<string, Airport>, uberAirports?: Record<string, { lat: number; lng: number; name: string; from: string }>): Search<RideQuery>;
-export function rideCompare(pickup: Partial<Place> | null | undefined, drop: Partial<Place> | null | undefined): Search<RideQuery>;
+export function rideCompare(pickup: Partial<Place> | null | undefined, drop: Partial<Place> | null | undefined, typed?: { pickup?: string; drop?: string }): Search<RideQuery>;

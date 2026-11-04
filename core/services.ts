@@ -37,7 +37,7 @@ export const SERVICES: readonly Service[] = [
     name: 'Rapido',
     home: 'https://m.rapido.bike/',
     hosts: ['m.rapido.bike'],
-    measured: '2026-11-04: Rapido\'s own web app opens in the Britto app and asks for your mobile number and an SMS code once. Its trip is typed on its own page (its address holds none), so Britto reads its ride prices while you look at them (opened from Travel, Rides) and puts them beside Uber\'s.',
+    measured: '2026-11-04: Rapido\'s own web app opens in the Britto app and asks for your mobile number and an SMS code once. Its trip is typed on its own page (its address holds none), so the app types the trip into Rapido\'s own two boxes, picks Rapido\'s matching place (never a button) and reads its ride list beside Uber\'s.',
   },
   {
     id: 'cleartrip',

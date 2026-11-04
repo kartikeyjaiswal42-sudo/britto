@@ -1,8 +1,8 @@
 {
-  "version": "0.6.0",
-  "versionCode": 7,
-  "bytes": 298221,
-  "sha256": "1fbf81f70d0938a4325e32dea9a70d4e3381ad93b4c0ff43370c94e08f6c0830",
+  "version": "0.6.1",
+  "versionCode": 8,
+  "bytes": 299905,
+  "sha256": "a20f957b773fd936756bb5d272caeaa79f69603f54bad7c36d74cfa0f4b2dc1e",
   "cert": "fbf25e7d9e0346d9b8f584a2f970ae78eb04e94f02db38ebb445af7fa7f356b7",
-  "builtAt": 1793792544109
+  "builtAt": 1793794669392
 }

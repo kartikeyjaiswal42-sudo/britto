@@ -49,14 +49,14 @@ answer, never worked around.
 
 **Proving it.** Every reader is checked against pages saved from real stores
 (`test/fixtures/`). Every test suite is **proved able to fail**: `npm run mutate` breaks the
-code in 116 deliberate ways, and each must turn exactly its own checks red (the mutation run
+code in 120 deliberate ways, and each must turn exactly its own checks red (the mutation run
 has caught tests that passed while asserting nothing). "Verified live" means checked in the
 production database, not a fixture.
 
 **What it does not do (yet).** No Play Store listing; Flipkart's reader is off until a real
 page is saved; round trips are compared as two one-way tickets (the sites' own round-trip pages
-are not read); Rapido is read only while you look at it (its trip is typed on its own page, so
-Britto cannot open it with the trip); Ola and MakeMyTrip hotels are links only. The record of every decision
+are not read); Rapido has no trip link, so the app types the trip into Rapido's own boxes
+(never pressing a button) and reads its ride list like Uber's; Ola and MakeMyTrip hotels are links only. The record of every decision
 and measurement is `HISTORY.md`.
 
 ## Without the extension (phone or laptop)

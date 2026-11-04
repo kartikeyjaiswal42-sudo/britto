@@ -26,11 +26,11 @@ to this list and removes what is done.
    to the next session). That lets a session check and switch on the Flipkart reader.
 4. **Install the Android app on your phone** (5 minutes): open
    https://britto.amitynoidalibrary.workers.dev/app on the phone, tap **Download**, open the
-   file, allow installs from Chrome once, Install. (Version 0.6.0, 2026-11-04, signed with the
+   file, allow installs from Chrome once, Install. (Version 0.6.1, 2026-11-04, signed with the
    release key of item 6, so later versions install over it; 0.5.0 was seen installing over
    0.4.0 with its data kept.) To send it to friends: in the app, **Get the app → Send Britto to
    a friend** (WhatsApp or any app gets the download link), or send the file itself
-   (`~/Downloads/Britto-0.6.0.apk` on the Mac) as a WhatsApp **Document**; the friend opens it
+   (`~/Downloads/Britto-0.6.1.apk` on the Mac) as a WhatsApp **Document**; the friend opens it
    and allows installs from WhatsApp once. It was tested end to end on an
    Android 14 emulator against the live site (HISTORY "P11 part 1"); a real phone is still the
    final check: tell the next session anything that looks wrong. Uninstall any older Britto
@@ -92,10 +92,9 @@ to this list and removes what is done.
    Compare rides again: every Uber ride type is listed with its fare. Never press Request.
 15. ~~Rapido's fare page~~ (done 2026-11-04: you logged in to Rapido on the test phone; the
    session typed the trip with your permission and saved the page, kept OUTSIDE the repo in
-   `~/.britto/pages/`; only the ride list went into the tests.) On your phone: Travel → Rides →
-   Compare rides → **Open Rapido**, log in once, enter the same pickup and drop: a blue Britto
-   bar says how many prices it read; tap **Britto** (top right) and Rapido's rides are listed
-   beside Uber's. Never press Book unless you want that ride.
+   `~/.britto/pages/`; only the ride list went into the tests.) Since 0.6.1 Rapido works like
+   Uber: on your phone, log in to Rapido once (Travel → Rides → Compare rides → **Open
+   Rapido**), then every Compare rides fills in Rapido and lists its prices by itself.
 16. **Try 0.5.0's and 0.6.0's new things on your phone** (10 minutes, after item 4): Travel → Flights,
    DEL to BOM, a date, **Compare fares**: check that a row of dates with prices appears under
    "Cheapest found" (tap a day: it compares that day), and tap **Alert me if it gets cheaper**.
@@ -1640,3 +1639,48 @@ Rapido and share code; `prove --live` 71/71.
 - MakeMyTrip/Goibibo were not re-checked (the test phone ran out of memory and was restarted
   twice; the 8 GB Mac swapped ~10 GB). Uber on the test phone needs a fresh login.
 - Photo search (Workers AI, allowed today by the owner) is not built: P11 part 4.
+
+## P11 part 3 (second part), 2026-11-04 (local session): Rapido filled in like Uber, app 0.6.1
+
+The owner: "make rapido work same as uber in my brito---do it now", then "without breaking
+anything". Rapido's address holds no trip (measured), so "like Uber" means the app enters the
+trip on Rapido's own page as a person would. New recipe entry `fill` (rides only): Rapido's
+pickup/drop boxes, the search box each opens, and its suggestion list
+(`div.location-item`). `android/js/fill.ts` takes ONE step per reading (every 1.5 s): tap the
+pickup box → type what the shopper typed into Britto → wait for Rapido's suggestions → tap the
+one naming most of the place's words (at least half; ties keep Rapido's order) → the same for
+the drop → "done", then the ride list is read. The step goes back to the app (FareJob keeps it,
+only steps it knows) and returns with the next reading; nothing is stored on Rapido's page.
+Fares count only after "done" (a page can show an earlier trip). Anything that is or sits in a
+button/link, or says book/confirm/request/pay, is refused and Britto stops ("did not list the
+same place… open it and enter the trip there"); "Open Rapido" (read while you look) stays as the
+fallback, and a fresh manual reading fills in when the automatic one found no fares.
+
+**Verified:**
+- On the REAL Rapido page (test phone, the owner's login from earlier today, debug 0.6.1-dev,
+  local site): a Rapido-only compare went pickup-open → pickup-typed → drop-open → drop-typed →
+  done → fares in 19.5 s: Auto ₹171, Cab Economy ₹160, Cab Premium ₹196, Cab XL ₹308, trip
+  "Gate no. 3, Amity Rd → Noida Sec-18" (17:45 IST). Then Britto's own Compare rides (Uber and
+  Rapido together): "Rapido 4 rides from ₹160" with the trip line, Uber "log in" (the test
+  phone's Uber login has expired) (screenshot).
+- `scripts/fares-reader.mjs` 13/13 in real Chrome, 8 new on a stand-in page with Rapido's real
+  placeholders, real ride cards, suggestions that appear only after a key is released, and a
+  Book button that counts presses: filled like a person; the best-matching (not the first)
+  suggestion picked; trip read back; Book pressed 0 times; no matching place → stops; a
+  matching suggestion inside a button never tapped; an earlier trip's fares not taken; without
+  a trip nothing is filled.
+- `npm test` 143 · typecheck (android/js included) · check:readers · Android 34/34 (FareJobTest
+  trip rules: too long, control character, not text, no drop, not an object; unknown steps not
+  kept) · app.mjs 32/32 · prove 133/133. 4 new mutants (120 in all), each caught exactly
+  (two first reddened more checks than listed: those checks rely on the same rule, so the lists
+  were widened, not the code changed).
+- Release 0.6.1 (8): 299,905 bytes, sha256 a20f957b…, same certificate fbf25e7d….
+
+**NOT verified:**
+- On a real phone. Uber and Rapido logged in at the same time (the test phone's Uber login
+  expired). The full 120-mutant run (the new ones were run one by one).
+- The test phone crashed three times while Rapido's map drew (emulator graphics; it held with
+  `-gpu swiftshader_indirect`) and the Mac swapped 7-10 GB: Uber and Rapido together were run
+  once. The phone's place search failed right after each restart ("no such place found") and
+  worked on the second try: an emulator start-up delay, not seen on a phone yet.
+

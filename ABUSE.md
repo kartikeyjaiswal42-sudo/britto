@@ -34,7 +34,14 @@ below is checked by `npm run prove` against a real local Worker unless it says o
 - **Fare and hotel compare** opens only `https://` pages on the travel hosts listed in
   `core/services.ts` (`FareJob.of` refuses anything else, and one bad site refuses the whole
   list), at most 10 sites, 2 at a time, each for at most 45 s. Links that try to open another
-  app are not followed. Nothing is clicked, typed or booked on the sites.
+  app are not followed. Nothing is booked. The one site where Britto types is **Rapido** (its
+  address holds no trip): the app types the pickup and drop the shopper gave Britto into
+  Rapido's own two boxes and taps Rapido's matching suggestion, one step per reading
+  (`android/js/fill.ts`). It touches only the boxes and suggestions the recipe names; anything
+  that is or sits inside a button or link, or says book / confirm / request / pay, is refused
+  and Britto stops (tested on a stand-in page whose Book button counts presses:
+  `scripts/fares-reader.mjs`). A trip is two printable places of at most 80 characters
+  (`FareJob.PLACE`), and the step handed back by the page must be one the app knows.
 - **A searched day** handed to the reader must be a real `YYYY-MM-DD` (`FareJob.DAY`), so no
   text from the page reaches the script the app runs (FareJobTest "refused:
   2026-11-20\");alert(1);//").

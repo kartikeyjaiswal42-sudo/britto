@@ -635,6 +635,27 @@ export const MUTANTS = [
     file: 'android/app/src/main/java/app/britto/SiteBridgeCore.java', find: '!text.isEmpty() && text.length() <= 500 && share.text(text)', replace: 'share.text(text)',
     run: GRADLE_TEST, expect: [/RideReadingsTest > sendBrittoToAFriendSharesThePagesTextOnlyWhenShort/],
   },
+  // ---- Rapido filled in like Uber (the app types the trip into Rapido's own boxes)
+  {
+    name: 'Rapido fill: a suggestion inside a button is tapped',
+    file: 'android/js/fill.ts', find: "return !e.closest('button, a, [role=button]') && !NEVER.test(e.textContent ?? '');", replace: 'return true;',
+    run: FARES_READER, expect: [/inside a button is never tapped/],
+  },
+  {
+    name: 'Rapido fill: the first suggestion picked, matching or not',
+    file: 'android/js/fill.ts', find: 'if (n > score) { score = n; best = i; }', replace: 'if (best < 0) { score = need.length; best = i; }',
+    run: FARES_READER, expect: [/names the place is picked/, /no listed place matches the drop/, /earlier trip/],
+  },
+  {
+    name: "Rapido fill: an earlier trip's fares taken before the trip is entered",
+    file: 'android/js/fares.ts', find: "if (stage !== 'done' && reading.status !== 'login'", replace: "if (stage !== 'done' && reading.status !== 'fares' && reading.status !== 'login'",
+    run: FARES_READER, expect: [/earlier trip/, /filled like a person/, /names the place is picked/, /no listed place matches the drop/, /inside a button is never tapped/],
+  },
+  {
+    name: 'fare compare takes any text as a ride place',
+    file: 'android/app/src/main/java/app/britto/FareJob.java', find: '|| !PLACE.matcher(p).matches() || !PLACE.matcher(d).matches()', replace: '',
+    run: GRADLE_TEST, expect: [/FareJobTest > aRideTripIsTwoShortPlacesAndItsStepGoesBackToTheReader/],
+  },
 ];
 
 const only = process.argv[2];

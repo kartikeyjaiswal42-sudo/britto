@@ -86,6 +86,11 @@
    ],
    "eta": [{ "selector": [".eta-indication"], "attribute": "innerText" }],
    "places": "input.location-ip",
+   "fill": {
+    "boxes": ["input[placeholder=\"Enter pickup location here\"]", "input[placeholder=\"Enter drop location here\"]"],
+    "search": ["input[placeholder=\"Enter pickup location\"]", "input[placeholder=\"Enter drop location\"]"],
+    "suggestions": "div.location-item"
+   },
    "check": ["verify you are human", "are you a robot"],
    "login": ["enter your mobile number", "get an sms to confirm your number"],
    "ask": ["book your hassle-free trip with rapido"]
