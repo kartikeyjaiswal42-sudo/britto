@@ -29,7 +29,13 @@
 > - **P11 part 1** (2026-11-04): Amazon store search, a best-seller catalogue (308 products live
 >   after one night, from 11), price drops, alerts as app notifications, the app on the site at
 >   /app (0.3.1, release-signed), Flipkart-from-search fixed (HISTORY "P11 part 1").
-> **Next: P11 part 2**: read Uber's fare screen (page saved, kept outside the repo), SSR meta for
+> - **P11 part 2a** (2026-11-04): fare compare ON THE PHONE (app 0.4.0): flights read from
+>   MakeMyTrip, ixigo, Goibibo and EaseMyTrip side by side per flight; ride compare with Uber's
+>   fares (after the shopper's login) and Rapido opening; recipes in web/fares.json (HISTORY
+>   "P11 part 2a").
+> **Next: P11 part 2b**: Rapido's fare recipe once the owner saves its fare page (owner item 15);
+> hotel compare the same way (Booking.com, MakeMyTrip hotels, Goibibo: measure in the app
+> first); round-trip flights; a fare strip by date; flight price alerts; then SSR meta for
 > shared links, abuse review, README case study, the app's status-bar colour. Earlier note: P5 waits for the owner's Claude Design
 > export. Owner-only steps: top of HISTORY.md, "Waiting for the owner".
 

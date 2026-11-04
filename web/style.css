@@ -287,7 +287,7 @@ table.spend td.num { text-align: right; font-variant-numeric: tabular-nums; whit
 .fare-sites li { display: grid; grid-template-columns: minmax(6.5em, auto) 1fr auto; align-items: center; gap: 4px 10px; background: var(--panel); border-radius: 14px; padding: 8px 10px 8px 12px; }
 .fare-sites .fare-site { font-weight: 700; }
 .fare-sites .button { padding: 6px 14px; min-width: 0; }
-.fare-sites li[data-status="check"], .fare-sites li[data-status="login"] { background: var(--warn-bg); }
+.fare-sites li[data-status="check"], .fare-sites li[data-status="login"], .fare-sites li[data-status="ask"] { background: var(--warn-bg); }
 .fare-list { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 10px; }
 .fare-list li { background: var(--panel); border-radius: 14px; padding: 12px; display: grid; gap: 8px; }
 .fare-flight { display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; }

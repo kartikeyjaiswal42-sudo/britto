@@ -69,3 +69,13 @@ export function siteSummary(sites) {
   priced.sort((a, b) => a.cheapest - b.cheapest);
   return [...priced, ...sites.filter((s) => !priced.some((p) => p.id === s.id)).map((s) => ({ ...s, cheapest: null }))];
 }
+
+/**
+ * The rides of ride compare, cheapest first: each row with its site. Uber lists parcel delivery
+ * ("Parcel Bike", "Parcel Scooter", measured 2026-11-04) beside its rides; those are not rides
+ * for a person, so they are left out.
+ */
+export function rideRows(sites) {
+  return sites.flatMap((s) => (s.status === 'fares' ? (s.rows ?? []).filter((r) => !/^parcel\b/i.test(r.label)).map((r) => ({ ...r, site: s })) : []))
+    .sort((a, b) => a.price - b.price || a.label.localeCompare(b.label));
+}

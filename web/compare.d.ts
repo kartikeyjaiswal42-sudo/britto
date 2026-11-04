@@ -12,3 +12,4 @@ export function clock(t: string | null | undefined): string | null;
 export function groupFlights(sites: SiteFares[]): Flight[];
 export function otherAirport(printed: string[], code: string, city: string | null): boolean;
 export function siteSummary<S extends SiteFares>(sites: S[]): (S & { cheapest: number | null })[];
+export function rideRows<S extends SiteFares>(sites: S[]): (FareRow & { site: S })[];

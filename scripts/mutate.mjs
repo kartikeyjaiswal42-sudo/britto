@@ -426,6 +426,16 @@ export const MUTANTS = [
     run: FARES, expect: [/names and times as the sites print them/],
   },
   {
+    name: "fares: Uber's airline question read as no fares",
+    file: 'core/fares.ts', find: "  if (recipe.ask?.some((c) => text.includes(c.toLowerCase()))) return { status: 'ask', rows: [] };\n", replace: '',
+    run: FARES, expect: [/airline question/],
+  },
+  {
+    name: 'rides: parcel delivery listed as a ride',
+    file: 'web/compare.js', find: ".filter((r) => !/^parcel\\b/i.test(r.label))", replace: '',
+    run: FARES, expect: [/parcel delivery left out/],
+  },
+  {
     name: 'Amazon search reads the struck-out M.R.P. as the price',
     file: 'readers/amazon.desktop.json', find: '".a-price[data-a-color=base]"', replace: '".a-price.a-text-price"',
     run: CHECK, expect: [/^amazon-search-(boat-earbuds|cello-technotip-paise|iphone-15-brands)\.html /],

@@ -66,7 +66,8 @@
    "price": [{ "selector": ["li"], "attribute": "innerText", "regex": ["(₹\\s?[\\d,]+(?:\\.\\d{1,2})?)"] }],
    "eta": [{ "selector": ["[data-testid=\"product_selector.list_item.eta_string\"]"], "attribute": "innerText" }],
    "check": ["are you a person or a robot", "verify you are human"],
-   "login": ["uber journey login", "uber login loading"]
+   "login": ["uber journey login", "uber login loading"],
+   "ask": ["which airline?"]
   }
  ]
 }

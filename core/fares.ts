@@ -44,6 +44,9 @@ export interface FareRecipe {
   check: string[];
   /** Literal texts meaning the fares show only after the shopper logs in (rides). */
   login?: string[];
+  /** Literal texts of a question the site asks before its fares (Uber, for an airport drop:
+   * "Which airline?"). Britto never answers it for the shopper. */
+  ask?: string[];
   max?: number;
 }
 
@@ -62,8 +65,9 @@ export interface FareRow {
 export type FareRead =
   | { status: 'fares'; rows: FareRow[]; cheapest: Paise }
   /** check: the site asks the shopper to prove they are a person; login: fares need a login;
-   * waiting: the right page, no fares on it (yet); other_page: not this recipe's results page. */
-  | { status: 'check' | 'login' | 'waiting' | 'other_page'; rows: [] };
+   * ask: the site asks a question first; waiting: the right page, no fares on it (yet);
+   * other_page: not this recipe's results page. */
+  | { status: 'check' | 'login' | 'ask' | 'waiting' | 'other_page'; rows: [] };
 
 /** Under ₹10 is never a fare (a "₹0 convenience fee", a coupon's "₹1"). */
 const MIN_FARE: Paise = 1_000;
@@ -110,11 +114,12 @@ export function readFares(recipe: FareRecipe, html: string, url: string): FareRe
   }
   if (rows.length) return { status: 'fares', rows, cheapest: Math.min(...rows.map((r) => r.price)) };
   if (recipe.login?.some((c) => text.includes(c.toLowerCase()))) return { status: 'login', rows: [] };
+  if (recipe.ask?.some((c) => text.includes(c.toLowerCase()))) return { status: 'ask', rows: [] };
   return { status: 'waiting', rows: [] };
 }
 
 const FIELD_KEYS = new Set(['selector', 'attribute', 'regex', 'match', 'squash', 'replace', 'sub_regex']);
-const RECIPE_KEYS = new Set(['site', 'sector', 'verified', 'page', 'items', 'label', 'price', 'depart', 'arrive', 'origin', 'destination', 'duration', 'stops', 'eta', 'check', 'login', 'max']);
+const RECIPE_KEYS = new Set(['site', 'sector', 'verified', 'page', 'items', 'label', 'price', 'depart', 'arrive', 'origin', 'destination', 'duration', 'stops', 'eta', 'check', 'login', 'ask', 'max']);
 
 /** Everything wrong with a recipe ([] = usable). A recipe that fails is never run. */
 export function checkFareRecipe(input: unknown): string[] {
@@ -145,9 +150,9 @@ export function checkFareRecipe(input: unknown): string[] {
       for (const re of (f?.regex as unknown[] | undefined) ?? []) regex(`${name}[${i}].regex`, re);
     });
   }
-  for (const name of ['check', 'login']) {
+  for (const name of ['check', 'login', 'ask']) {
     const v = r[name];
-    if (v === undefined && name === 'login') continue;
+    if (v === undefined && name !== 'check') continue;
     if (!Array.isArray(v) || v.some((s) => typeof s !== 'string' || s.trim().length < 6)) errs.push(`${name}: texts of 6+ characters`);
   }
   if (r.max !== undefined && !(Number.isInteger(r.max) && (r.max as number) > 0 && (r.max as number) <= 100)) errs.push('max: 1 to 100');

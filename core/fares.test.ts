@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { checkFareRecipe, readFares, type FareRecipe, type FareRow } from './fares.ts';
-import { clock, flightName, groupFlights, otherAirport, siteSummary } from '../web/compare.js';
+import { clock, flightName, groupFlights, otherAirport, rideRows, siteSummary } from '../web/compare.js';
 
 // Every page here was saved INSIDE the Britto app (debug build, Android 14 emulator, a home
 // network in India) on 2026-11-04: Delhi -> Mumbai, one adult, economy, 20 Nov 2026. EaseMyTrip's
@@ -87,6 +87,23 @@ test('pages without fares say why: log in, a person check, another page, still l
   const mmt = page('fares-makemytrip-del-bom-2026-11-20.html');
   assert.equal(readFares(recipe('ixigo'), mmt.html, mmt.url).status, 'other_page', "ixigo's recipe on MakeMyTrip's page");
   assert.equal(readFares(recipe('makemytrip'), '<html><body><div>Hold on, we are fetching flights</div></body></html>', mmt.url).status, 'waiting');
+});
+
+test("Uber's airline question (an airport drop) is its own answer, never taken for no fares", () => {
+  // Built from Uber's own words on the phone's screen (2026-11-04 11:36, the owner's logged-in
+  // Uber in the Britto app; the page itself was not saved: it belongs to their account).
+  const asked = '<html><body><h1>Which airline?</h1><p>Indira Gandhi International Airport</p><ul><li>Air India Terminal 3</li><li>IndiGo Terminal 1, Terminal 3</li></ul><button>Next</button><button>Skip</button></body></html>';
+  assert.equal(readFares(recipe('uber'), asked, 'https://m.uber.com/go/home?drop').status, 'ask');
+  assert.match(checkFareRecipe({ ...recipe('uber'), ask: ['air'] }).join(), /ask/);
+});
+
+test('rides: cheapest first, parcel delivery left out', () => {
+  const list = rows(read('uber', 'fares-uber-cp-del-t3-2026-11-04-list.html'));
+  const parcel: FareRow = { ...list[0]!, label: 'Parcel Bike', price: 6525 };
+  const out = rideRows([{ id: 'uber', name: 'Uber', url: 'https://m.uber.com/x', status: 'fares', rows: [...list, parcel] }, { id: 'x', name: 'X', url: '', status: 'login' }]);
+  assert.deepEqual(out.map((r) => [r.label, r.price]).slice(0, 3), [['Bike Saver', 16461], ['Bike', 18801], ['Go Sedan', 36618]]);
+  assert.equal(out.length, 9, 'the nine rides, not the parcel option');
+  assert.ok(out.every((r) => r.site.id === 'uber'));
 });
 
 test('compare: one flight across four sites, cheapest offer first, other airports flagged', () => {

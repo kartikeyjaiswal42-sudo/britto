@@ -26,7 +26,7 @@ to this list and removes what is done.
    to the next session). That lets a session check and switch on the Flipkart reader.
 4. **Install the Android app on your phone** (5 minutes): open
    https://britto.amitynoidalibrary.workers.dev/app on the phone, tap **Download**, open the
-   file, allow installs from Chrome once, Install. (Version 0.3.1, 2026-11-04, signed with the
+   file, allow installs from Chrome once, Install. (Version 0.4.0, 2026-11-04, signed with the
    release key of item 6, so later versions install over it.) It was tested end to end on an
    Android 14 emulator against the live site (HISTORY "P11 part 1"); a real phone is still the
    final check: tell the next session anything that looks wrong. Uninstall any older Britto
@@ -70,19 +70,27 @@ to this list and removes what is done.
    ACCOUNT, so on AMITY it is shared with the paying client's projects, if they use Workers AI.
    If that is fine, tell the next session "Workers AI is allowed on AMITY"; it will add it and
    measure the cost per search before switching anything on. If not, nothing changes.
-12. **Check four travel links from India** (P9, 3 minutes): open
-   https://britto.amitynoidalibrary.workers.dev/travel on your phone or laptop. Under Flights
-   type From `DEL`, To `BOM`, any date next month, press "Show flight searches", then tap
-   **MakeMyTrip**, **ixigo** and **Skyscanner** one by one. Under Hotels type `Goa`, press
-   "Show hotel searches", tap **Booking.com**. For each, tell the next session "filled in" (your
-   trip was already there) or "empty" (you had to type it). Britto's test computer is in the
-   USA and these four sites refused it, so only you can check them; the next session then
-   marks each link as checked or removes it.
+12. **Check two travel links from India** (3 minutes; MakeMyTrip, ixigo, Goibibo and EaseMyTrip
+   were checked inside the Britto app on 2026-11-04 and are read for fares now): in the Britto
+   app open Travel → Flights, DEL to BOM, any date, Compare fares; under "Also search on" tap
+   **Skyscanner**: it asks "Are you a person or a robot?" (press and hold). Tell the next
+   session whether it then showed fares. Under Hotels type `Goa` and tap **Booking.com**: say
+   "filled in" or "empty".
 13. **Log in to Appetize** (if you want to try the app in your browser): the Chrome window on
    appetize.io asks you to log in again. Log in and tell the session; it uploads
    `web/download/britto.apk` there. Appetize's free plan gives 30 minutes a month. Typing your
    number into an Appetize phone sends it through Appetize's computers, so test logins on your
    own phone instead.
+14. **Log in to Uber once in the Britto app on your phone** (2 minutes): Travel → Rides →
+   type a pickup and a drop → Compare rides. If Uber says "log in", tap **Open Uber**, log in
+   with your number on Uber's own page (it stays in the app on your phone), go back and press
+   Compare rides again: every Uber ride type is listed with its fare. Never press Request.
+15. **Rapido's fare page, saved once** (5 minutes; makes Rapido readable): in the Britto app,
+   Shop → Rides → **Rapido** (or Travel → Rides → Open Rapido), log in with your number on
+   Rapido's own page, enter a pickup and a drop, and when the ride types with prices show,
+   press **Save page** at the top (do NOT book). Send the `britto-page-rapido-….html` file to
+   the next session. It may hold your name or saved places: it stays private, and only the
+   ride list (names and fares) goes into the tests, as was done for Uber.
 
 ## S1, 2026-10-26: foundations
 
@@ -1319,3 +1327,112 @@ first and were fixed (a sample Flipkart link with no "/dp/"; a skip that hid a w
 - Flights/hotels still show no fares (no permitted free source; unchanged since P9).
 - The app's status bar stays light grey above the blue Home header.
 - Appetize upload: waiting for the owner to log in to Appetize again (item 13).
+
+## P11 part 2a, 2026-11-04 (local session): fare compare on the phone — flights and rides
+
+**Asked:** "does every feature match BuyHatke … did you add MakeMyTrip, Skyscanner and Rapido …
+BuyHatke's speciality: it compares prices and shows you" + a 2 min 38 s screen recording of the
+BuyHatke app (`~/Downloads/WhatsApp Video 2026-11-04 at 10.00.09.mp4`, watched as 53 frames, one
+every 3 s): Home (search or paste a link, camera, mic; Ride / Flight / Hotel / Grocery / Food
+Compare, Gift Card), **Ride compare** (pickup + drop, map, All/Bike/Auto/Cab, Smart Pickup,
+"Connect" Namma Yatri / Uber / Rapido / Ola / Bharat Taxi / RedTaxi: the list stays empty until
+apps are connected), **Flight compare** (one-way / round / multi-city, a fare strip by date,
+Cheapest / Fastest / Best, price alert, "Checking … 26 of 47 airlines · 12 booking sites", per
+flight "More booking options": Agoda, Cleartrip, MakeMyTrip, ixigo, Goibibo, Paytm Travel,
+TeaFlight), **Food compare** (address, connect Swiggy-style apps + Domino's / McDonald's / KFC,
+"Your app logins stay on this phone"), Explore (Product Lens, Spend Lens, Super Browse, Refer &
+Win, Verified Deals, Gift Cards).
+
+### Measured first (inside the Britto app: a debug build `app.britto.dev`, Android 14 emulator, the owner's home network in India, driven over DevTools)
+- **MakeMyTrip** (the old one-way link, unchanged): results with fares (16-19 flights). The
+  bare "200-OK" page of 2026-10-29 did not come back.
+- **ixigo**: results with fares (6 at 15 s, 40 at 30 s: the list keeps growing).
+- **Goibibo** (MakeMyTrip's link format on goibibo.com, a guess that was then seen working).
+- **EaseMyTrip** (`flight.easemytrip.com/FlightList/Index?srch=DEL-…|BOM-…|dd/mm/yyyy…`): fares,
+  but its page is **8.8 MB** (168 cards, each ~58 KB of hidden fare details).
+- **Skyscanner**: "Are you a person or a robot?" (press and hold, PerimeterX). Not worked around.
+- **Cleartrip**: fares at 10:19 (IndiGo 03:30 → 05:55 ₹7,427 on screen); after several test
+  loads its `flight/search/v2` answered **403** to this phone. Not worked around; no recipe.
+- **Uber**: logged out = "Plan your Uber journey Login" (product page) or "Uber Login Loading"
+  (`/go/home`, read twice via DevTools; that screen was never saved whole: the emulator froze).
+  Logged in (the owner's login of 2026-11-04 in the release app): every ride with its fare.
+- **Rapido**: `m.rapido.bike` is Rapido's own web app (the one inside Flipkart's app); it asks
+  for a mobile number and an SMS code. Its fare page has not been seen. No number was entered.
+- **Ola**: `book.olacabs.com` loads with no text in the app (as on 2026-10-29).
+- Sites mix nearby airports into a city: Hindon (HDO, "Ghaziabad") for Delhi, Navi Mumbai
+  (NMI) for Mumbai. The cheapest DEL→BOM flight of 20 Nov was from Hindon.
+
+### Built
+- `core/fares.ts`: fare recipes (data) + `readFares` (statuses fares / check / login / waiting
+  / other_page; prices under ₹10 dropped) + `checkFareRecipe`. Same selector engine and
+  `fieldValue` as every product reader.
+- `web/fares.json`: recipes for ixigo, MakeMyTrip, Goibibo, EaseMyTrip (flights) and Uber
+  (rides), each `verified: 2026-11-04`. Served with the site: a site that changes its page is
+  fixed without a new app.
+- `web/compare.js`: `groupFlights` (one flight = airline + departure + arrival minutes; each
+  site's lowest fare; cheapest first), `otherAirport`, `siteSummary`, `flightName`, `clock`.
+- App: `FareJob` (rules: ≤ 2 sites at once, ≤ 10 sites, https + a known travel host only; a
+  site is done after 3 equal readings and 15 s, or at 45 s; a load error ends only a site that
+  showed nothing — results pages raise errors for their own redirects, measured: that ended
+  all four sites early in the first run), `FareRunner` (hidden WebViews UNDER the Britto page,
+  the phone's own WebView, Super Browse's cookies, no bridge or reader; never follows a link to
+  another app; nothing is clicked or typed), `android/js/fares.ts` → `assets/britto-fares.js`
+  (25 KB; reads only the fare cards when there are any, so EaseMyTrip's 8.8 MB is not re-read).
+  Site bridge: `compareFares` / `compareStatus` / `compareStop`, and `places` (the phone's own
+  Geocoder, limited to India, no location permission). Debug builds are now `app.britto.dev`
+  (install beside the signed app without touching its logins).
+- Site: Travel → Flights in the app = "Compare fares" (per site: cheapest + Open; per flight:
+  every site's fare, cheapest highlighted, other airports flagged); Travel → Rides (app only):
+  pickup + drop → Uber's rides with fares (after login) + "Open Rapido". In a browser: links, and
+  the page says fares are read in the Android app. Links: Goibibo and EaseMyTrip added;
+  MakeMyTrip/ixigo/Goibibo/EaseMyTrip marked "checked in the Britto app".
+- Services: + MakeMyTrip, ixigo, Goibibo, EaseMyTrip, Skyscanner (flights), Rapido (rides).
+- App 0.4.0 (versionCode 5), signed with the `~/.britto` key, published at /download.
+
+### Verified (this session, final code unless said)
+- **In the app (debug build against a local copy of the site), DEL→BOM 20 Nov:** all four
+  sites read in ~32 s: ixigo from ₹7,116 (6), EaseMyTrip ₹7,116 (40), MakeMyTrip ₹7,122 (19),
+  Goibibo ₹7,279 (18); 40 flights grouped, e.g. IndiGo 6E 5175 12:55 HDO → 14:55 BOM:
+  EaseMyTrip ₹7,116 · ixigo ₹7,116 · MakeMyTrip ₹7,201 · Goibibo ₹7,326 (screenshots).
+- Ride compare in the debug app: places found by the phone ("Connaught Place, New Delhi 110001",
+  "IGI Airport Terminal 3, Delhi 110037"); Uber opened with the trip; logged out it ended as
+  "showed no fares" (the `/go/home` login text was then added as a marker; see NOT verified).
+- Gates: `npm test` 132/132 (134 after the live fixes) · typecheck (both) · check:readers clean (fare pages excluded: they
+  are fare recipes' pages) · Gradle unit tests 22/22 (FareJob 6 new) · app.mjs 32/0 (with
+  `PW_DIR`) · browser.mjs 100/0 local (schema + the Cello product first, as before) · prove
+  129/0 (real amazon.in).
+- **Proved able to fail:** 9 new breakages each reddened exactly their checks (MakeMyTrip price
+  block, person check ignored, page address ignored, airline spelling, city as airport, dearer
+  fare kept, all sites at once, settle without agreement, any load error ends a site); two were
+  not caught at first and the tests were made stronger (a site listing one flight twice; a
+  city-name-only airport). A browser breakage (ride compare shown in a browser) reddened its
+  check at both sizes, restored.
+
+### Verified LIVE (release 0.4.0 installed OVER 0.3.1 on the emulator — same key, data and the owner's Uber login kept — against https://britto.amitynoidalibrary.workers.dev after the deploy of `96a9437`)
+- The live site serves `/fares.json` (5 recipes), `/compare.js`, 9 services in `/api/stores`,
+  and the 0.4.0 APK (282,857 bytes, sha256 c258da1a…, matching britto.json). `prove --live`
+  69/0.
+- **Ride compare, Connaught Place → India Gate: "Uber 16 rides from ₹52.44"** (Bike Saver
+  ₹52.44, Bike ₹59.18, Auto ₹91.06 …) read from the owner's logged-in Uber in the app
+  (screenshots). Nothing on Uber's page was touched.
+- **Connaught Place → IGI Airport T3: Uber asked "Which airline?"** (seen on screen through
+  "Open Uber") before any fare, so the compare said "no fares". Fixed on the site (no new app
+  needed: recipes and page are served): a new status `ask` ("asks a question before its fares
+  … Britto never answers for you"), recipe marker "which airline?". Uber also lists parcel
+  delivery ("Parcel Bike", "Parcel Scooter") among its rides: now left out (`rideRows`).
+  Tests: 11 fare tests (the airline-question page is built from the on-screen words, not a
+  saved page: it belongs to the owner's account); 2 more breakages caught (11 new in all).
+
+### NOT verified / not done
+- **Airport rides on Uber**: the airline question is now reported, not answered. Mapping an
+  airport drop to the points Uber was seen to accept (web/rides.json) might skip it: not
+  measured, not built.
+- **Rapido fares**: not read (login, then its fare page must be saved: owner item 15). Ola: blank
+  web page. Namma Yatri / Bharat Taxi / RedTaxi: no web booking measured.
+- **Cleartrip** (403 after repeated tests), **Skyscanner** (person check): links only.
+- Round trip / multi-city / other cabins: links only (only one-way economy was seen working).
+- Hotels, grocery, food: no fares read (hotels: links; grocery: P7 partial; food: nothing).
+- A real phone (only the emulator, which froze several times on this 8 GB Mac).
+- The saved Uber page in `~/.britto/pages/` (2026-11-04 09:32) holds a destination from the
+  owner's Uber account (Amity University Gate 4): it stays on the Mac; only its ride list is in
+  the repo (`test/fixtures/fares-uber-cp-del-t3-2026-11-04-list.html`).

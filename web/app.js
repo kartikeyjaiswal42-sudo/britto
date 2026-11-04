@@ -7,7 +7,7 @@ import {
 import { drawChart } from './chart.js';
 import { mergeOrders, summarize } from './spend.js';
 import { airportIndex, flightSearch, hotelSearch, MAX_DAYS_AHEAD, rideCompare, rideSearch, todayIST } from './travel.js';
-import { groupFlights, otherAirport, siteSummary } from './compare.js';
+import { groupFlights, otherAirport, rideRows, siteSummary } from './compare.js';
 
 const app = document.getElementById('app');
 
@@ -367,6 +367,7 @@ const FARE_STATUS = {
   loading: 'Checking…',
   check: 'asks you to confirm you are a person. Open it, answer it there, then search again.',
   login: 'shows fares only after you log in. Open it and log in once.',
+  ask: 'asks a question before its fares (for an airport: which airline). Open it and answer it there; Britto never answers for you.',
   waiting: 'showed no fares for this search.',
   failed: 'did not open.',
 };
@@ -416,7 +417,7 @@ function drawFares(box, sites, st, others, q, airports) {
     h('ul', { class: 'fare-sites' }, siteSummary(read).map((s) => h('li', { 'data-site': s.id, 'data-status': s.status },
       h('span', { class: 'fare-site' }, s.name),
       s.cheapest != null ? h('span', {}, `from ${rupees(s.cheapest)}`, h('small', { class: 'muted' }, ` · ${s.rows.length} fares`)) : h('span', { class: 'small muted' }, FARE_STATUS[s.status] ?? FARE_STATUS.waiting),
-      open(s.url, s.status === 'check' || s.status === 'login' ? `Open ${s.name}` : 'Open', 'button secondary small')))),
+      open(s.url, ['check', 'login', 'ask'].includes(s.status) ? `Open ${s.name}` : 'Open', 'button secondary small')))),
     flights.length ? h('h3', {}, `${flights.length} flights, cheapest first`) : null,
     h('ol', { class: 'fare-list' }, flights.slice(0, 25).map((f) => {
       const away = otherAirport(f.from, q.from, fromCity) || otherAirport(f.to, q.to, toCity);
@@ -436,13 +437,15 @@ function drawFares(box, sites, st, others, q, airports) {
 function drawRides(box, sites, st, others) {
   const state = new Map(st.sites.map((x) => [x.id, x]));
   const read = sites.map((s) => ({ ...s, ...state.get(s.id) }));
-  const rides = read.flatMap((s) => (s.status === 'fares' ? s.rows.map((r) => ({ ...r, site: s })) : [])).sort((a, b) => a.price - b.price);
+  const rides = rideRows(read);
   put(box,
     h('p', { class: 'fare-progress small' }, st.done ? `Checked on your phone just now.` : 'Checking ride fares on your phone…'),
     st.done ? null : h('progress', { class: 'fare-bar' }),
     h('ul', { class: 'fare-sites' }, read.map((s) => h('li', { 'data-site': s.id, 'data-status': s.status },
       h('span', { class: 'fare-site' }, s.name),
-      s.status === 'fares' ? h('span', {}, `${s.rows.length} rides from ${rupees(Math.min(...s.rows.map((r) => r.price)))}`) : h('span', { class: 'small muted' }, FARE_STATUS[s.status] ?? FARE_STATUS.waiting),
+      s.status === 'fares' && rides.some((r) => r.site.id === s.id)
+        ? h('span', {}, `${rides.filter((r) => r.site.id === s.id).length} rides from ${rupees(rides.find((r) => r.site.id === s.id).price)}`)
+        : h('span', { class: 'small muted' }, FARE_STATUS[s.status] ?? FARE_STATUS.waiting),
       h('a', { class: 'button secondary small', href: s.url, rel: 'noopener' }, `Open ${s.name}`)))),
     rides.length ? h('ol', { class: 'fare-list' }, rides.map((r) => h('li', { 'data-ride': r.label },
       h('div', { class: 'fare-flight' }, h('strong', {}, r.label), h('span', { class: 'small muted' }, r.eta ? `pickup ${r.eta}` : '')),
