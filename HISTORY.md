@@ -1424,6 +1424,10 @@ Win, Verified Deals, Gift Cards).
   saved page: it belongs to the owner's account); 2 more breakages caught (11 new in all).
 
 ### NOT verified / not done
+- **The airline-question status, live**: after the fix went live (11:42 IST) the same airport
+  trip in the release app still ended "showed no fares": the hidden Uber page answered only 3
+  readings in 45 s on the overloaded emulator (log), so the question had probably not appeared
+  yet. Not seen working live; check on a real phone.
 - **Airport rides on Uber**: the airline question is now reported, not answered. Mapping an
   airport drop to the points Uber was seen to accept (web/rides.json) might skip it: not
   measured, not built.
