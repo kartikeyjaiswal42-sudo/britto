@@ -1626,6 +1626,11 @@ checked for the name and a phone number before writing.
 - Release `web/download/britto.apk` 0.6.0 (7): 298,221 bytes, sha256 1fbf81f7…, signed by the
   same certificate fbf25e7d… as 0.4.0/0.5.0 (installs over them).
 
+**Verified LIVE** (17:18 IST, after GitHub deployed f785d5e): `/download/britto.json` says
+0.6.0 and the live `/download/britto.apk` has sha256 1fbf81f7… (same bytes as
+`~/Downloads/Britto-0.6.0.apk`); the live `/fares.json` has the Rapido recipe and `/app.js` the
+Rapido and share code; `prove --live` 71/71.
+
 **NOT verified:**
 - The Parcel fix and the trip-line layout were checked on the device through the page (served
   by the local site); the blue bar's text after the Parcel fix was not re-read on the device.
