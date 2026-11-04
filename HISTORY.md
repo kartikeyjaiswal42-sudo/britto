@@ -1675,6 +1675,9 @@ fallback, and a fresh manual reading fills in when the automatic one found no fa
   (two first reddened more checks than listed: those checks rely on the same rule, so the lists
   were widened, not the code changed).
 - Release 0.6.1 (8): 299,905 bytes, sha256 a20f957b…, same certificate fbf25e7d….
+- **Verified LIVE** (after GitHub deployed a34badf): `/download/britto.json` 0.6.1, the live APK's
+  sha256 a20f957b… (= `~/Downloads/Britto-0.6.1.apk`), the live `/fares.json` has Rapido's
+  `fill`, `prove --live` 71/71.
 
 **NOT verified:**
 - On a real phone. Uber and Rapido logged in at the same time (the test phone's Uber login
