@@ -360,6 +360,14 @@ try {
     const r = await j(path);
     check(`${path} serves the app`, r.status === 200 && r.text.includes('id="app"'), `${r.status} ${r.headers.get('location') ?? ''}`);
   }
+  // The Android app the /app page offers: the file itself, matching the facts the page shows.
+  // (Its first publish was ignored by .gitignore's *.apk and answered 404 live: caught by hand.)
+  const apkInfo = await j('/download/britto.json');
+  const apk = await fetch(`${base}/download/britto.apk`);
+  const apkBytes = new Uint8Array(await apk.arrayBuffer());
+  const apkHash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', apkBytes))].map((b) => b.toString(16).padStart(2, '0')).join('');
+  check('the app download is the APK its page describes (size and SHA-256)', apk.status === 200 && apkInfo.body?.bytes === apkBytes.length && apkInfo.body?.sha256 === apkHash
+    && apk.headers.get('content-type') === 'application/vnd.android.package-archive', `${apk.status} ${apkBytes.length} bytes ${apkHash.slice(0, 12)} vs ${JSON.stringify(apkInfo.body).slice(0, 120)}`);
   const bot = await j('/bot');
   check('/bot explains the crawler', bot.status === 200 && bot.text.includes('BrittoBot'), `${bot.status} ${bot.headers.get('location') ?? ''}`);
   const js = await j('/app.js');

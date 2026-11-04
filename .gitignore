@@ -11,3 +11,5 @@ android/.gradle/
 android/app/build/
 android/local.properties
 android/build/
+# The published app (scripts/publish-apk.mjs) is served by the site: keep it.
+!web/download/britto.apk
