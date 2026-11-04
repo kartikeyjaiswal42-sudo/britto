@@ -1535,6 +1535,16 @@ saved fare page (owner item 15).
 - Release 0.5.0 (294,189 bytes, sha256 26df6c3f…, the same certificate fbf25e7d… as 0.4.0)
   installed over 0.4.0 on the emulator with its first-install date (= data) kept.
 
+### Verified LIVE (production, after the push of `00f2f5d`, live at 16:11 IST)
+- The site serves app 0.5.0: the downloaded `/download/britto.apk` is 294,189 bytes with
+  sha256 26df6c3f… (= `britto.json`); `/fares.json` carries the hotel recipes.
+- `prove --live` 71/0 (69 before + a shared product link's own title/tags and /travel's).
+- A shared product link on production: `<title>Cello Butterflow Simply Ball Pen Set | … |
+  Britto</title>`, og:description "₹280 now on Amazon.in. …", og:image from m.media-amazon.com;
+  the page keeps its CSP and nosniff headers.
+- The release 0.5.0 app on the emulator, on the live site: Travel shows the new wording and a
+  white status bar with dark icons over its white header.
+
 ### NOT verified
 - **MakeMyTrip and Goibibo stopped answering this emulator in the afternoon** (after ~6 test
   searches each that day): MakeMyTrip a bare "200-OK" page (169 characters, seen in Super
