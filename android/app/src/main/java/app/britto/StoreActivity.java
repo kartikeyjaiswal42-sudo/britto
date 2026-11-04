@@ -19,6 +19,7 @@ import androidx.webkit.WebViewCompat;
 import androidx.webkit.WebViewFeature;
 
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -33,6 +34,16 @@ import java.net.URISyntaxException;
  */
 public class StoreActivity extends ComponentActivity {
     private static final String EXTRA_URL = "url";
+    private static final String EXTRA_SITE = "site";
+    private static final String EXTRA_RECIPE = "recipe";
+    private static final long READ_EVERY_MS = 2_000;
+    /** Rides read on this page (Rapido, {@link RideReadings}): the site, its recipe, the fare reader. */
+    private String rideSite;
+    private String rideRecipe;
+    private String faresJs;
+    private TextView info;
+    private final android.os.Handler ui = new android.os.Handler(android.os.Looper.getMainLooper());
+    private boolean resumed;
     private WebView web;
     private Bridge bridge;
     private TextView title;
@@ -43,6 +54,11 @@ public class StoreActivity extends ComponentActivity {
 
     static Intent open(Context context, String url) {
         return new Intent(context, StoreActivity.class).putExtra(EXTRA_URL, url);
+    }
+
+    /** A ride site whose trip is typed on its own page: its fares are read while the shopper looks. */
+    static Intent read(Context context, String url, String site, String recipe) {
+        return open(context, url).putExtra(EXTRA_SITE, site).putExtra(EXTRA_RECIPE, recipe);
     }
 
     @Override
@@ -66,6 +82,22 @@ public class StoreActivity extends ComponentActivity {
         bar.addView(Ui.barButton(this, "Save page", v -> savePage()));
         bar.addView(Ui.barButton(this, "Britto", v -> startActivity(new Intent(this, MainActivity.class))));
         root.addView(bar);
+        rideSite = getIntent().getStringExtra(EXTRA_SITE);
+        rideRecipe = getIntent().getStringExtra(EXTRA_RECIPE);
+        if (rideSite != null && rideRecipe != null) {
+            try {
+                faresJs = Stores.Assets.text(this, "britto-fares.js");
+            } catch (IOException e) {
+                faresJs = null;
+            }
+            info = new TextView(this);
+            info.setPadding(32, 12, 32, 12);
+            info.setTextSize(13);
+            info.setBackgroundColor(0xFFEEF3FF);
+            info.setTextColor(0xFF0A1128);
+            info.setText("Enter your pickup and drop on this page. Britto reads the prices when they show and puts them beside Uber's. Britto never books.");
+            root.addView(info);
+        }
 
         web = new WebView(this);
         Ui.setUpWebView(web, null); // the store sees the phone's own WebView, unchanged
@@ -121,6 +153,56 @@ public class StoreActivity extends ComponentActivity {
         }
         showStore(url);
         web.loadUrl(url);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        resumed = true;
+        if (faresJs != null) ui.postDelayed(this::readRide, READ_EVERY_MS);
+    }
+
+    @Override
+    protected void onPause() {
+        resumed = false;
+        ui.removeCallbacksAndMessages(null);
+        super.onPause();
+    }
+
+    /** Reads the ride site's page (the fare reader, as in a compare) and keeps fresh fares. */
+    private void readRide() {
+        if (!resumed || faresJs == null || web == null) return;
+        Stores.Store at = currentUrl == null ? null : Stores.forUrl(this, currentUrl);
+        if (at == null || !at.id.equals(rideSite)) {
+            ui.postDelayed(this::readRide, READ_EVERY_MS);
+            return;
+        }
+        String script = "(function(){" + faresJs + ";return __brittoFares.read(" + rideRecipe + ",{});})()";
+        web.evaluateJavascript(script, value -> {
+            if (!resumed) return;
+            try {
+                JSONObject r = new JSONObject(new JSONArray("[" + value + "]").getString(0));
+                showReading(at.name, r);
+            } catch (Exception e) {
+                // not a reading (the page was changing): try again
+            }
+            ui.postDelayed(this::readRide, READ_EVERY_MS);
+        });
+    }
+
+    private void showReading(String name, JSONObject r) {
+        String status = r.optString("status");
+        if (RideReadings.SHARED.put(rideSite, r, System.currentTimeMillis())) {
+            int n = r.optJSONArray("rows").length();
+            info.setText("Britto read " + n + " " + name + " price" + (n == 1 ? "" : "s") + ", from " + FareWatches.rupees(r.optLong("cheapest"))
+                    + ". Tap Britto (top right) to see them beside Uber's. Britto never books.");
+        } else if ("login".equals(status)) {
+            info.setText("Log in on " + name + "'s page with your number. Then enter the trip: Britto reads the prices when they show.");
+        } else if ("ask".equals(status)) {
+            info.setText("Enter your pickup and drop on " + name + "'s page. Britto reads the prices when they show and puts them beside Uber's.");
+        } else if ("check".equals(status)) {
+            info.setText(name + " asks if you are a person: answer it on its page.");
+        }
     }
 
     @Override

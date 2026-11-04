@@ -23,6 +23,8 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.webkit.WebViewCompat;
 import androidx.webkit.WebViewFeature;
 
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.regex.Matcher;
@@ -105,7 +107,13 @@ public class MainActivity extends ComponentActivity {
                     () -> runOnUiThread(this::watchAlerts), () -> AlertJob.notificationsAllowed(this), System::currentTimeMillis, bridgeFares)
                     .withPlaces(this::findPlaces)
                     .withBars((top, bottom) -> runOnUiThread(() -> paintBars(top, bottom)))
-                    .withFareAlerts(fareAlerts())::handle);
+                    .withFareAlerts(fareAlerts())
+                    .withRides(rides())
+                    .withShare(text -> {
+                        Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text);
+                        runOnUiThread(() -> startActivity(Intent.createChooser(send, "Send Britto to a friend")));
+                        return true;
+                    })::handle);
             WebViewCompat.addWebMessageListener(web, "BrittoBridge", Collections.singleton(siteOrigin()), siteBridge);
         }
         // The site draws the design's tab bar (Home, Deals, Tracker, Shop, Travel) itself.
@@ -179,6 +187,24 @@ public class MainActivity extends ComponentActivity {
     }
 
     /** Flight price alerts on this phone: kept by FareWatches, checked by FareAlertJob. */
+    /** Rapido: opened in the app to read its prices while the shopper enters the trip there. */
+    private SiteBridgeCore.Rides rides() {
+        return new SiteBridgeCore.Rides() {
+            @Override
+            public boolean open(String site, String url, JSONObject recipe) {
+                Stores.Store at = Stores.forUrl(MainActivity.this, url);
+                if (at == null || !at.service || !at.id.equals(site)) return false;
+                runOnUiThread(() -> startActivity(StoreActivity.read(MainActivity.this, url, site, recipe.toString())));
+                return true;
+            }
+
+            @Override
+            public JSONObject reading(String site) {
+                return RideReadings.SHARED.get(site, System.currentTimeMillis());
+            }
+        };
+    }
+
     private SiteBridgeCore.FareAlerts fareAlerts() {
         FareWatches watches = FareWatches.inDirectory(getFilesDir());
         return new SiteBridgeCore.FareAlerts() {

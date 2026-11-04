@@ -45,8 +45,8 @@ android {
         applicationId = "app.britto"
         minSdk = 29 // Android 10: saving to Downloads needs no storage permission
         targetSdk = 36
-        versionCode = 6
-        versionName = "0.5.0"
+        versionCode = 7
+        versionName = "0.6.0"
         buildConfigField("String", "SITE", "\"${brittoSite.get()}\"")
     }
 

@@ -495,26 +495,83 @@ function drawHotels(box, sites, st, others, q) {
     others.length ? [h('h3', {}, 'Also search on'), travelLinks(others)] : null);
 }
 
+/**
+ * Rides whose trip is typed on the site's own page (Rapido: its address holds no trip, measured
+ * 2026-11-04). The shopper opens it from here and enters the trip there; the app reads its prices
+ * while they look (StoreActivity, RideReadings) and this page puts them beside Uber's.
+ */
+const READ_WHILE_OPEN = new Set(['rapido']);
+const rideReads = new Map();
+const rideDraws = new WeakMap();
+let ridePoll = 0;
+
+async function openToRead(link) {
+  const ask = inApp ? siteBridge() : null;
+  const recipe = (await loadFareRecipes()).find((r) => r.site === link.id && r.sector === 'ride');
+  const r = ask && recipe ? await ask({ type: 'readRide', site: link.id, url: link.url, recipe }) : null;
+  if (!r?.ok) location.href = link.url;
+}
+
+/** Asks the app every 3 s (for 30 minutes) for the newest reading of each site; redraws on a new one. */
+function watchRideReads(box, ids) {
+  const run = ++ridePoll;
+  const ask = siteBridge();
+  const until = Date.now() + 30 * 60_000;
+  const tick = async () => {
+    if (run !== ridePoll || !box.isConnected || Date.now() > until) return;
+    let changed = false;
+    for (const id of ids) {
+      const reading = (await ask({ type: 'rideReading', site: id }))?.reading ?? null;
+      if ((reading?.at ?? 0) === (rideReads.get(id)?.at ?? 0)) continue;
+      if (reading) rideReads.set(id, reading);
+      else rideReads.delete(id);
+      changed = true;
+    }
+    if (changed && rideDraws.has(box)) drawRides(box, ...rideDraws.get(box));
+    setTimeout(tick, 3000);
+  };
+  tick();
+}
+
+/** "Gate no. 3, Amity Rd, Sector 125, Noida, …" -> "Gate no. 3, Amity Rd" */
+const shortPlace = (p) => String(p).split(',').map((x) => x.trim()).filter(Boolean).slice(0, 2).join(', ');
+const clock = (ms) => new Date(ms).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
+
 function drawRides(box, sites, st, others) {
+  rideDraws.set(box, [sites, st, others]);
+  const readable = inApp ? others.filter((l) => READ_WHILE_OPEN.has(l.id)) : [];
+  if (readable.length && !box.dataset.rideWatch) {
+    box.dataset.rideWatch = '1';
+    watchRideReads(box, readable.map((l) => l.id));
+  }
   const state = new Map(st.sites.map((x) => [x.id, x]));
-  const read = sites.map((s) => ({ ...s, ...state.get(s.id) }));
+  const opened = readable.filter((l) => rideReads.has(l.id)).map((l) => ({ ...l, ...rideReads.get(l.id), opened: true }));
+  const read = [...sites.map((s) => ({ ...s, ...state.get(s.id) })), ...opened];
+  const rest = others.filter((l) => !opened.some((o) => o.id === l.id));
   const rides = rideRows(read);
+  const openButton = (l) => (READ_WHILE_OPEN.has(l.id) && inApp
+    ? h('button', { type: 'button', class: 'button secondary small', 'data-read': l.id, onclick: () => openToRead(l) }, `Open ${l.name}`)
+    : h('a', { class: 'button secondary small', href: l.url, rel: 'noopener' }, `Open ${l.name}`));
   put(box,
     h('p', { class: 'fare-progress small' }, st.done ? `Checked on your phone just now.` : 'Checking ride fares on your phone…'),
     st.done ? null : h('progress', { class: 'fare-bar' }),
     h('ul', { class: 'fare-sites' }, read.map((s) => h('li', { 'data-site': s.id, 'data-status': s.status },
       h('span', { class: 'fare-site' }, s.name),
       s.status === 'fares' && rides.some((r) => r.site.id === s.id)
-        ? h('span', {}, `${rides.filter((r) => r.site.id === s.id).length} rides from ${rupees(rides.find((r) => r.site.id === s.id).price)}`)
+        ? h('span', {}, `${rides.filter((r) => r.site.id === s.id).length} rides from ${rupees(rides.find((r) => r.site.id === s.id).price)}`,
+          s.opened ? h('span', { class: 'small muted' }, ` · read at ${clock(s.at)}`) : null)
         : h('span', { class: 'small muted' }, FARE_STATUS[s.status] ?? FARE_STATUS.waiting),
-      h('a', { class: 'button secondary small', href: s.url, rel: 'noopener' }, `Open ${s.name}`)))),
+      s.opened ? openButton(s) : h('a', { class: 'button secondary small', href: s.url, rel: 'noopener' }, `Open ${s.name}`)))),
+    opened.map((s) => h('p', { class: 'small muted', 'data-trip': s.id }, `${s.name}\u2019s prices are for the trip entered on its own page${s.places?.filter(Boolean).length === 2 ? `: ${s.places.map(shortPlace).join(' \u2192 ')}` : ''}. Check it is the same trip.`)),
     rides.length ? h('ol', { class: 'fare-list' }, rides.map((r) => h('li', { 'data-ride': r.label },
       h('div', { class: 'fare-flight' }, h('strong', {}, r.label), h('span', { class: 'small muted' }, r.eta ? `pickup ${r.eta}` : '')),
       h('div', { class: 'fare-offers' }, h('a', { class: 'offer', href: r.site.url, rel: 'noopener', 'data-offer': r.site.id }, h('span', {}, r.site.name), h('b', {}, rupees(r.price))))))) : null,
-    others.length ? h('ul', { class: 'fare-sites' }, others.map((l) => h('li', { 'data-site': l.id, 'data-status': 'link' },
+    rest.length ? h('ul', { class: 'fare-sites' }, rest.map((l) => h('li', { 'data-site': l.id, 'data-status': 'link' },
       h('span', { class: 'fare-site' }, l.name),
-      h('span', { class: 'small muted' }, 'Britto cannot read its fares yet: open it, log in with your number once, and enter the trip there.'),
-      h('a', { class: 'button secondary small', href: l.url, rel: 'noopener' }, `Open ${l.name}`)))) : null,
+      h('span', { class: 'small muted' }, READ_WHILE_OPEN.has(l.id) && inApp
+        ? `Its trip is typed on its own page: open it, log in with your number once, and enter the same pickup and drop. Britto reads its prices while you look and shows them here.`
+        : 'Britto cannot read its fares yet: open it, log in with your number once, and enter the trip there.'),
+      openButton(l)))) : null,
     h('p', { class: 'small muted' }, 'Fares as each app\u2019s own page showed them on this phone. Tap one to book it there; Britto never books a ride.'));
 }
 
@@ -687,7 +744,7 @@ async function travelPage() {
 
   put(app, h('h1', {}, 'Travel'),
     h('p', { class: 'muted' }, inApp
-      ? 'Enter your trip once. Britto opens MakeMyTrip, ixigo, Goibibo and EaseMyTrip (flights), Booking.com and Cleartrip (hotels) and Uber (rides) on this phone, reads the prices each one shows, and lists them side by side. Britto\u2019s server never sees your search, and nothing is booked.'
+      ? 'Enter your trip once. Britto opens MakeMyTrip, ixigo, Goibibo and EaseMyTrip (flights), Booking.com and Cleartrip (hotels) and Uber (rides) on this phone, reads the prices each one shows, and lists them side by side. Rapido\u2019s prices are read when you open it from Rides and enter the trip there. Britto\u2019s server never sees your search, and nothing is booked.'
       : 'Enter your trip once and open the same search on each site. In the Britto Android app, Britto also reads the fares each site shows and compares them for you.'),
     list,
     inApp ? h('section', {}, h('h2', {}, 'Rides'), rideCmp) : null,
@@ -818,7 +875,11 @@ async function appPage() {
   put(app,
     h('h1', {}, 'Britto for Android'),
     h('p', { class: 'lede-dark' }, 'Shop on Amazon, Flipkart, Myntra and more inside Britto: every product page shows its price history and whether the sale is real.'),
-    inApp ? h('p', { class: 'notice' }, `You are using the app${info ? `; the newest version is ${info.version}` : ''}.`)
+    inApp ? h('div', {}, h('p', { class: 'notice' }, `You are using the app${info ? `; the newest version is ${info.version}` : ''}.`),
+      h('button', { type: 'button', class: 'button', id: 'share-app', onclick: async () => {
+        const r = await siteBridge()?.({ type: 'shareApp', text: `Britto: price history, real discounts, and flight, hotel and ride prices compared. Get the Android app: ${location.origin}/app` });
+        if (!r?.ok) location.href = `https://wa.me/?text=${encodeURIComponent(`Britto for Android: ${location.origin}/app`)}`;
+      } }, 'Send Britto to a friend'))
       : info ? h('div', { class: 'download' },
         h('a', { class: 'button warn big', href: '/download/britto.apk', download: 'Britto.apk' }, `Download Britto ${info.version} (${Math.round(info.bytes / 1024)} KB)`),
         h('p', { class: 'muted small' }, `Android 10 or newer. Built ${date(info.builtAt)}. SHA-256 ${info.sha256}`))
@@ -829,7 +890,7 @@ async function appPage() {
       feature('Search.', 'Search Amazon from Britto, or open the same search on Flipkart, Myntra and the rest.'),
       feature('Price alerts.', 'Set an alert on any product: the app shows it as a notification (it checks every 15 minutes, and when you open it). In Chrome on a laptop, alerts arrive as browser notifications.'),
       feature('Share to Britto.', 'In any store’s app, tap Share on a product and choose Britto to see its history.'),
-      feature('Rides, flights and hotels.', 'Uber, Cleartrip and Booking.com open inside the app, so you log in once.'),
+      feature('Rides, flights and hotels.', 'Uber and Rapido rides, flights on MakeMyTrip, ixigo, Goibibo and EaseMyTrip, hotels on Booking.com and Cleartrip: compared on your phone, with your own logins.'),
       feature('Spend Lens.', 'What you spent across stores, from your own order pages, worked out on your phone and never uploaded.')),
     inApp ? null : h('div', {},
       h('h2', {}, 'Installing'),

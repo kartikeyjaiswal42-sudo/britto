@@ -165,7 +165,7 @@ export function rideSearch(input, airports, uberAirports = {}) {
  * Ride compare in the Britto app: pickup and drop found by the phone's own place search. Uber
  * opens with the trip (its documented link) and its ride list is read on the phone (web/fares.json);
  * Rapido opens its own web app, where the shopper logs in and enters the trip (no link format for
- * a trip, and its fare page has not been seen, so nothing of it is read).
+ * a trip): the app reads its ride list while the shopper looks (web/app.js READ_WHILE_OPEN).
  */
 export function rideCompare(pickup, drop) {
   if (!isCoord(pickup?.lat, pickup?.lng)) return { ok: false, reason: 'Pickup: pick a place from the list' };

@@ -26,9 +26,12 @@ to this list and removes what is done.
    to the next session). That lets a session check and switch on the Flipkart reader.
 4. **Install the Android app on your phone** (5 minutes): open
    https://britto.amitynoidalibrary.workers.dev/app on the phone, tap **Download**, open the
-   file, allow installs from Chrome once, Install. (Version 0.5.0, 2026-11-04, signed with the
+   file, allow installs from Chrome once, Install. (Version 0.6.0, 2026-11-04, signed with the
    release key of item 6, so later versions install over it; 0.5.0 was seen installing over
-   0.4.0 with its data kept.) It was tested end to end on an
+   0.4.0 with its data kept.) To send it to friends: in the app, **Get the app → Send Britto to
+   a friend** (WhatsApp or any app gets the download link), or send the file itself
+   (`~/Downloads/Britto-0.6.0.apk` on the Mac) as a WhatsApp **Document**; the friend opens it
+   and allows installs from WhatsApp once. It was tested end to end on an
    Android 14 emulator against the live site (HISTORY "P11 part 1"); a real phone is still the
    final check: tell the next session anything that looks wrong. Uninstall any older Britto
    first (it was signed with a different key).
@@ -64,7 +67,9 @@ to this list and removes what is done.
    is ready" and it will explain how to store it as a Worker secret yourself.
 10. ~~CPU check on production~~ (measured 2026-11-04 with `wrangler tail`: two Amazon store
    searches took 470 ms and 94 ms of CPU and both answered normally; no CPU-limit errors seen.)
-11. **Decide on Workers AI** (P8, a decision, 1 minute): picture search ("Lens": photo of a
+11. ~~Decide on Workers AI~~ (decided 2026-11-04: **"Yes, allowed on AMITY"**, for photo search,
+   measured and capped so it cannot use up the account's daily allowance; not built yet: P11
+   part 4). The question was: picture search ("Lens": photo of a
    product → matches) and smarter "similar products" need Cloudflare Workers AI. Cloudflare's
    pricing page (read 2026-10-27) says every account gets 10,000 "neurons" a day free, and on
    the free plan going over makes requests fail rather than cost money. The allowance is per
@@ -85,13 +90,13 @@ to this list and removes what is done.
    type a pickup and a drop → Compare rides. If Uber says "log in", tap **Open Uber**, log in
    with your number on Uber's own page (it stays in the app on your phone), go back and press
    Compare rides again: every Uber ride type is listed with its fare. Never press Request.
-15. **Rapido's fare page, saved once** (5 minutes; makes Rapido readable): in the Britto app,
-   Shop → Rides → **Rapido** (or Travel → Rides → Open Rapido), log in with your number on
-   Rapido's own page, enter a pickup and a drop, and when the ride types with prices show,
-   press **Save page** at the top (do NOT book). Send the `britto-page-rapido-….html` file to
-   the next session. It may hold your name or saved places: it stays private, and only the
-   ride list (names and fares) goes into the tests, as was done for Uber.
-16. **Try 0.5.0's new things on your phone** (10 minutes, after item 4): Travel → Flights,
+15. ~~Rapido's fare page~~ (done 2026-11-04: you logged in to Rapido on the test phone; the
+   session typed the trip with your permission and saved the page, kept OUTSIDE the repo in
+   `~/.britto/pages/`; only the ride list went into the tests.) On your phone: Travel → Rides →
+   Compare rides → **Open Rapido**, log in once, enter the same pickup and drop: a blue Britto
+   bar says how many prices it read; tap **Britto** (top right) and Rapido's rides are listed
+   beside Uber's. Never press Book unless you want that ride.
+16. **Try 0.5.0's and 0.6.0's new things on your phone** (10 minutes, after item 4): Travel → Flights,
    DEL to BOM, a date, **Compare fares**: check that a row of dates with prices appears under
    "Cheapest found" (tap a day: it compares that day), and tap **Alert me if it gets cheaper**.
    Then add a Return date and compare again (round trip). Then Hotels → Goa → **Compare
@@ -1559,3 +1564,74 @@ saved fare page (owner item 15).
   are linked, not read. Hotel compare reads only the first hotels each site draws.
 - Link previews as WhatsApp/Telegram actually render them (the tags are checked, not the apps).
 - A real phone (owner items 4 and 16).
+
+## P11 part 3 (first part), 2026-11-04 (local session): Rapido read in the app, app 0.6.0
+
+The owner asked: "BUILD left things and provide me modapk that i send over whatsapp, with rapido
+and other thing working". "Mod APK" here = Britto's own signed app file to send on WhatsApp
+(not a modified copy of anyone else's app).
+
+**Rapido.** Its web app (m.rapido.bike) asks for a number and SMS code, and its trip is TYPED on
+its own page: the address stays `/home`, so Britto cannot open it with the trip as it opens Uber
+(measured). The owner logged in on the test phone (asked twice: their first "done" was before a
+trip was entered; the boxes were still empty) and then allowed the session to type the trip
+("You type the places": only the two place boxes and Rapido's own suggestion list were touched,
+never Book). Rapido then showed Auto ₹162, Cab Economy ₹376, Cab Premium ₹488, Cab XL ₹788,
+Parcel ₹98 (16:2x IST; ₹166/₹284/₹353/₹570/₹92 at 17:07 on the second run). The page is kept
+outside the repo (`~/.britto/pages/rapido-fares-…`: it holds the account's name and number);
+`test/fixtures/fares-rapido-amity-sector18-2026-11-04-list.html` is the ride list only (and the
+logged-out Uber list page has its anonymous session id blanked),
+checked for the name and a phone number before writing.
+- `web/fares.json` `rapido:ride`: cards `div.card-wrap`, name from the icon's alt text, the
+  price only when the card shows ONE price (or one marked `.price-after-discount`): a card with
+  two unmarked prices is not guessed at. Parcel (a delivery) is left out by the recipe, so it is
+  never "the cheapest ride" (the first device run said "from ₹92": that was Parcel).
+- New recipe key `places` (rides only): the boxes holding pickup and drop. Only the app reads
+  what they hold (a saved page keeps no typed text), so the Britto page can say which trip the
+  prices are for: "Gate no. 3, Amity Rd → Noida Sec-18, Captain Vijyant Thapar Marg. Check it is
+  the same trip."
+- The flow: Travel → Rides → Compare rides → **Open Rapido** (bridge `readRide`, only a
+  `ride` recipe of that site on https) → the in-app browser reads Rapido's page every 2 s with the
+  same fare reader as a compare and shows a blue bar ("Britto read 4 Rapido prices, from ₹166")
+  → the newest reading is kept IN MEMORY for 15 minutes (`RideReadings`) → the Britto page asks
+  every 3 s (`rideReading`) and merges Rapido's rides into the ride list.
+- **Bug found on the device and fixed**: in the app the reader gets the fare CARDS alone, so a
+  logged-out Uber (it lists ride types with no prices and a "Login" button, measured) read as
+  "showed no fares" after 45 s instead of "log in": the words saying why are outside the cards.
+  The app reader now also reads the start of the page's visible text when the cards show no
+  fare. Same device afterwards: "Uber shows fares only after you log in" in 21 s.
+- **Rule added**: a recipe's card selector must be one part (no space or `>`), because the app
+  reads the cards without their page; the first Rapido recipe (`.fare-estimate-wrapper
+  .card-wrap`) would have read nothing in the app while every test passed. `checkFareRecipe`
+  now refuses that.
+- New `scripts/fares-reader.mjs`: the app's reader (built exactly as the app's
+  `britto-fares.js`) in real Chrome on saved pages served at their own address with their
+  scripts off (5 checks). It is what caught the two problems above as tests.
+- "Send Britto to a friend" on the app's Get the app page: Android's share sheet (WhatsApp…)
+  with the download link (bridge `shareApp`, at most 500 characters).
+
+**Verified (local, this session):**
+- `npm test` 143/143 · typecheck both configs · `check:readers` · `scripts/fares-reader.mjs` 5/5 ·
+  Android unit tests 33/33 (new `RideReadingsTest` 3) · `scripts/app.mjs` 32/32 (release APK
+  0.6.0) · `npm run prove` 133/133 (real Worker, real amazon.in).
+- Every new check proved able to fail: 7 new mutants (116 in all), each caught exactly (run one
+  by one: Rapido two-price card, two-part card selector, app reader without the page words,
+  one trip box read, readings kept too long, flight recipe opened as a ride, share text
+  unchecked); plus by hand: the Parcel rule, Uber's new login words, the 15-minute limit.
+- On the test phone (debug build 0.6.0-dev, Android 14 emulator, local site): Compare rides →
+  Uber "log in" (the test phone's Uber login had expired) → Open Rapido → blue bar → trip typed
+  → bar "Britto read 5 Rapido prices, from ₹92" (before the Parcel fix) → back to Britto: "Rapido
+  4 rides from ₹166 · read at 5:08 pm", Auto ₹166, Cab Economy ₹284, Cab Premium ₹353, Cab XL
+  ₹570, and the trip line (screenshots). The reading survived a reload of the Britto page.
+- Release `web/download/britto.apk` 0.6.0 (7): 298,221 bytes, sha256 1fbf81f7…, signed by the
+  same certificate fbf25e7d… as 0.4.0/0.5.0 (installs over them).
+
+**NOT verified:**
+- The Parcel fix and the trip-line layout were checked on the device through the page (served
+  by the local site); the blue bar's text after the Parcel fix was not re-read on the device.
+- "Send Britto to a friend" opening WhatsApp's share sheet on a phone (unit-tested only).
+- Rapido on a real phone; a Rapido card with a discount (its markup was not seen: such a card
+  is skipped unless one price is marked as the price after the discount).
+- MakeMyTrip/Goibibo were not re-checked (the test phone ran out of memory and was restarted
+  twice; the 8 GB Mac swapped ~10 GB). Uber on the test phone needs a fresh login.
+- Photo search (Workers AI, allowed today by the owner) is not built: P11 part 4.

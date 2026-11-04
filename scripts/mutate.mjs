@@ -25,6 +25,8 @@ const PROVE = ['node', ['scripts/prove.mjs']];
 const EXTENSION = ['node', ['scripts/extension.mjs']];
 const APP = ['node', ['scripts/app.mjs']];
 const GRADLE_TEST = ['sh', ['-c', 'cd android && ./gradlew --no-daemon testDebugUnitTest 2>&1']];
+// The app's fare reader in a real Chrome (needs PW_DIR, as the other browser scripts).
+const FARES_READER = ['node', ['scripts/fares-reader.mjs']];
 
 export const MUTANTS = [
   {
@@ -596,6 +598,42 @@ export const MUTANTS = [
     name: 'abuse: every load counts as a view',
     file: 'api/app.ts', find: 'if (await rateLimit(env.DB, `view:${viewer}:${key}`, 1, 3_600_000, Date.now())) {', replace: 'if (viewer) {',
     run: PROVE, expect: [/views: three loads/], timeout: 900_000,
+  },
+  // ---- P11 part 3: Rapido read while the shopper looks; the app reader's own page words.
+  {
+    name: 'Rapido: a card showing two prices is read anyway',
+    file: 'web/fares.json', find: '"^[^₹]*(₹', replace: '"(₹',
+    run: FARES, expect: [/Rapido: every ride type/],
+  },
+  {
+    name: 'fare recipes: a card selector that needs the page is accepted',
+    file: 'core/fares.ts', find: 'parseSelector(v).parts.length > 1', replace: 'parseSelector(v).parts.length > 9',
+    run: FARES, expect: [/Rapido: every ride type/],
+  },
+  {
+    name: 'app reader: cards with no price never read the page\'s words',
+    file: 'android/js/fares.ts', find: "if (cards.length && reading.status !== 'fares') {", replace: 'if (false) {',
+    run: FARES_READER, expect: [/Uber logged out on its ride list/],
+  },
+  {
+    name: 'app reader: only the first of Rapido\'s trip boxes read',
+    file: 'android/js/fares.ts', find: 'reading.places = all(recipe.places, 2)', replace: 'reading.places = all(recipe.places, 1)',
+    run: FARES_READER, expect: [/the trip its boxes hold/, /before a trip is entered/],
+  },
+  {
+    name: 'ride readings kept long after they are fresh',
+    file: 'android/app/src/main/java/app/britto/RideReadings.java', find: 'if (now - at > FRESH_MS || at > now) {', replace: 'if (now - at > FRESH_MS * 100 || at > now) {',
+    run: GRADLE_TEST, expect: [/RideReadingsTest > keepsOnlyFaresAndOnlyWhileFresh/],
+  },
+  {
+    name: 'the bridge opens a flight recipe as a ride to read',
+    file: 'android/app/src/main/java/app/britto/SiteBridgeCore.java', find: '&& "ride".equals(recipe.optString("sector"))', replace: '',
+    run: GRADLE_TEST, expect: [/RideReadingsTest > bridgeOpensOnlyARideRecipeOnHttpsAndHandsBackTheReading/],
+  },
+  {
+    name: '"Send Britto to a friend" shares any text, however long',
+    file: 'android/app/src/main/java/app/britto/SiteBridgeCore.java', find: '!text.isEmpty() && text.length() <= 500 && share.text(text)', replace: 'share.text(text)',
+    run: GRADLE_TEST, expect: [/RideReadingsTest > sendBrittoToAFriendSharesThePagesTextOnlyWhenShort/],
   },
 ];
 

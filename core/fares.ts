@@ -11,7 +11,7 @@
 import { fieldValue } from './interpret.ts';
 import { parseRupees } from './money.ts';
 import type { Field } from './recipe.ts';
-import { compile, outerOf, selectAll, selectFirst, SelectorError } from './select.ts';
+import { compile, outerOf, parseSelector, selectAll, selectFirst, SelectorError } from './select.ts';
 import type { Paise } from './types.ts';
 
 export type FareSector = 'flight' | 'ride' | 'hotel';
@@ -44,6 +44,10 @@ export interface FareRecipe {
   area?: Field[];
   /** Hotels: whether the price is for one night or the whole stay (measured per site). */
   per?: 'night' | 'stay';
+  /** Rides whose trip is typed on the site's own page (Rapido: its address has no trip in it):
+   * the boxes holding the pickup and the drop, in that order. Only the app reads what they hold
+   * (a saved page keeps no typed text), so Britto can show which trip the fares are for. */
+  places?: string;
   /** Literal texts (any one, case-insensitive, in the page's visible text) of a person check. */
   check: string[];
   /** Literal texts meaning the fares show only after the shopper logs in (rides). */
@@ -195,7 +199,7 @@ export function readFares(recipe: FareRecipe, html: string, url: string, when?: 
 }
 
 const FIELD_KEYS = new Set(['selector', 'attribute', 'regex', 'match', 'squash', 'replace', 'sub_regex']);
-const RECIPE_KEYS = new Set(['site', 'sector', 'verified', 'page', 'items', 'label', 'price', 'depart', 'arrive', 'origin', 'destination', 'duration', 'stops', 'eta', 'check', 'login', 'ask', 'max', 'strip', 'area', 'per']);
+const RECIPE_KEYS = new Set(['site', 'sector', 'verified', 'page', 'items', 'label', 'price', 'depart', 'arrive', 'origin', 'destination', 'duration', 'stops', 'eta', 'check', 'login', 'ask', 'max', 'strip', 'area', 'per', 'places']);
 const STRIP_KEYS = new Set(['items', 'day', 'price', 'active']);
 
 /** Everything wrong with a recipe ([] = usable). A recipe that fails is never run. */
@@ -214,7 +218,15 @@ export function checkFareRecipe(input: unknown): string[] {
     if (typeof v !== 'string') { errs.push(`${name}: a selector`); return; }
     try { compile(v); } catch (e) { errs.push(`${name}: ${e instanceof SelectorError ? e.message : 'bad selector'}`); }
   };
+  // The app hands the reader the cards alone (android/js/fares.ts: a results page can be 8.8 MB),
+  // so a card selector that needs the cards' ancestors ("#list .card") would find nothing there.
+  const alone = (name: string, v: unknown) => {
+    try {
+      if (typeof v === 'string' && parseSelector(v).parts.length > 1) errs.push(`${name}: one part only (no space or >): the app reads the cards without their page`);
+    } catch { /* reported by selector() */ }
+  };
   selector('items', r.items);
+  alone('items', r.items);
   const fieldList = (name: string, fields: unknown) => {
     if (!Array.isArray(fields) || !fields.length) { errs.push(`${name}: one or more fields`); return; }
     fields.forEach((f: Record<string, unknown>, i) => {
@@ -231,12 +243,17 @@ export function checkFareRecipe(input: unknown): string[] {
   }
   if (r.sector === 'hotel' && r.per !== 'night' && r.per !== 'stay') errs.push('per: night or stay (a hotel price is one or the other)');
   if (r.sector !== 'hotel' && r.per !== undefined) errs.push('per: hotels only');
+  if (r.places !== undefined) {
+    if (r.sector !== 'ride') errs.push('places: rides only');
+    else selector('places', r.places);
+  }
   if (r.strip !== undefined) {
     const st = r.strip as Record<string, unknown>;
     if (!st || typeof st !== 'object') errs.push('strip: an object');
     else {
       for (const k of Object.keys(st)) if (!STRIP_KEYS.has(k)) errs.push(`strip: unknown key ${k}`);
       selector('strip.items', st.items);
+      alone('strip.items', st.items);
       selector('strip.active', st.active);
       fieldList('strip.day', st.day);
       fieldList('strip.price', st.price);

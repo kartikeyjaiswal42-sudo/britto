@@ -69,8 +69,26 @@
    "price": [{ "selector": ["li"], "attribute": "innerText", "regex": ["(₹\\s?[\\d,]+(?:\\.\\d{1,2})?)"] }],
    "eta": [{ "selector": ["[data-testid=\"product_selector.list_item.eta_string\"]"], "attribute": "innerText" }],
    "check": ["are you a person or a robot", "verify you are human"],
-   "login": ["uber journey login", "uber login loading"],
+   "login": ["uber journey login", "uber login loading", "login choose a ride"],
    "ask": ["which airline?"]
+  },
+  {
+   "site": "rapido", "sector": "ride", "verified": "2026-11-04",
+   "page": "^https://m\\.rapido\\.bike/",
+   "items": "div.card-wrap",
+   "label": [
+    { "selector": [".card-header-wrap img"], "attribute": "alt", "regex": ["^\\s*(?![Pp]arcel\\b)(\\S.*?)\\s*$"] },
+    { "selector": [".card-content span"], "attribute": "innerText", "regex": ["^\\s*(?![Pp]arcel\\b)(\\S.*?)\\s*$"] }
+   ],
+   "price": [
+    { "selector": [".price-after-discount"], "attribute": "innerText", "regex": ["(₹\\s?[\\d,]+(?:\\.\\d{1,2})?)"] },
+    { "selector": [".card-wrap"], "attribute": "innerText", "regex": ["^[^₹]*(₹\\s?[\\d,]+(?:\\.\\d{1,2})?)[^₹]*$"] }
+   ],
+   "eta": [{ "selector": [".eta-indication"], "attribute": "innerText" }],
+   "places": "input.location-ip",
+   "check": ["verify you are human", "are you a robot"],
+   "login": ["enter your mobile number", "get an sms to confirm your number"],
+   "ask": ["book your hassle-free trip with rapido"]
   },
   {
    "site": "booking", "sector": "hotel", "verified": "2026-11-04", "per": "stay",

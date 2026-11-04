@@ -39,6 +39,12 @@ below is checked by `npm run prove` against a real local Worker unless it says o
   text from the page reaches the script the app runs (FareJobTest "refused:
   2026-11-20\");alert(1);//").
 - **Status-bar colours** from the page must be `#RRGGBB`; anything else paints nothing.
+- **Rapido is read while the shopper looks** (P11 part 3): the Britto page can ask the app to
+  open only a `ride` recipe's own site, on https, and the reader runs in that page every 2 s
+  with nothing clicked or typed by the app; the shopper enters the trip. The newest reading is
+  kept in memory for 15 minutes and is handed only to the Britto site's own page.
+- **"Send Britto to a friend"** hands Android's share sheet at most 500 characters of text; the
+  shopper picks the app and the person.
 - **Fare alerts** are kept on the phone only. At most 3 routes, each checked every 6 hours:
   at most 12 travel-site page loads per phone in 6 hours. That is about what the shopper
   would cause by searching themselves.

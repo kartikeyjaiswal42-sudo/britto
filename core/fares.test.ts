@@ -9,7 +9,7 @@ import { clock, fareStrip, flightName, groupFlights, groupHotels, hotelKey, othe
 // is its first 20 fare cards, exactly as the app hands them to the reader (its whole page is
 // 8.8 MB); Uber's is only the ride list (the full page holds places from the logged-in account).
 const recipes = (JSON.parse(readFileSync(new URL('../web/fares.json', import.meta.url), 'utf8')) as { recipes: FareRecipe[] }).recipes;
-const recipe = (site: string, sector = 'flight') => recipes.find((r) => r.site === site && (r.site === 'uber' || r.sector === sector))!;
+const recipe = (site: string, sector = 'flight') => recipes.find((r) => r.site === site && (r.sector === 'ride' || r.sector === sector))!;
 const page = (name: string) => {
   const html = readFileSync(new URL(`../test/fixtures/${name}`, import.meta.url), 'utf8');
   const url = /^<!-- saved by the Britto app[^>]*? from (\S+)/.exec(html)?.[1];
@@ -24,7 +24,7 @@ const rows = (r: ReturnType<typeof readFares>): FareRow[] => (r.status === 'fare
 const find = (list: FareRow[], depart: string, arrive: string) => list.find((r) => r.depart === depart && r.arrive === arrive);
 
 test('fare recipes: every one in web/fares.json is usable, and refusals are real', () => {
-  assert.deepEqual(recipes.map((r) => `${r.site}:${r.sector}`), ['ixigo:flight', 'makemytrip:flight', 'goibibo:flight', 'easemytrip:flight', 'uber:ride', 'booking:hotel', 'cleartrip:hotel']);
+  assert.deepEqual(recipes.map((r) => `${r.site}:${r.sector}`), ['ixigo:flight', 'makemytrip:flight', 'goibibo:flight', 'easemytrip:flight', 'uber:ride', 'rapido:ride', 'booking:hotel', 'cleartrip:hotel']);
   for (const r of recipes) assert.deepEqual(checkFareRecipe(r), [], r.site);
   const ok = recipe('ixigo');
   assert.match(checkFareRecipe({ ...ok, items: 'div:first-child' }).join(), /items/);
@@ -81,6 +81,8 @@ test('Uber: every ride with its fare (paise kept), the struck-out fare never tak
 
 test('pages without fares say why: log in, a person check, another page, still loading', () => {
   assert.equal(read('uber', 'fares-uber-logged-out-2026-11-04.html').status, 'login');
+  // Logged out on the ride list itself (2026-11-04 16:37, the test phone): ride types, no prices.
+  assert.equal(read('uber', 'fares-uber-logged-out-list-2026-11-04.html').status, 'login');
   // Skyscanner's own "Are you a person or a robot?" page, read with a recipe for its address.
   const sky = page('fares-skyscanner-person-check-2026-11-04.html');
   assert.equal(readFares({ ...recipe('ixigo'), site: 'skyscanner', page: '^https://www\\.skyscanner\\.co\\.in/' }, sky.html, sky.url).status, 'check');
@@ -95,6 +97,43 @@ test("Uber's airline question (an airport drop) is its own answer, never taken f
   const asked = '<html><body><h1>Which airline?</h1><p>Indira Gandhi International Airport</p><ul><li>Air India Terminal 3</li><li>IndiGo Terminal 1, Terminal 3</li></ul><button>Next</button><button>Skip</button></body></html>';
   assert.equal(readFares(recipe('uber'), asked, 'https://m.uber.com/go/home?drop').status, 'ask');
   assert.match(checkFareRecipe({ ...recipe('uber'), ask: ['air'] }).join(), /ask/);
+});
+
+test('Rapido: every ride type with its fare, read from the ride list its own page showed', () => {
+  const r = read('rapido', 'fares-rapido-amity-sector18-2026-11-04-list.html');
+  assert.deepEqual(rows(r).map((x) => [x.label, x.price, x.eta]), [
+    ['Auto', 16200, '2 mins'], ['Cab Economy', 37600, '2 mins'], ['Cab Premium', 48800, '2 mins'], ['Cab XL', 78800, '2 mins'],
+  ]);
+  assert.equal(r.status === 'fares' && r.cheapest, 16200, 'Parcel (₹98, a delivery, not a ride) is never the cheapest ride');
+  // A card showing two prices is never guessed at: the price after a discount, or nothing.
+  const p = page('fares-rapido-amity-sector18-2026-11-04-list.html');
+  const two = p.html.replace('<div _ngcontent-ucj-c66="">₹ 162</div>', '<div _ngcontent-ucj-c66=""><span class="price-prior-discount">₹ 200</span> <span>₹ 162</span></div>');
+  assert.notEqual(two, p.html);
+  assert.equal(rows(readFares(recipe('rapido'), two, p.url)).find((x) => x.label === 'Auto'), undefined, 'two prices, neither marked: not read');
+  const marked = two.replace('<span>₹ 162</span>', '<span class="price-after-discount">₹ 162</span>');
+  assert.equal(rows(readFares(recipe('rapido'), marked, p.url)).find((x) => x.label === 'Auto')?.price, 16200, 'the price after the discount');
+  // Rapido's own words (2026-11-04, on the test phone's screen): its login, and its home page
+  // before a trip is entered (the trip is typed on Rapido's page: its address holds none).
+  const login = '<html><body><p>Hey there!</p><h2>Enter your mobile number</h2><p>You\u2019ll get an SMS to confirm your number</p><span>+91</span><button>Next</button></body></html>';
+  assert.equal(readFares(recipe('rapido'), login, 'https://m.rapido.bike/verify-phonenumber').status, 'login');
+  const home = '<html><body><h1>Welcome to Rapido!</h1><p>Book your hassle-free trip with Rapido</p><p>Our Services</p><p>Bike</p><p>Auto</p><p>Car</p><p>Parcel</p></body></html>';
+  assert.equal(readFares(recipe('rapido'), home, 'https://m.rapido.bike/home').status, 'ask');
+  assert.equal(readFares(recipe('rapido'), p.html, 'https://www.rapido.bike/').status, 'other_page');
+  assert.match(checkFareRecipe({ ...recipe('rapido'), sector: 'flight' }).join(), /places: rides only/);
+  assert.match(checkFareRecipe({ ...recipe('rapido'), places: 'input:focus' }).join(), /places/);
+  // In the app the cards reach the reader without their page: read them that way too.
+  const cards = [...p.html.matchAll(/<div _ngcontent-ucj-c66="" class="card-wrap">[\s\S]*?₹ \d+<\/div><!----><!----><\/div>/g)].map((m) => m[0]);
+  assert.equal(cards.length, 5);
+  assert.equal(rows(readFares(recipe('rapido'), `<html><body><div class="britto-strip"></div><div class="britto-items">${cards.join('')}</div></body></html>`, p.url)).length, 4);
+  assert.match(checkFareRecipe({ ...recipe('rapido'), items: '.fare-estimate-wrapper .card-wrap' }).join(), /items: one part only/);
+});
+
+test('rides from two apps: one list, cheapest first, parcel left out', () => {
+  const uber = rows(read('uber', 'fares-uber-cp-del-t3-2026-11-04-list.html'));
+  const rapido = rows(read('rapido', 'fares-rapido-amity-sector18-2026-11-04-list.html'));
+  const out = rideRows([{ id: 'uber', name: 'Uber', url: '', status: 'fares', rows: uber }, { id: 'rapido', name: 'Rapido', url: '', status: 'fares', rows: rapido }]);
+  assert.equal(out.length, 9 + 4);
+  assert.deepEqual(out.slice(0, 3).map((r) => [r.site.id, r.label, r.price]), [['rapido', 'Auto', 16200], ['uber', 'Bike Saver', 16461], ['uber', 'Bike', 18801]]);
 });
 
 test('rides: cheapest first, parcel delivery left out', () => {

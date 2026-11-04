@@ -8,6 +8,8 @@
 // second and a half would make a phone crawl. With no cards yet (a page still loading, a "are you a
 // person?" page, a login page) the whole page is read, which is small. The site's date strip
 // (recipe.strip) is handed over beside the cards, and dated from the searched day (`when.date`).
+// A ride site whose trip is typed on its own page (recipe.places: Rapido) also says what its
+// pickup and drop boxes hold, so the Britto page can show which trip the fares are for.
 import { readFares, type FareRecipe } from '../../core/fares.ts';
 
 const all = (selector: string, max: number): Element[] => {
@@ -22,10 +24,20 @@ export function read(recipe: FareRecipe, when?: { date?: string }): string {
   try {
     const cards = all(recipe.items, (recipe.max ?? 40) * 2);
     const strip = recipe.strip ? all(recipe.strip.items, 62) : [];
-    const html = cards.length
-      ? `<html><body><div class="britto-strip">${strip.map((c) => c.outerHTML).join('')}</div><div class="britto-items">${cards.map((c) => c.outerHTML).join('')}</div></body></html>`
-      : document.documentElement?.outerHTML ?? ''; // no document yet while the first page loads
-    return JSON.stringify(readFares(recipe, html, location.href, when?.date));
+    const only = (extra: string) => `<html><body><div class="britto-strip">${strip.map((c) => c.outerHTML).join('')}</div><div class="britto-items">${cards.map((c) => c.outerHTML).join('')}</div>${extra}</body></html>`;
+    const html = cards.length ? only('') : document.documentElement?.outerHTML ?? ''; // no document yet while the first page loads
+    let reading: Record<string, unknown> = { ...readFares(recipe, html, location.href, when?.date) };
+    if (cards.length && reading.status !== 'fares') {
+      // Cards but no fare on them (Uber logged out lists its rides without prices, measured
+      // 2026-11-04): the words saying why ("Login") are outside the cards, so read the page's
+      // visible text too, its start only (a log-in or a question is at the top).
+      const words = (document.body?.innerText ?? '').slice(0, 20_000).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+      reading = { ...readFares(recipe, only(`<div class="britto-text">${words}</div>`), location.href, when?.date) };
+    }
+    if (recipe.places) {
+      reading.places = all(recipe.places, 2).map((e) => String((e as HTMLInputElement).value ?? '').replace(/\s+/g, ' ').trim().slice(0, 120));
+    }
+    return JSON.stringify(reading);
   } catch (e) {
     // Still "waiting" for the rules (FareJob), but the app logs the error: a reader that throws
     // must never pass for a page with no fares.
