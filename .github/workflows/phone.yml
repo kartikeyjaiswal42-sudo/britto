@@ -18,6 +18,10 @@ on:
       - 'scripts/phone-ci.mjs'
       - '.github/workflows/phone.yml'
 
+# Writes its results to the phone-ci-results branch (sessions on the Mac read them with git).
+permissions:
+  contents: write
+
 jobs:
   phone:
     runs-on: ubuntu-latest
@@ -68,3 +72,21 @@ jobs:
             phone-ci/
             wrangler.log
           if-no-files-found: warn
+      # The same results on a branch of their own (only these files), so a session without the
+      # GitHub CLI reads them with `git fetch origin phone-ci-results`.
+      - name: Results to the phone-ci-results branch
+        if: always()
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/res"
+          cp -r phone-ci/. "$RUNNER_TEMP/res/" 2>/dev/null || true
+          cp wrangler.log "$RUNNER_TEMP/res/" 2>/dev/null || true
+          cd "$RUNNER_TEMP/res"
+          echo "run ${{ github.run_id }} for ${{ github.sha }}: ${{ job.status }}" > RUN.txt
+          git init -q -b phone-ci-results
+          git config user.name "phone-ci"
+          git config user.email "phone-ci@users.noreply.github.com"
+          git add -A
+          git commit -qm "phone test for ${{ github.sha }}"
+          git push -qf "https://x-access-token:${TOKEN}@github.com/${{ github.repository }}.git" phone-ci-results
