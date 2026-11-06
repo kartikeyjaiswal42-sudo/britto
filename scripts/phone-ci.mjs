@@ -223,7 +223,7 @@ function tapSystem(ids, texts) {
   check('search page in the app offers "Search N more stores"', !!shopButton, await ev(`document.querySelector('#other-stores')?.innerText ?? null`).catch(() => null));
   if (shopButton) {
     await ev(`document.querySelector('#shop-search-run').click(), 1`);
-    const shopDone = await until(`(() => { const s = [...document.querySelectorAll('#other-stores .store-results')]; return s.length && s.every((x) => !['queued', 'loading'].includes(x.dataset.status)) ? s.length : null; })()`, 150000, 2000);
+    const shopDone = await until(`(() => { const s = [...document.querySelectorAll('#other-stores .store-results')]; return s.length && s.every((x) => x.dataset.state === 'done') ? s.length : null; })()`, 150000, 2000);
     const stores = await ev(`[...document.querySelectorAll('#other-stores .store-results')].map((x) => ({ store: x.dataset.store, status: x.dataset.status, cards: x.querySelectorAll('.shop-card').length, first: x.querySelector('.shop-card')?.innerText.replace(/\\s+/g, ' ').slice(0, 160) ?? x.innerText.replace(/\\s+/g, ' ').slice(0, 160), priced: [...x.querySelectorAll('.shop-card')].filter((c) => /₹\\s?[\\d,]+/.test(c.innerText)).length }))`);
     check('every store searched on the phone ends with a status (no hang)', !!shopDone, stores);
     results.push({ name: 'store searches read in the app (info: which stores answered this US computer)', ok: true, got: stores });

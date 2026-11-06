@@ -438,7 +438,9 @@ function drawStoreResults(box, sites) {
   const done = sites.filter((s) => s.state === 'done').length;
   put(box,
     done < sites.length ? h('p', { class: 'fare-progress small' }, `Searching on your phone: ${done} of ${sites.length} stores done\u2026`) : null,
-    sites.map((s) => h('section', { class: 'store-results', 'data-store': s.id, 'data-status': s.status ?? 'queued' },
+    // data-state: a store's LAST reading can already say "listed" while it is still loading (the
+    // app waits for its products to stop changing), so "done" is the state, not the status.
+    sites.map((s) => h('section', { class: 'store-results', 'data-store': s.id, 'data-status': s.status ?? 'queued', 'data-state': s.state ?? 'queued' },
       h('div', { class: 'section-head' }, h('h3', {}, s.name), h('a', { class: 'small', href: s.url, rel: 'noopener' }, 'Open')),
       s.state !== 'done' ? h('p', { class: 'small muted' }, SHOP_STATUS[s.status] ?? SHOP_STATUS.loading)
         : s.status === 'listed' && s.rows?.length ? h('div', { class: 'row' }, s.rows.slice(0, 8).map((r) => h('a', { class: 'card shop-card', href: r.link ?? s.url, rel: 'noopener' },

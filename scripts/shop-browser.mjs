@@ -173,6 +173,7 @@ try {
   check('…each store\'s own search for the typed words', !!searched && searched.every((u) => /cello(%20|-)pen/i.test(u)), JSON.stringify(searched));
   const fkCards = await sp.locator('#other-stores .store-results[data-store=flipkart] .shop-card').count();
   check('…Flipkart\'s results listed with their prices', fkCards === Math.min(8, readings.flipkart.rows.length) && /₹799/.test(await sp.locator('#other-stores .store-results[data-store=flipkart]').innerText()), String(fkCards));
+  check('…every store section says it is done (data-state), not just its last status', (await sp.locator('#other-stores .store-results').evaluateAll((x) => x.every((e) => e.dataset.state === 'done'))));
   check('…Croma says it asks if you are a person', /asks if you are a person/.test(await sp.locator('#other-stores .store-results[data-store=croma]').innerText().catch(() => '')));
   await sp.evaluate(() => window.scrollTo(500, 0));
   check('…no horizontal scroll', (await sp.evaluate(() => window.scrollX)) === 0);

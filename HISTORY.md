@@ -1822,6 +1822,13 @@ LOCAL database) · fares-reader 22 (13 + 9 new: the app's bundled reader on each
 page = the engine on the file) · test:app 32 + 36 Java (FareJobTest new case) · mutate: 8
 new/changed cases each red exactly as expected, every breakage point restored.
 
+**Phone test, later runs:** 0919f25 = the first run with the WHOLE cabs flow green on the
+emulator (fused + GPS test positions after the shell got the mock-location permission: pickup
+filled, Uber + Rapido compare finished saying "log in", the airport link from the location) and
+the shop step reading Flipkart (4 priced) and Reliance Digital (8); its one red was the test's:
+Croma's last reading said "listed" while it was still loading, so the sections now carry
+`data-state` and the test waits for "done".
+
 **NOT verified:** shop compare on a real phone in India (the emulator is in the USA; Snapdeal and
 Meesho unknown from India in the app); recipes against live pages after today (stores change
 their pages: `web/shops.json` is data, fixable without a new app); cabs and the rest of 0.8.0 on
