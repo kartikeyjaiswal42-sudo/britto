@@ -44,10 +44,10 @@ public class MainActivity extends ComponentActivity {
     private FrameLayout frame;
     private View statusStrip;
 
-    /** Only travel sites Britto opens in its own browser (core/services.ts) are read. */
+    /** Only sites in Britto's registry are opened and read: the travel and ride services and the
+     * shopping stores (core/services.ts, core/stores.ts), whose own search pages shop compare reads. */
     private boolean opensHere(String url) {
-        Stores.Store at = Stores.forUrl(this, url);
-        return at != null && at.service;
+        return Stores.forUrl(this, url) != null;
     }
 
     @Override

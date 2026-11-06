@@ -122,7 +122,7 @@ try {
     const tiles = await page.locator('a.store-tile[data-store]').evaluateAll((as) => as.map((a) => [a.dataset.store, a.getAttribute('href')]));
     check('Super Browse lists every store with its front page', JSON.stringify(tiles) === JSON.stringify(STORE_IDS.map((id) => [id, STORES[id].home])), JSON.stringify(tiles));
     const services = await page.locator('a.store-tile[data-service]').evaluateAll((as) => as.map((a) => [a.dataset.service, a.getAttribute('href'), a.closest('.store-grid')?.previousElementSibling?.textContent]));
-    check('…and the travel services under their sector headings (Rides, Flights, Hotels), each opening its own site', JSON.stringify(services) === JSON.stringify(SERVICES.map((s) => [s.id, s.home, SECTOR_NAMES[s.sector]])), JSON.stringify(services));
+    check('…and the services under their sector headings (More stores, Rides, Flights, Hotels), each opening its own site', JSON.stringify(services) === JSON.stringify(SERVICES.map((s) => [s.id, s.home, SECTOR_NAMES[s.sector]])), JSON.stringify(services));
     const tileBox = await page.locator('a.store-tile').first().boundingBox();
     check('…tiles are large enough to tap (≥ 44 px tall)', (tileBox?.height ?? 0) >= 44, JSON.stringify(tileBox));
     check('…the header links to it ("Shop")', (await page.locator('.top nav a', { hasText: 'Shop' }).getAttribute('href')) === '/browse');

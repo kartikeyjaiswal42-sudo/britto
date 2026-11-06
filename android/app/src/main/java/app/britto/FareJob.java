@@ -22,6 +22,12 @@ import java.util.regex.Pattern;
  */
 final class FareJob {
     static final int PARALLEL = 2;
+    /** Shop compare (core/shop.ts): a store's search page is lighter than a fare list, so three at once. */
+    static final int SHOP_PARALLEL = 3;
+    /** A store's search page shows its products at once (the nine measured 2026-11-06 did, in a
+     * phone-size Chrome, before 3 s): read it settled after 5 s, give up at 30 s. */
+    static final long SHOP_SETTLE_MS = 5_000;
+    static final long SHOP_TIMEOUT_MS = 30_000;
     static final int MAX_SITES = 10;
     /** Results pages keep adding fares for a while (ixigo: 6 flights at 15 s, 40 at 30 s, measured). */
     static final long SETTLE_MS = 15_000;
@@ -56,6 +62,8 @@ final class FareJob {
         final String date;
         /** A ride typed on the site's own page (recipe.fill: Rapido): {"pickup", "drop"}, or null. */
         final JSONObject trip;
+        /** A store's search page (recipe.sector "shop"): its rows are products, not fares. */
+        final boolean shop;
         /** How far the reader got entering the trip (android/js/fill.ts), handed back each reading. */
         String stage = "";
         String state = "queued"; // queued | loading | done
@@ -75,6 +83,21 @@ final class FareJob {
             this.recipe = recipe;
             this.date = date;
             this.trip = trip;
+            boolean isShop = false;
+            try {
+                isShop = "shop".equals(new JSONObject(recipe).optString("sector", ""));
+            } catch (JSONException e) {
+                isShop = false;
+            }
+            this.shop = isShop;
+        }
+
+        long settleMs() {
+            return shop ? SHOP_SETTLE_MS : SETTLE_MS;
+        }
+
+        long timeoutMs() {
+            return shop ? SHOP_TIMEOUT_MS : TIMEOUT_MS;
         }
 
         /** The reader's second argument: {"date": …, "trip": …, "stage": …}, or {}. */
@@ -127,10 +150,15 @@ final class FareJob {
     /** Sites to open now (marked loading). */
     List<Site> toStart(long now) {
         int loading = 0;
-        for (Site s : sites.values()) if (s.state.equals("loading")) loading++;
+        boolean allShop = true;
+        for (Site s : sites.values()) {
+            if (s.state.equals("loading")) loading++;
+            if (!s.shop) allShop = false;
+        }
+        int parallel = allShop ? SHOP_PARALLEL : PARALLEL;
         List<Site> out = new ArrayList<>();
         for (Site s : sites.values()) {
-            if (loading >= PARALLEL) break;
+            if (loading >= parallel) break;
             if (!s.state.equals("queued")) continue;
             s.state = "loading";
             s.status = "loading";
@@ -171,8 +199,8 @@ final class FareJob {
         }
         String stage = read == null ? null : read.optString("stage", null);
         if (s.trip != null && stage != null && STAGE.matcher(stage).matches()) s.stage = stage;
-        boolean settled = s.same >= SAME_READS - 1 && now - s.startedAt >= SETTLE_MS && !"waiting".equals(s.status) && !"loading".equals(s.status);
-        if (settled || now - s.startedAt >= TIMEOUT_MS) {
+        boolean settled = s.same >= SAME_READS - 1 && now - s.startedAt >= s.settleMs() && !"waiting".equals(s.status) && !"loading".equals(s.status);
+        if (settled || now - s.startedAt >= s.timeoutMs()) {
             s.state = "done";
             if (s.status.equals("loading")) s.status = "failed";
             return true;
@@ -204,7 +232,7 @@ final class FareJob {
             JSONArray list = new JSONArray();
             for (Site s : sites.values()) {
                 JSONObject o = new JSONObject().put("id", s.id).put("state", s.state).put("status", s.status);
-                if (s.read != null && "fares".equals(s.status)) {
+                if (s.read != null && ("fares".equals(s.status) || "listed".equals(s.status))) {
                     o.put("rows", s.read.optJSONArray("rows")).put("cheapest", s.read.optLong("cheapest"));
                     if (s.read.optJSONArray("strip") != null) o.put("strip", s.read.optJSONArray("strip"));
                     if (s.read.optJSONArray("places") != null) o.put("places", s.read.optJSONArray("places"));

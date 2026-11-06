@@ -8,6 +8,8 @@ import { drawChart } from './chart.js';
 import { mergeOrders, summarize } from './spend.js';
 import { airportIndex, flightSearch, hotelSearch, MAX_DAYS_AHEAD, rideCompare, rideSearch, todayIST } from './travel.js';
 import { fareStrip, groupFlights, groupHotels, otherAirport, rideRows, siteSummary, tripTotal } from './compare.js';
+import { bestMatch, searchWordsFor } from './match.js';
+import { compareView, shopSearchUrl, storesFor } from './shop.js';
 
 const app = document.getElementById('app');
 
@@ -302,24 +304,175 @@ async function productPage(key) {
   if (location.hash === '#alert') document.getElementById('alert')?.scrollIntoView();
 }
 
-/** The same product on the other stores: their own search pages for its first words. Britto
- * cannot say it is the same item (stores name products differently), so these are searches.
- * The search addresses come from the server (core/stores.ts), never a copy here. */
+// ---- Compare prices across stores (core/shop.ts, web/shop.js, web/match.js). In the Britto app
+// (0.8.0+), each store's own SEARCH page for the product opens on this phone, under this page, and
+// the products it shows are read there: Britto's server asks Flipkart, Myntra, Croma and the rest
+// nothing (they refuse it, measured). A result is called the same product only when its title
+// says nothing otherwise; a search-list price never enters the price history. On the website,
+// Amazon.in's search is read by the server (api/listing.ts) for products from other stores.
+let shopRecipes = null;
+const loadShopRecipes = () => (shopRecipes ??= fetch('/shops.json').then((r) => r.json()).then((j) => j.recipes ?? []).catch(() => { shopRecipes = null; return []; }));
+/** The app reads store search pages from 0.8.0 (its reader knows shop recipes and may open stores). */
+const appCanShop = () => !!appVersion && (appVersion[0] > 0 || appVersion[1] >= 8);
+const COMPARE_KEEP_MS = 6 * 3_600_000;
+const compareKey = (key) => `britto.compare.${key}`;
+function savedCompare(key) {
+  try {
+    const v = JSON.parse(localStorage.getItem(compareKey(key)) ?? 'null');
+    return v && Date.now() - v.at < COMPARE_KEEP_MS ? v : null;
+  } catch { return null; }
+}
+function saveCompare(key, sites) {
+  try { localStorage.setItem(compareKey(key), JSON.stringify({ at: Date.now(), sites })); } catch { /* a full or blocked store: shown, not kept */ }
+}
+const SHOP_STATUS = {
+  queued: 'Waiting…',
+  loading: 'Checking…',
+  check: 'asks if you are a person: open it and answer there',
+  empty: 'found nothing for this',
+  waiting: 'showed no products for this',
+  failed: 'did not open',
+};
+
 function compareSection(view) {
-  const words = (view.title ?? '').replace(/[|,(:].*$/, '').replace(/[^\p{L}\p{N}\s.+-]/gu, ' ').split(/\s+/).filter(Boolean).slice(0, 6).join(' ');
-  if (words.length < 3) return null;
+  const words = searchWordsFor(view.title ?? '');
+  if (!words) return null;
   const box = h('section', { class: 'compare', id: 'compare' });
-  storesOnce().then((stores) => {
+  const here = view.stats?.inStock !== false ? view.stats?.current ?? null : null;
+  Promise.all([storesOnce(), loadShopRecipes()]).then(([stores, recipes]) => {
+    const recipesHere = storesFor(view.title, recipes, view.store.id);
+    const names = new Map([...stores.map((s) => [s.id, s.name]), ...(servicesCache ?? []).map((s) => [s.id, s.name])]);
     const links = stores.filter((s) => s.id !== view.store.id).map((s) => ({ store: s.id, name: s.name, url: searchLink(s, words) }));
-    put(box, h('h2', {}, 'Check other stores'),
-      h('p', { class: 'muted small' }, `Searches for “${words}”. Stores name products differently, so check it is the same item.`),
-      storeButtons(links));
+    const head = h('div', { class: 'section-head' }, h('h2', {}, 'Compare prices'));
+    const out = h('div', { class: 'shop-out' });
+    const server = h('div', { class: 'shop-server' });
+    const more = h('details', { class: 'shop-more' }, h('summary', {}, 'Search other stores yourself'),
+      h('p', { class: 'muted small' }, `Searches for \u201c${words}\u201d. Stores name products differently, so check it is the same item.`), storeButtons(links));
+    const sites = recipesHere.map((r) => ({ id: r.store, name: names.get(r.store) ?? r.store, url: shopSearchUrl(r, words), recipe: r }));
+    if (inApp && appCanShop() && sites.length) {
+      const run = h('button', { type: 'button', class: 'button', id: 'shop-run' }, `Check prices on ${sites.length} stores`);
+      const saved = savedCompare(view.key);
+      run.onclick = () => {
+        run.textContent = 'Check again';
+        liveShop(out, sites, (read) => drawShop(out, view, read, here, null), (read) => saveCompare(view.key, read));
+      };
+      put(box, head, h('p', { class: 'muted small' }, `Britto opens each store\u2019s own search for \u201c${words}\u201d on your phone and reads its prices. Nothing is bought or added to a cart.`), run, out, server, more);
+      if (saved) { run.textContent = 'Check again'; drawShop(out, view, saved.sites, here, saved.at); }
+    } else {
+      put(box, head, server, inApp
+        ? h('p', { class: 'notice' }, 'Update the Britto app (Get the app) to see this product\u2019s price on Flipkart, Croma, Myntra and more, read on your phone.')
+        : h('p', { class: 'notice' }, h('b', {}, 'See its price on Flipkart, Croma, Myntra and more: '), 'the Britto Android app reads each store\u2019s own page on your phone. ', h('a', { href: '/app' }, 'Get the app')), more);
+    }
+    // Amazon.in, read by Britto's server, for a product from another store (works everywhere).
+    if (view.store.id !== 'amazon') serverAmazon(server, view, words, here);
   }).catch(() => {});
   return box;
 }
 
+/** Amazon.in's own search for the product, read by the server; its best match, if any. */
+async function serverAmazon(box, view, words, here) {
+  let res;
+  try { res = await storeSearch(words); } catch { return; }
+  const amazon = res.stores?.find((s) => s.store === 'amazon' && s.status === 'listed');
+  const rows = (amazon?.items ?? []).filter((i) => i.price != null).map((i) => ({ title: i.title, price: i.price, mrp: i.mrp, image: i.image, link: `/p/${i.key}` }));
+  const best = bestMatch(view.title, rows);
+  if (!best) return;
+  put(box, h('ul', { class: 'shop-list' }, shopRow({ id: 'amazon', name: 'Amazon.in', url: best.row.link, done: true, status: 'listed', best, diff: here != null ? best.row.price - here : null }, `As Amazon.in\u2019s search showed it ${ago(amazon.at)}`)));
+}
+
+/**
+ * Opens each store's search page on this phone (FareRunner reads it with its shop recipe) and
+ * calls draw(sites with their state) as stores finish, then done(sites) once all are.
+ */
+async function liveShop(box, sites, draw, done = () => {}) {
+  const ask = siteBridge();
+  if (!ask) return;
+  const started = await ask({ type: 'compareFares', sites: sites.map(({ id, url, recipe }) => ({ id, url, recipe })) });
+  if (!started?.ok) { put(box, h('p', { class: 'error' }, 'This copy of the app could not open the stores.')); return; }
+  const run = ++fareRun;
+  put(box, h('p', { class: 'muted' }, `Opening ${sites.map((s) => s.name).join(', ')} on your phone\u2026`));
+  const tick = async () => {
+    if (run !== fareRun || !box.isConnected) { if (run === fareRun) ask({ type: 'compareStop' }); return; }
+    const st = await ask({ type: 'compareStatus', job: started.job });
+    if (!st?.ok || run !== fareRun) return;
+    const state = new Map(st.sites.map((x) => [x.id, x]));
+    const read = sites.map(({ id, name, url }) => ({ id, name, url, ...state.get(id) }));
+    draw(read);
+    if (!st.done) setTimeout(tick, 1000);
+    else done(read.map(({ id, name, url, state: s, status, rows }) => ({ id, name, url, state: s, status, rows })));
+  };
+  tick();
+}
+
+/** The search page in the app: every other store's own results for the words, read on this phone. */
+function otherStoresSearch(box, q) {
+  Promise.all([storesOnce(), loadShopRecipes()]).then(([stores, recipes]) => {
+    const names = new Map([...stores.map((s) => [s.id, s.name]), ...(servicesCache ?? []).map((s) => [s.id, s.name])]);
+    const sites = storesFor(q, recipes, 'amazon').map((r) => ({ id: r.store, name: names.get(r.store) ?? r.store, url: shopSearchUrl(r, q), recipe: r }));
+    if (!sites.length) return;
+    const out = h('div', { class: 'shop-search-out' });
+    const go = h('button', { type: 'button', class: 'button', id: 'shop-search-run' }, `Search ${sites.length} more stores`);
+    go.onclick = () => { go.remove(); liveShop(out, sites, (read) => drawStoreResults(out, read)); };
+    put(box, h('div', { class: 'section-head' }, h('h2', {}, 'On other stores')),
+      h('p', { class: 'section-note' }, `${sites.map((s) => s.name).join(', ')}: each store\u2019s own search, opened and read on your phone.`), go, out);
+  }).catch(() => {});
+}
+
+function drawStoreResults(box, sites) {
+  const done = sites.filter((s) => s.state === 'done').length;
+  put(box,
+    done < sites.length ? h('p', { class: 'fare-progress small' }, `Searching on your phone: ${done} of ${sites.length} stores done\u2026`) : null,
+    sites.map((s) => h('section', { class: 'store-results', 'data-store': s.id, 'data-status': s.status ?? 'queued' },
+      h('div', { class: 'section-head' }, h('h3', {}, s.name), h('a', { class: 'small', href: s.url, rel: 'noopener' }, 'Open')),
+      s.state !== 'done' ? h('p', { class: 'small muted' }, SHOP_STATUS[s.status] ?? SHOP_STATUS.loading)
+        : s.status === 'listed' && s.rows?.length ? h('div', { class: 'row' }, s.rows.slice(0, 8).map((r) => h('a', { class: 'card shop-card', href: r.link ?? s.url, rel: 'noopener' },
+          h('div', { class: 'thumb' }, r.image ? h('img', { src: r.image, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }) : null),
+          h('span', { class: 'title' }, r.title),
+          h('span', { class: 'price-line' }, h('b', {}, rupees(r.price)), r.mrp ? h('s', { class: 'small muted' }, rupees(r.mrp)) : null))))
+          : h('p', { class: 'small muted' }, SHOP_STATUS[s.status] ?? SHOP_STATUS.waiting))),
+    done === sites.length ? h('p', { class: 'muted small' }, 'Prices as each store\u2019s search showed them on your phone just now. Tap one to open it in that store: Britto shows its price history there.') : null);
+}
+
+function drawShop(box, view, sites, here, savedAt) {
+  const v = compareView(view.title, sites, here);
+  const best = v.cheapest;
+  const summary = !v.done ? h('p', { class: 'fare-progress small' }, `Checking prices on your phone: ${v.checked} of ${sites.length} stores done\u2026`)
+    : best && (here == null || best.best.row.price < here)
+      ? h('div', { class: 'shop-best' }, h('span', { class: 'small' }, here == null ? 'Lowest price found' : 'Cheaper elsewhere'), h('strong', {}, `${rupees(best.best.row.price)} on ${best.name}`),
+        here == null ? h('span', { class: 'small' }, `${view.store.name} shows no price for it now`) : h('span', { class: 'small' }, `${rupees(here - best.best.row.price)} less than on ${view.store.name}`))
+      : best ? h('div', { class: 'shop-best good' }, h('span', { class: 'small' }, `${view.store.name} is the cheapest`), h('strong', {}, rupees(here)), h('span', { class: 'small' }, `of the ${v.rows.filter((r) => r.best?.kind === 'same').length + 1} stores that have this exact product`))
+        : h('p', { class: 'small muted' }, v.rows.some((r) => r.best) ? 'No other store\u2019s search showed this exact product; similar ones are below.' : 'No other store\u2019s search showed this exact product.');
+  put(box, summary,
+    !v.done ? h('progress', { max: sites.length, value: v.checked, class: 'fare-bar' }) : null,
+    h('ul', { class: 'shop-list' }, v.rows.map((r) => shopRow(r))),
+    h('p', { class: 'muted small' }, `${savedAt ? `Checked ${ago(savedAt)} on this phone` : 'Prices as each store\u2019s search showed them on your phone'}. A search price can differ from the product page (offers, sizes, sellers): Britto starts tracking a product\u2019s own price when you open it.`));
+}
+
+/** One store's line: its best match (photo, price, same / similar), or why there is none. */
+function shopRow(r, note = null) {
+  const m = r.best;
+  const open = m?.row.link ?? r.url;
+  const named = (status) => h('span', { class: 'shop-what' }, h('b', {}, r.name), h('span', { class: 'small muted' }, status));
+  if (!r.done) return h('li', { class: 'shop-row pending', 'data-store': r.id, 'data-status': r.status ?? 'queued' }, h('span', { class: 'mono', 'data-mono': monogramOf(r.name) }), named(SHOP_STATUS[r.status] ?? SHOP_STATUS.loading));
+  if (!m) return h('li', { class: 'shop-row none', 'data-store': r.id, 'data-status': r.status },
+    h('span', { class: 'mono', 'data-mono': monogramOf(r.name) }),
+    named(r.status === 'listed' ? 'no matching product in its search' : SHOP_STATUS[r.status] ?? SHOP_STATUS.waiting),
+    h('a', { class: 'button secondary small', href: r.url, rel: 'noopener' }, 'Open'));
+  const diff = r.diff == null || r.diff === 0 ? null : r.diff < 0 ? h('span', { class: 'badge good' }, `${rupees(-r.diff)} less`) : h('span', { class: 'badge bad' }, `${rupees(r.diff)} more`);
+  return h('li', { class: `shop-row ${m.kind}`, 'data-store': r.id, 'data-status': r.status, 'data-kind': m.kind },
+    h('a', { class: 'shop-link', href: open, rel: 'noopener' },
+      m.row.image ? h('img', { src: m.row.image, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }) : h('span', { class: 'mono', 'data-mono': monogramOf(r.name) }),
+      h('span', { class: 'shop-what' },
+        h('b', {}, r.name),
+        h('span', { class: 'small shop-title' }, m.row.title),
+        h('span', { class: `badge ${m.kind === 'same' ? 'neutral' : 'warn'}` }, m.kind === 'same' ? 'Same product' : `Similar: ${m.why}`),
+        note ? h('span', { class: 'small muted' }, note) : null),
+      h('span', { class: 'shop-price' }, h('strong', {}, rupees(m.row.price)), m.row.mrp ? h('s', { class: 'small muted' }, rupees(m.row.mrp)) : null, diff)));
+}
+
 let storesCache = null;
-const storesOnce = () => (storesCache ??= getStores().then((r) => r.stores).catch((e) => { storesCache = null; throw e; }));
+let servicesCache = null;
+const storesOnce = () => (storesCache ??= getStores().then((r) => { servicesCache = r.services ?? []; return r.stores; }).catch((e) => { storesCache = null; throw e; }));
 function searchLink(store, words) {
   return store.search.url.replace('{q}', encodeURIComponent(words)).replace('{slug}', encodeURIComponent(words.toLowerCase().replace(/ /g, '-')));
 }
@@ -1032,7 +1185,11 @@ async function searchPage(q) {
   const tracked = h('section', { id: 'tracked' });
   const live = h('section', { id: 'live' }, h('div', { class: 'section-head' }, h('h2', {}, 'On Amazon.in now')), h('div', { class: 'grid skeleton' }, Array.from({ length: 6 }, () => h('div', { class: 'card ghost' }))));
   const others = h('section', { id: 'others' });
-  put(app, h('h1', {}, `Results for “${q}”`), tracked, live, others);
+  // In the app (0.8.0+), the other stores' own searches, read on the phone: not waiting for (or
+  // depending on) the server's Amazon search below.
+  const more = h('section', { id: 'other-stores' });
+  put(app, h('h1', {}, `Results for “${q}”`), tracked, live, more, others);
+  if (inApp && appCanShop() && siteBridge()) otherStoresSearch(more, q);
   searchProducts(q).then(({ results }) => {
     if (results.length) put(tracked, h('div', { class: 'section-head' }, h('h2', {}, 'With price history on Britto')), row(results, ''));
   }).catch(() => {});
@@ -1165,7 +1322,7 @@ const askHere = (ask) => Promise.race([ask({ type: 'here' }), new Promise((r) =>
  * where Britto reads the page you are looking at. In a normal browser the tiles just open the
  * store (the extension reads it there).
  */
-const SECTORS = [['ride', 'Rides'], ['flight', 'Flights'], ['hotel', 'Hotels']];
+const SECTORS = [['shop', 'More stores'], ['ride', 'Rides'], ['flight', 'Flights'], ['hotel', 'Hotels']];
 /** The design uses letter badges, not store logos: "Amazon.in" -> "A", "Reliance Digital" -> "RD". */
 const monogram = (name) => name.replace(/\.\w+$/, '').split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 
@@ -1177,7 +1334,8 @@ async function browsePage() {
     const list = services.filter((s) => s.sector === sector);
     return list.length ? [h('h2', {}, title), h('div', { class: 'store-grid' }, list.map((s) => h('a', { class: 'store-tile', href: s.home, rel: 'noopener', 'data-service': s.id, 'data-mono': monogram(s.name) },
       h('span', { class: 'store-name' }, s.name),
-      h('span', { class: 'small muted' }, inApp ? `Log in with your number on ${s.name}\u2019s own page; it stays on this phone.` : `Opens ${s.name}.`))))] : [];
+      h('span', { class: 'small muted' }, sector === 'shop' ? (inApp ? 'Its prices are compared on product pages' : `Opens ${s.name}.`)
+        : inApp ? `Log in with your number on ${s.name}\u2019s own page; it stays on this phone.` : `Opens ${s.name}.`))))] : [];
   };
   put(app, h('h1', {}, 'Super Browse'),
     h('p', { class: 'muted' }, inApp

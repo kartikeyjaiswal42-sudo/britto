@@ -1,0 +1,123 @@
+{
+ "about": "Shop recipes (core/shop.ts): how the Britto app reads the products a store's own search page shows on the shopper's phone, to compare one product across stores. Each was checked on the store's phone search page on its 'verified' day (test/fixtures/shop-*-cards.html). A search-list price is labelled as such and never enters a product's price history.",
+ "recipes": [
+  {
+   "store": "flipkart", "sector": "shop", "verified": "2026-11-06",
+   "search": "https://www.flipkart.com/search?q={q}",
+   "page": "^https://www\\.flipkart\\.com/search",
+   "items": "div.css-g5y9jx.r-1pi2tsx",
+   "title": [{ "selector": ["*"], "attribute": "textContent", "regex": ["^(?:(?:Sponsored|TRENDING|Trending|Bestseller|BESTSELLER|AD)\\s+)*(.+?)\\s+(?:\\d+%\\s+)?₹"] }],
+   "price": [
+    { "selector": ["*"], "attribute": "textContent", "regex": ["\\d+%\\s*₹\\s?[\\d,]+\\s+₹\\s?([\\d,]+)"] },
+    { "selector": ["*"], "attribute": "textContent", "regex": ["₹\\s?([\\d,]+)"] }
+   ],
+   "mrp": [{ "selector": ["div[style*=line-through]"], "attribute": "textContent" }],
+   "image": [{ "selector": ["img[src*=\"/image/\"]"], "attribute": "attr:src" }],
+   "link": [{ "selector": ["a[href*=\"/p/itm\"]"], "attribute": "attr:href" }],
+   "check": ["are you a human", "verify you are human", "unusual traffic"]
+  },
+  {
+   "store": "myntra", "sector": "shop", "verified": "2026-11-06",
+   "search": "https://www.myntra.com/{slug}?rawQuery={q}",
+   "page": "^https://www\\.myntra\\.com/",
+   "items": "a[aria-label^=plp_product_]",
+   "title": [{ "selector": ["img"], "attribute": "attr:alt" }, { "selector": ["h4"], "attribute": "textContent" }],
+   "price": [
+    { "selector": ["*"], "attribute": "textContent", "regex": ["₹\\s?[\\d,]+\\s+₹\\s?([\\d,]+)\\s+\\d+%\\s*OFF"] },
+    { "selector": ["*"], "attribute": "textContent", "regex": ["₹\\s?([\\d,]+)"] }
+   ],
+   "mrp": [{ "selector": ["*"], "attribute": "textContent", "regex": ["₹\\s?([\\d,]+)\\s+₹\\s?[\\d,]+\\s+\\d+%\\s*OFF"] }],
+   "image": [{ "selector": ["img"], "attribute": "attr:src" }],
+   "link": [{ "selector": ["*"], "attribute": "attr:href" }],
+   "check": ["verify you are human", "unusual traffic"]
+  },
+  {
+   "store": "croma", "sector": "shop", "verified": "2026-11-06",
+   "search": "https://www.croma.com/searchB?q={q}%3Arelevance&text={q}",
+   "page": "^https://www\\.croma\\.com/searchB",
+   "items": "li.product-item",
+   "title": [{ "selector": ["h3.product-title"], "attribute": "textContent" }],
+   "price": [{ "selector": ["[data-testid=new-price]"], "attribute": "textContent" }],
+   "mrp": [{ "selector": ["[data-testid=old-price]"], "attribute": "textContent" }],
+   "image": [{ "selector": ["div.product-img", "img"], "attribute": "attr:src" }],
+   "link": [{ "selector": ["h3.product-title", "a"], "attribute": "attr:href" }],
+   "check": ["verify you are human", "unusual traffic", "access denied"]
+  },
+  {
+   "store": "ajio", "sector": "shop", "verified": "2026-11-06",
+   "search": "https://www.ajio.com/search/?text={q}",
+   "page": "^https://www\\.ajio\\.com/search",
+   "items": "a.rilrtl-products-list__link",
+   "title": [
+    { "selector": ["img[alt^=\"Product image of\"]"], "attribute": "attr:alt", "regex": ["^Product image of (.+)$"] },
+    { "selector": [".name"], "attribute": "textContent" }
+   ],
+   "price": [{ "selector": [".price"], "attribute": "textContent" }],
+   "mrp": [{ "selector": [".orginal-price"], "attribute": "textContent" }],
+   "image": [{ "selector": ["img[alt^=\"Product image of\"]"], "attribute": "attr:src" }],
+   "link": [{ "selector": ["*"], "attribute": "attr:href" }],
+   "check": ["verify you are human", "unusual traffic", "access denied"]
+  },
+  {
+   "store": "meesho", "sector": "shop", "verified": "2026-11-06",
+   "search": "https://www.meesho.com/search?q={q}",
+   "page": "^https://www\\.meesho\\.com/search",
+   "items": "div[class*=ProductListItem__GridCol]",
+   "title": [{ "selector": ["[class*=ProductTitle]"], "attribute": "textContent" }],
+   "price": [{ "selector": ["[class*=PriceRow]"], "attribute": "textContent", "regex": ["₹\\s?([\\d,]+)"] }],
+   "image": [{ "selector": ["img[src*=\"images.meesho.com\"]"], "attribute": "attr:src" }],
+   "link": [{ "selector": ["a"], "attribute": "attr:href" }],
+   "check": ["verify you are human", "unusual traffic", "access denied"]
+  },
+  {
+   "store": "reliancedigital", "sector": "shop", "verified": "2026-11-06",
+   "search": "https://www.reliancedigital.in/products?q={q}",
+   "page": "^https://www\\.reliancedigital\\.in/products",
+   "items": "div.product-card",
+   "title": [{ "selector": [".product-card-title"], "attribute": "textContent" }],
+   "price": [{ "selector": [".price-container", ".price"], "attribute": "textContent" }],
+   "mrp": [{ "selector": [".mrp-amount"], "attribute": "textContent" }],
+   "image": [{ "selector": [".product-card-image", "img"], "attribute": "attr:src" }],
+   "link": [{ "selector": ["a.details-container"], "attribute": "attr:href" }],
+   "check": ["verify you are human", "unusual traffic", "access denied"]
+  },
+  {
+   "store": "tatacliq", "sector": "shop", "verified": "2026-11-06",
+   "search": "https://www.tatacliq.com/search/?searchCategory=all&text={q}",
+   "page": "^https://www\\.tatacliq\\.com/search",
+   "items": "div.plpGridItem",
+   "title": [{ "selector": [".plpImgHolder", "img"], "attribute": "attr:alt" }, { "selector": [".prdInfoDesc", "h2"], "attribute": "textContent" }],
+   "price": [{ "selector": [".prdPrice"], "attribute": "textContent", "regex": ["₹\\s?([\\d,]+)"] }],
+   "mrp": [{ "selector": [".oldPricee"], "attribute": "textContent", "regex": ["₹\\s?([\\d,]+)"] }],
+   "image": [{ "selector": [".plpImgHolder", "img"], "attribute": "attr:src" }],
+   "link": [{ "selector": [".plpImgHolder", "a"], "attribute": "attr:href" }],
+   "check": ["verify you are human", "unusual traffic", "access denied"]
+  },
+  {
+   "store": "nykaa", "sector": "shop", "verified": "2026-11-06",
+   "search": "https://www.nykaa.com/search/result/?q={q}",
+   "page": "^https://www\\.nykaa\\.com/search/result",
+   "items": "div.product-card-wrap",
+   "title": [{ "selector": ["img"], "attribute": "attr:alt" }],
+   "price": [
+    { "selector": ["*"], "attribute": "textContent", "regex": ["₹\\s?[\\d,]+\\s+₹\\s?([\\d,]+)\\s+\\d+%\\s*[Oo]ff"] },
+    { "selector": ["*"], "attribute": "textContent", "regex": ["₹\\s?([\\d,]+)"] }
+   ],
+   "mrp": [{ "selector": ["*"], "attribute": "textContent", "regex": ["₹\\s?([\\d,]+)\\s+₹\\s?[\\d,]+\\s+\\d+%\\s*[Oo]ff"] }],
+   "image": [{ "selector": ["img"], "attribute": "attr:src" }],
+   "check": ["verify you are human", "unusual traffic", "access denied"]
+  },
+  {
+   "store": "snapdeal", "sector": "shop", "verified": "2026-11-06",
+   "search": "https://www.snapdeal.com/search?keyword={q}",
+   "page": "^https://www\\.snapdeal\\.com/search",
+   "items": "a.sd-product-tuple",
+   "title": [{ "selector": [".product-name-info"], "attribute": "textContent" }],
+   "price": [{ "selector": [".product-final-price"], "attribute": "textContent" }],
+   "mrp": [{ "selector": [".product-mrp"], "attribute": "textContent" }],
+   "image": [{ "selector": ["img[src*=sdlcdn]"], "attribute": "attr:src" }],
+   "link": [{ "selector": ["*"], "attribute": "attr:href" }],
+   "check": ["verify you are human", "unusual traffic", "access denied"]
+  }
+ ]
+}

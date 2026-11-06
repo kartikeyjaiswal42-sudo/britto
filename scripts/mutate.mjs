@@ -20,6 +20,7 @@ const GROCERY = ['node', ['--test', 'core/grocery.test.ts']];
 const TRAVEL = ['node', ['--test', 'core/travel.test.ts']];
 const LISTING = ['node', ['--test', 'api/listing.test.ts']];
 const FARES = ['node', ['--test', 'core/fares.test.ts']];
+const SHOP = ['node', ['--test', 'core/shop.test.ts']];
 // The slow ones (a real Worker; prove also makes its real amazon.in requests): run them by name.
 const PROVE = ['node', ['scripts/prove.mjs']];
 const EXTENSION = ['node', ['scripts/extension.mjs']];
@@ -478,8 +479,45 @@ export const MUTANTS = [
   // ---- fare compare on the phone (FareJob)
   {
     name: 'fare compare opens every site at once',
-    file: 'android/app/src/main/java/app/britto/FareJob.java', find: '            if (loading >= PARALLEL) break;\n', replace: '',
-    run: GRADLE_TEST, expect: [/twoSitesLoadAtOnceAndTheNextStartsWhenOneIsDone/],
+    file: 'android/app/src/main/java/app/britto/FareJob.java', find: '            if (loading >= parallel) break;\n', replace: '',
+    run: GRADLE_TEST, expect: [/twoSitesLoadAtOnceAndTheNextStartsWhenOneIsDone/, /storeSearchPagesLoadThreeAtOnceSettleSoonerAndHandBackTheirProducts/],
+  },
+  {
+    name: 'shop compare waits the 15 s fares take',
+    file: 'android/app/src/main/java/app/britto/FareJob.java', find: 'return shop ? SHOP_SETTLE_MS : SETTLE_MS;', replace: 'return SETTLE_MS;',
+    run: GRADLE_TEST, expect: [/storeSearchPagesLoadThreeAtOnceSettleSoonerAndHandBackTheirProducts/],
+  },
+  {
+    name: 'shop compare hands the page no products',
+    file: 'android/app/src/main/java/app/britto/FareJob.java', find: '("fares".equals(s.status) || "listed".equals(s.status))', replace: '"fares".equals(s.status)',
+    run: GRADLE_TEST, expect: [/storeSearchPagesLoadThreeAtOnceSettleSoonerAndHandBackTheirProducts/],
+  },
+  // ---- shop compare: the store readers and the same-product matcher (core/shop.ts, web/match.js)
+  {
+    name: 'Flipkart shop reader takes the crossed-out price',
+    file: 'web/shops.json', find: String.raw`"regex": ["\\d+%\\s*₹\\s?[\\d,]+\\s+₹\\s?([\\d,]+)"]`, replace: String.raw`"regex": ["\\d+%\\s*₹\\s?([\\d,]+)\\s+₹\\s?[\\d,]+"]`,
+    run: SHOP, expect: [/flipkart: reads the products its own search page showed/, /on real pages: Flipkart has the same earbuds/, /the compare view: same product cheapest first/],
+  },
+  {
+    name: 'shop reader reads a nested card twice',
+    file: 'core/shop.ts', find: '    if (seen.has(key)) continue;\n', replace: '',
+    // The Flipkart page's product count reddens too: 13 cards are 6 products.
+    run: SHOP, expect: [/a card nested in another card of the same product is read once/, /flipkart: reads the products its own search page showed/],
+  },
+  {
+    name: 'matcher ignores a different pack size',
+    file: 'web/match.js', find: "      return { kind: 'none', score, why };\n", replace: '',
+    run: SHOP, expect: [/the matcher calls a result the same product only when nothing says otherwise/],
+  },
+  {
+    name: 'matcher ignores a variant word (Plus, Pro, ANC)',
+    file: 'web/match.js', find: 'if (variantDiff.length) return', replace: 'if (false) return',
+    run: SHOP, expect: [/the matcher calls a result the same product only when nothing says otherwise/],
+  },
+  {
+    name: 'a similar item is called the cheapest',
+    file: 'web/shop.js', find: 'const cheapest = same.length ? same[0] : null;', replace: 'const cheapest = rows.find((r) => r.best) ?? null;',
+    run: SHOP, expect: [/the compare view: same product cheapest first/],
   },
   {
     name: 'fare compare ends a site at its first fares after the settle time',

@@ -11,6 +11,7 @@
 // A ride site whose trip is typed on its own page (recipe.places: Rapido) also says what its
 // pickup and drop boxes hold, so the Britto page can show which trip the fares are for.
 import { readFares, type FareRecipe } from '../../core/fares.ts';
+import { readShop, type ShopRecipe } from '../../core/shop.ts';
 import { fillStep, type Trip } from './fill.ts';
 
 const all = (selector: string, max: number): Element[] => {
@@ -21,8 +22,21 @@ const all = (selector: string, max: number): Element[] => {
   }
 };
 
-export function read(recipe: FareRecipe, when?: { date?: string; trip?: Trip; stage?: string }): string {
+/**
+ * A store's search page (shop compare, core/shop.ts): its product cards alone when it shows any,
+ * else the whole page (small: a person check, or a page still loading).
+ */
+function readStore(recipe: ShopRecipe): string {
+  const cards = all(recipe.items, (recipe.max ?? 20) * 3);
+  const html = cards.length
+    ? `<html><body><div class="britto-items">${cards.map((c) => c.outerHTML).join('')}</div></body></html>`
+    : document.documentElement?.outerHTML ?? '';
+  return JSON.stringify(readShop(recipe, html, location.href));
+}
+
+export function read(recipe: FareRecipe | ShopRecipe, when?: { date?: string; trip?: Trip; stage?: string }): string {
   try {
+    if (recipe.sector === 'shop') return readStore(recipe);
     const cards = all(recipe.items, (recipe.max ?? 40) * 2);
     const strip = recipe.strip ? all(recipe.strip.items, 62) : [];
     const only = (extra: string) => `<html><body><div class="britto-strip">${strip.map((c) => c.outerHTML).join('')}</div><div class="britto-items">${cards.map((c) => c.outerHTML).join('')}</div>${extra}</body></html>`;

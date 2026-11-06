@@ -66,8 +66,9 @@ if (candidatePath) {
 
 // ---- fixtures
 const expected = JSON.parse(readFileSync(join(FIXTURES, 'expected.json'), 'utf8'));
-// fares-*.html are travel results pages, read by fare recipes (web/fares.json) in core/fares.test.ts.
-const files = readdirSync(FIXTURES).filter((f) => f.endsWith('.html') && !f.startsWith('fares-')).sort();
+// fares-*.html are travel results pages, read by fare recipes (web/fares.json) in core/fares.test.ts;
+// shop-*.html are store search cards, read by shop recipes (web/shops.json) in core/shop.test.ts.
+const files = readdirSync(FIXTURES).filter((f) => f.endsWith('.html') && !f.startsWith('fares-') && !f.startsWith('shop-')).sort();
 for (const f of files) if (!expected[f]) diff(f, 'has no entry in expected.json');
 for (const f of Object.keys(expected)) if (f !== '_about' && !files.includes(f)) diff(f, 'is in expected.json but not saved');
 

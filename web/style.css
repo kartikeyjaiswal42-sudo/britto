@@ -405,3 +405,29 @@ svg.ico { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColo
 /* Travel forms: two fields a row on a phone (From | To, Depart | Return, …), as in the design. */
 .travel-form .fields { grid-template-columns: repeat(auto-fill, minmax(min(140px, 100%), 1fr)); }
 .travel-form .field input[type="date"] { min-width: 0; width: 100%; }
+
+/* Compare prices across stores (product page; web/shop.js) */
+.shop-list { list-style: none; margin: 10px 0 8px; padding: 0; display: grid; gap: 8px; }
+.shop-row { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 8px 10px; border-radius: 16px; background: var(--panel); border: 1.5px solid var(--line); }
+.shop-row.same { border-color: var(--line-2); }
+.shop-row.pending { opacity: .75; }
+.shop-row > .mono, .shop-link > .mono { flex: none; }
+.shop-row > .button { flex: none; }
+.shop-row .mono::before { content: attr(data-mono); width: 40px; height: 40px; border-radius: 12px; background: var(--primary-tint); color: var(--primary); display: grid; place-items: center; font: 700 13px 'Outfit', sans-serif; }
+.shop-link { display: flex; align-items: center; gap: 10px; width: 100%; color: var(--ink); text-decoration: none; min-width: 0; }
+.shop-link img { width: 56px; height: 56px; object-fit: contain; border-radius: 10px; background: #FFFFFF; flex: none; }
+.shop-what { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.shop-title { color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.shop-price { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex: none; }
+.shop-price strong { font: 800 17px 'Outfit', sans-serif; }
+.badge.warn { background: var(--warn-bg); color: #A34700; }
+.shop-best { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border-radius: 18px; background: #0F1530; color: #FFFFFF; margin: 10px 0; }
+.shop-best strong { font: 800 22px 'Outfit', sans-serif; }
+.shop-best.good { background: var(--good-bg); color: var(--ink); }
+.shop-more { margin-top: 10px; }
+.shop-more summary { cursor: pointer; font-weight: 700; color: var(--primary); min-height: 44px; display: flex; align-items: center; }
+.store-results { margin: 6px 0 14px; }
+.store-results h3 { margin: 0; font-size: 16px; }
+.shop-card .price-line { display: flex; gap: 6px; align-items: baseline; }
+.shop-card .price-line b { font-size: 15px; }
+.shop-search-out { margin-top: 10px; }

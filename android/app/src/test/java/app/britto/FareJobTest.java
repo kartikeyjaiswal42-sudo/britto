@@ -207,4 +207,44 @@ public class FareJobTest {
         JSONObject flight = new JSONObject(FareJob.of("j3", three(), TRAVEL).site("ixigo").when());
         assertFalse("a flight has no trip and no step", flight.has("trip") || flight.has("stage"));
     }
+
+    private static final Predicate<String> STORES = (url) -> url.startsWith("https://www.flipkart.com/") || url.startsWith("https://www.croma.com/")
+            || url.startsWith("https://www.ajio.com/") || url.startsWith("https://www.ixigo.com/");
+
+    private static JSONObject store(String id, String url) throws Exception {
+        return new JSONObject().put("id", id).put("url", url).put("recipe", new JSONObject().put("store", id).put("sector", "shop"));
+    }
+
+    private static String listed(String title, long price) throws Exception {
+        JSONArray rows = new JSONArray().put(new JSONObject().put("title", title).put("price", price).put("mrp", JSONObject.NULL)
+                .put("image", "https://img.example/a.jpg").put("link", "https://www.flipkart.com/p/itm1"));
+        return new JSONObject().put("status", "listed").put("rows", rows).put("cheapest", price).toString();
+    }
+
+    @Test
+    public void storeSearchPagesLoadThreeAtOnceSettleSoonerAndHandBackTheirProducts() throws Exception {
+        JSONArray four = new JSONArray().put(store("flipkart", "https://www.flipkart.com/search?q=boat"))
+                .put(store("croma", "https://www.croma.com/searchB?q=boat")).put(store("ajio", "https://www.ajio.com/search/?text=boat"))
+                .put(store("flipkartb", "https://www.flipkart.com/search?q=boat+141"));
+        FareJob job = FareJob.of("j1", four, STORES);
+        assertNotNull(job);
+        assertEquals("three store pages at once", 3, job.toStart(0).size());
+        assertTrue(job.toStart(1).isEmpty());
+        String read = listed("boAt Airdopes 141 Gen 2", 79_900);
+        assertFalse(job.onRead("flipkart", read, 1_500));
+        assertFalse(job.onRead("flipkart", read, 3_000));
+        assertFalse("not before 5 s", job.onRead("flipkart", read, 4_500));
+        assertTrue("settled at 5 s, not the 15 s fares take", job.onRead("flipkart", read, FareJob.SHOP_SETTLE_MS));
+        JSONObject site = job.toJson().getJSONArray("sites").getJSONObject(0);
+        assertEquals("listed", site.getString("status"));
+        assertEquals("boAt Airdopes 141 Gen 2", site.getJSONArray("rows").getJSONObject(0).getString("title"));
+        assertEquals(79_900, site.getLong("cheapest"));
+        // A store that never shows a product is given up at 30 s, not 45.
+        assertFalse(job.onRead("croma", status("waiting"), FareJob.SHOP_TIMEOUT_MS - 1));
+        assertTrue(job.onRead("croma", status("waiting"), FareJob.SHOP_TIMEOUT_MS));
+        // A job mixing a travel site keeps the fare pace (two at once).
+        JSONArray mixed = new JSONArray().put(store("flipkart", "https://www.flipkart.com/search?q=a")).put(store("croma", "https://www.croma.com/searchB?q=a"))
+                .put(site("ixigo", "https://www.ixigo.com/search/result/flight?from=DEL"));
+        assertEquals(2, FareJob.of("j2", mixed, STORES).toStart(0).size());
+    }
 }

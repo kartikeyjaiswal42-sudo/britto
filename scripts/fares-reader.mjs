@@ -133,6 +133,35 @@ try {
   const plain = await readAt(rapido.url, rapido.html, 'rapido');
   check('without a trip, the ride list is read as before (no filling)', plain.status === 'fares' && plain.stage === undefined, plain);
   await live.close();
+
+  // Shop compare (app 0.8.0): the same bundled reader on each store's saved search cards, served
+  // at that store's own search address, reading the LIVE page's cards (querySelectorAll, as on the
+  // phone), must give exactly what the engine gives on the saved file (core/shop.test.ts).
+  const { readShop } = await import('../core/shop.ts');
+  const shops = JSON.parse(readFileSync(join(ROOT, 'web/shops.json'), 'utf8')).recipes;
+  const SHOP_PAGES = [
+    ['flipkart', 'shop-flipkart-boat-airdopes-141-2026-11-06-cards.html', 'https://www.flipkart.com/search?q=boat%20airdopes%20141'],
+    ['myntra', 'shop-myntra-levis-t-shirt-2026-11-06-cards.html', 'https://www.myntra.com/levis%20t%20shirt'],
+    ['croma', 'shop-croma-boat-airdopes-141-2026-11-06-cards.html', 'https://www.croma.com/searchB?q=boat%20airdopes%20141%3Arelevance&text=boat%20airdopes%20141'],
+    ['ajio', 'shop-ajio-levis-t-shirt-2026-11-06-cards.html', 'https://www.ajio.com/search/?text=levis%20t%20shirt'],
+    ['meesho', 'shop-meesho-steam-iron-2026-11-06-cards.html', 'https://www.meesho.com/search?q=steam%20iron'],
+    ['reliancedigital', 'shop-reliancedigital-boat-airdopes-141-2026-11-06-cards.html', 'https://www.reliancedigital.in/products?q=boat%20airdopes%20141'],
+    ['tatacliq', 'shop-tatacliq-boat-airdopes-141-2026-11-06-cards.html', 'https://www.tatacliq.com/search/?searchCategory=all&text=boat%20airdopes%20141'],
+    ['nykaa', 'shop-nykaa-cetaphil-face-wash-2026-11-06-cards.html', 'https://www.nykaa.com/search/result/?q=cetaphil%20face%20wash'],
+    ['snapdeal', 'shop-snapdeal-steam-iron-2026-11-06-cards.html', 'https://www.snapdeal.com/search?keyword=steam%20iron'],
+  ];
+  for (const [store, file, url] of SHOP_PAGES) {
+    const shopRecipe = shops.find((r) => r.store === store);
+    const html = readFileSync(join(ROOT, 'test/fixtures', file), 'utf8');
+    const page = await context.newPage();
+    await page.route('**/*', (route) => (route.request().url() === url ? route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: html }) : route.abort()));
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    const got = JSON.parse(await page.evaluate(`(function(){${engine};return __brittoFares.read(${JSON.stringify(shopRecipe)},{});})()`));
+    await page.close();
+    const want = readShop(shopRecipe, html, url);
+    check(`shop: ${store}'s search page read in the app's reader as on the saved file (${want.rows.length} products)`, got.status === 'listed' && JSON.stringify(got) === JSON.stringify(want),
+      { status: got.status, first: got.rows?.[0], want: want.rows[0] });
+  }
 } finally {
   await browser.close();
 }

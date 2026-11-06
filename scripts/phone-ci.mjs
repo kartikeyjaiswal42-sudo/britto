@@ -141,7 +141,14 @@ function tapSystem(ids, texts) {
     tapped = tapSystem(['com.android.permissioncontroller:id/permission_allow_foreground_only_button', 'com.android.permissioncontroller:id/permission_allow_one_time_button'], ['While using the app', 'Only this time']);
   }
   check('Android asked for the location (and only when the button was tapped)', !!tapped, tapped);
-  const pickup = await until(`(() => { const i = document.querySelector('#ride-compare [name=pickup]'); return i.value && !/Finding/.test(i.placeholder) ? i.value : null; })()`, 40000);
+  // The emulator reports a position only when one is sent (4 Nov run: "could not find where you
+  // are"), and the app asks for a FRESH fix: keep sending Amity's while it looks, as a phone would.
+  let pickup = null;
+  for (let t = Date.now(); !pickup && Date.now() - t < 40000;) {
+    try { adb('emu', 'geo', 'fix', '77.3331', '28.5442'); } catch { /* the next one */ }
+    pickup = await ev(`(() => { const i = document.querySelector('#ride-compare [name=pickup]'); return i.value && !/Finding/.test(i.placeholder) ? i.value : null; })()`).catch(() => null);
+    if (!pickup) await sleep(2000);
+  }
   const status = await ev(`document.querySelector('#ride-compare .form-status').textContent`);
   check('the pickup is filled from the phone\'s location', !!pickup, { pickup, status });
   shot('02-pickup');
@@ -170,6 +177,25 @@ function tapSystem(ids, texts) {
   const rideLink = await until(`document.querySelector('#ride-links li[data-site=uber] a')?.href ?? null`, 30000);
   check('ride to the airport: an Uber link from the phone\'s location', /pickup=.*28\.54/.test(decodeURIComponent(rideLink ?? '')), rideLink);
   shot('05-airport');
+
+  // Shop compare (app 0.8.0): the search page asks the app to open each other store's own search
+  // for the words on this phone and read its products. GitHub's computer is in the USA, so a
+  // store may refuse it or show another country's page: recorded as it is, not counted as a fail;
+  // the checks are that every store ends with a status (no hang) and the page draws what came.
+  step('shop compare: search page');
+  await ev(`location.href = '/search?q=boat%20airdopes%20141', 1`);
+  await sleep(2000);
+  const shopButton = await until(`!!document.querySelector('#shop-search-run')`, 30000);
+  check('search page in the app offers "Search N more stores"', !!shopButton, await ev(`document.querySelector('#other-stores')?.innerText ?? null`).catch(() => null));
+  if (shopButton) {
+    await ev(`document.querySelector('#shop-search-run').click(), 1`);
+    const shopDone = await until(`(() => { const s = [...document.querySelectorAll('#other-stores .store-results')]; return s.length && s.every((x) => !['queued', 'loading'].includes(x.dataset.status)) ? s.length : null; })()`, 150000, 2000);
+    const stores = await ev(`[...document.querySelectorAll('#other-stores .store-results')].map((x) => ({ store: x.dataset.store, status: x.dataset.status, cards: x.querySelectorAll('.shop-card').length, first: x.querySelector('.shop-card')?.innerText.replace(/\\s+/g, ' ').slice(0, 120) ?? x.innerText.replace(/\\s+/g, ' ').slice(0, 120) }))`);
+    check('every store searched on the phone ends with a status (no hang)', !!shopDone, stores);
+    results.push({ name: 'store searches read in the app (info: which stores answered this US computer)', ok: true, got: stores });
+    check('a store that listed products shows them with a price', (stores ?? []).filter((x) => x.status === 'listed').every((x) => x.cards > 0 && /₹/.test(x.first ?? '')), stores);
+    shot('06-shop-search');
+  }
   check('no script errors on Britto\'s page', errors.length === 0, errors);
 }
 

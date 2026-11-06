@@ -1,12 +1,14 @@
-// One service per sector that Britto opens inside its Android app (rides, flights, hotels),
-// next to the shopping stores (core/stores.ts). The shopper logs in on the service's OWN page
+// The services Britto opens inside its Android app (more shopping stores, rides, flights,
+// hotels), next to the shopping stores it keeps price history for (core/stores.ts). The shopper logs in on the service's OWN page
 // in the app's in-app browser, with their own number and OTP; the login stays in that browser
 // on their phone. Britto never sees the number, the code or the cookies.
 //
 // Each `measured` line is what was observed in the app, not what was hoped; the Super Browse
 // page shows it. Services are not stores: no product keys, no server reads, no price history.
+// A 'shop' service is a store whose own search page shop compare reads on the phone
+// (core/shop.ts, web/shops.json); its products are not tracked.
 
-export type Sector = 'ride' | 'flight' | 'hotel';
+export type Sector = 'shop' | 'ride' | 'flight' | 'hotel';
 
 export interface Service {
   id: string;
@@ -20,9 +22,16 @@ export interface Service {
   measured: string;
 }
 
-export const SECTOR_NAMES: Record<Sector, string> = { ride: 'Rides', flight: 'Flights', hotel: 'Hotels' };
+export const SECTOR_NAMES: Record<Sector, string> = { shop: 'More stores', ride: 'Rides', flight: 'Flights', hotel: 'Hotels' };
+
+const SHOP_MEASURED = '2026-11-06: its own search page, opened once in a phone-size Chrome, listed products with prices (no robot check); Britto reads that page on your phone to compare prices (web/shops.json).';
 
 export const SERVICES: readonly Service[] = [
+  { id: 'croma', sector: 'shop', name: 'Croma', home: 'https://www.croma.com/', hosts: ['www.croma.com', 'croma.com'], measured: SHOP_MEASURED },
+  { id: 'ajio', sector: 'shop', name: 'AJIO', home: 'https://www.ajio.com/', hosts: ['www.ajio.com', 'ajio.com'], measured: SHOP_MEASURED },
+  { id: 'meesho', sector: 'shop', name: 'Meesho', home: 'https://www.meesho.com/', hosts: ['www.meesho.com', 'meesho.com'], measured: SHOP_MEASURED },
+  { id: 'tatacliq', sector: 'shop', name: 'Tata CLiQ', home: 'https://www.tatacliq.com/', hosts: ['www.tatacliq.com', 'tatacliq.com'], measured: SHOP_MEASURED },
+  { id: 'snapdeal', sector: 'shop', name: 'Snapdeal', home: 'https://www.snapdeal.com/', hosts: ['www.snapdeal.com', 'snapdeal.com', 'm.snapdeal.com'], measured: SHOP_MEASURED },
   {
     id: 'uber',
     sector: 'ride',
