@@ -4,10 +4,13 @@
 // plus rows built from the test product's own title (one the same product, one a different pack
 // size) so the same/not-same labels are checked on a product the local database holds.
 //   PW_DIR=<playwright-core dir> node scripts/shop-browser.mjs [base url, default http://127.0.0.1:8787] [product key]
+// The one-usual-price check needs a product whose usual price differs from its middle price
+// (production's amazon:B01INWEX9U, copied into the LOCAL database: HISTORY 2026-11-06).
 // Needs a local `wrangler dev` with the schema and the product tracked (scripts/browser.mjs notes).
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { readShop } from '../core/shop.ts';
+import { quantities, searchWordsFor } from '../web/match.js';
 import { shopSearchUrl, storesFor } from '../web/shop.js';
 
 const require = createRequire(import.meta.url);
@@ -30,10 +33,14 @@ const fixture = (name) => readFileSync(new URL(`../test/fixtures/${name}`, impor
 const real = (store, file) => readShop(recipes.find((r) => r.store === store), fixture(file), 'https://www.' + (store === 'reliancedigital' ? 'reliancedigital.in/products' : `${store}.com/search`) + '?q=x').rows;
 // Flipkart: its real cards, plus the product itself ₹20 cheaper; Snapdeal: the same line in another
 // pack size (must NOT be called the same product); Croma: a person check; the rest: real cards.
-const name = title.replace(/\s*\|.*$/, '');
+// The product's name and pack size, so "same" is the same pack and "other" a DIFFERENT one
+// (a pen set sold as a pack of 10 must not be offered a pack of 10 as the other size).
+const name = searchWordsFor(title);
+const pack = [...(quantities(title).get('count') ?? [])][0] ?? 25;
+const otherPack = pack === 10 ? 25 : 10;
 const readings = {
-  flipkart: { status: 'listed', rows: [...real('flipkart', 'shop-flipkart-boat-airdopes-141-2026-11-06-cards.html'), { title: `${name}, Pack of 25`, price: (here ?? 30_000) - 2_000, mrp: 30_000, image: 'https://rukminim2.flixcart.com/image/412/494/x.jpeg', link: 'https://www.flipkart.com/cello-butterflow/p/itm123?pid=TEST' }] },
-  snapdeal: { status: 'listed', rows: [{ title: `${name}, Pack of 10`, price: 9_900, mrp: null, image: null, link: 'https://www.snapdeal.com/product/cello/1' }, ...real('snapdeal', 'shop-snapdeal-steam-iron-2026-11-06-cards.html')] },
+  flipkart: { status: 'listed', rows: [...real('flipkart', 'shop-flipkart-boat-airdopes-141-2026-11-06-cards.html'), { title: `${name}, Pack of ${pack}`, price: (here ?? 30_000) - 2_000, mrp: 30_000, image: 'https://rukminim2.flixcart.com/image/412/494/x.jpeg', link: 'https://www.flipkart.com/cello-butterflow/p/itm123?pid=TEST' }] },
+  snapdeal: { status: 'listed', rows: [{ title: `${name}, Pack of ${otherPack}`, price: 9_900, mrp: null, image: null, link: 'https://www.snapdeal.com/product/cello/1' }, ...real('snapdeal', 'shop-snapdeal-steam-iron-2026-11-06-cards.html')] },
   croma: { status: 'check', rows: [] },
   reliancedigital: { status: 'listed', rows: real('reliancedigital', 'shop-reliancedigital-boat-airdopes-141-2026-11-06-cards.html') },
   tatacliq: { status: 'listed', rows: real('tatacliq', 'shop-tatacliq-boat-airdopes-141-2026-11-06-cards.html') },
@@ -71,6 +78,14 @@ try {
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto(`${base}/p/${encodeURIComponent(key)}`, { waitUntil: 'networkidle' });
+  // ONE usual price on the page (6 Nov: the tile said ₹100 "median" while the sale check said
+  // "20% below its usual ₹125"): the tile shows the sale check's, or the middle price so far.
+  const usualTile = await page.locator('.stats > div', { hasText: 'Usual price' }).innerText().catch(() => '');
+  const usualWant = product.product?.sale?.usualPrice ?? product.product?.stats?.median;
+  const fmt = (p) => `₹${(p / 100).toLocaleString('en-IN', { minimumFractionDigits: p % 100 ? 2 : 0, maximumFractionDigits: 2 })}`;
+  const usualSale = product.product?.sale?.usualPrice;
+  if (usualSale == null || usualSale === product.product?.stats?.median) console.log('SKIP the one-usual-price check: this product cannot tell the two apart (NOT verified); run with amazon:B01INWEX9U seeded');
+  else check('the product page shows one usual price, the sale check\'s (not the plain middle price)', usualTile.includes(fmt(usualWant)) && !/median/i.test(await page.locator('#app').innerText()), `${usualTile} vs ${usualWant}`);
   const run = page.locator('#shop-run');
   await run.waitFor({ timeout: 10_000 }).catch(() => {});
   check(`in the app (0.8.0): "Check prices on ${want.length} stores"`, (await run.count()) === 1 && (await run.innerText()) === `Check prices on ${want.length} stores`, await run.count() ? await run.innerText() : 'no button');
@@ -87,7 +102,7 @@ try {
   const fk = rows.find((r) => r.store === 'flipkart');
   check('Flipkart: the same product, its price and how much less it is', fk?.kind === 'same' && /Same product/.test(fk.text) && fk.text.includes('₹20 less'), JSON.stringify(fk));
   const sd = rows.find((r) => r.store === 'snapdeal');
-  check('Snapdeal: the pack of 10 is NOT called the same product', sd != null && sd.kind !== 'same' && !/Same product/.test(sd.text), JSON.stringify(sd));
+  check(`Snapdeal: the pack of ${otherPack} is NOT called the same product (this one is a pack of ${pack})`, sd != null && sd.kind !== 'same' && !/Same product/.test(sd.text), JSON.stringify(sd));
   check('Croma: its person check is said, with a way to open it', /asks if you are a person/.test(rows.find((r) => r.store === 'croma')?.text ?? '') && (await page.locator('#compare .shop-row[data-store=croma] a').count()) === 1);
   check('Reliance Digital / Tata CLiQ / Meesho (no pen in their saved pages): "no matching product"', ['reliancedigital', 'tatacliq', 'meesho'].every((s) => /no matching product/.test(rows.find((r) => r.store === s)?.text ?? '')), JSON.stringify(rows.map((r) => [r.store, r.text.slice(0, 60)])));
   check('…the same product comes first', rows[0]?.store === 'flipkart', rows.map((r) => r.store).join());

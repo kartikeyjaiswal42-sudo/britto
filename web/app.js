@@ -8,7 +8,7 @@ import { drawChart } from './chart.js';
 import { mergeOrders, summarize } from './spend.js';
 import { airportIndex, flightSearch, hotelSearch, MAX_DAYS_AHEAD, rideCompare, rideSearch, todayIST } from './travel.js';
 import { fareStrip, groupFlights, groupHotels, otherAirport, rideRows, siteSummary, tripTotal } from './compare.js';
-import { bestMatch, searchWordsFor } from './match.js';
+import { bestMatch, matchTitle, searchWordsFor } from './match.js';
 import { compareView, shopSearchUrl, storesFor } from './shop.js';
 
 const app = document.getElementById('app');
@@ -289,7 +289,9 @@ async function productPage(key) {
       h('dl', { class: 'stats' },
         stat('Lowest', s.lowest ? `${rupees(s.lowest.price)}` : '—', s.lowest ? date(s.lowest.at) : ''),
         stat('Highest', s.highest ? `${rupees(s.highest.price)}` : '—', s.highest ? date(s.highest.at) : ''),
-        stat('Usual (median)', rupees(s.median), 'time-weighted'),
+        // ONE usual price on the page: the sale check's (90 days, leaving out the last 2, so a new
+        // sale is not its own baseline); a product too new for it shows the middle price so far.
+        stat('Usual price', rupees(view.sale.usualPrice ?? s.median), view.sale.usualPrice != null ? '90 days, before the last 2' : 'so far: too new to be sure'),
         stat('Price changes', String(s.changes), `${Math.floor(s.daysTracked)} days watched`)),
       alertBox(view),
       compareSection(view),
@@ -374,10 +376,23 @@ async function serverAmazon(box, view, words, here) {
   let res;
   try { res = await storeSearch(words); } catch { return; }
   const amazon = res.stores?.find((s) => s.store === 'amazon' && s.status === 'listed');
-  const rows = (amazon?.items ?? []).filter((i) => i.price != null).map((i) => ({ title: i.title, price: i.price, mrp: i.mrp, image: i.image, link: `/p/${i.key}` }));
+  const items = amazon?.items ?? [];
+  const rows = items.filter((i) => i.price != null).map((i) => ({ title: i.title, price: i.price, mrp: i.mrp, image: i.image, link: `/p/${i.key}` }));
   const best = bestMatch(view.title, rows);
-  if (!best) return;
-  put(box, h('ul', { class: 'shop-list' }, shopRow({ id: 'amazon', name: 'Amazon.in', url: best.row.link, done: true, status: 'listed', best, diff: here != null ? best.row.price - here : null }, `As Amazon.in\u2019s search showed it ${ago(amazon.at)}`)));
+  if (best) {
+    put(box, h('ul', { class: 'shop-list' }, shopRow({ id: 'amazon', name: 'Amazon.in', url: best.row.link, done: true, status: 'listed', best, diff: here != null ? best.row.price - here : null }, `As Amazon.in\u2019s search showed it ${ago(amazon.at)}`)));
+    return;
+  }
+  // The same product listed WITHOUT a price on the search page (measured 6 Nov 2026: Amazon.in
+  // lists "boAt Airdopes 141 Gen 2" with none): said, with its page, never hidden.
+  const unpriced = items.filter((i) => i.price == null).find((i) => matchTitle(view.title, i.title).kind === 'same');
+  if (!unpriced) return;
+  put(box, h('ul', { class: 'shop-list' }, h('li', { class: 'shop-row same', 'data-store': 'amazon', 'data-status': 'listed', 'data-kind': 'same-unpriced' },
+    h('a', { class: 'shop-link', href: `/p/${unpriced.key}`, rel: 'noopener' },
+      unpriced.image ? h('img', { src: unpriced.image, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }) : h('span', { class: 'mono', 'data-mono': 'A' }),
+      h('span', { class: 'shop-what' }, h('b', {}, 'Amazon.in'), h('span', { class: 'small shop-title' }, unpriced.title),
+        h('span', { class: 'badge neutral' }, 'Same product \u00b7 no price on its search')),
+      h('span', { class: 'shop-price' }, h('span', { class: 'button secondary small' }, 'See price'))))));
 }
 
 /**

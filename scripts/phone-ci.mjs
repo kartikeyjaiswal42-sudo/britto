@@ -45,6 +45,26 @@ async function main() {
 step('install');
 adb('install', '-r', apk);
 adb('reverse', `tcp:${port}`, `tcp:${port}`);
+// Location services on (the 4 and 6 Nov runs: "could not find where you are" even with fixes
+// sent; the image may ship with location off), then Amity University, Noida (gate 3) as its GPS.
+try { step(`location on: ${adb('shell', 'cmd', 'location', 'set-location-enabled', 'true').trim() || 'ok'}; now ${adb('shell', 'cmd', 'location', 'is-location-enabled').trim()}`); } catch (e) { step(`location on failed: ${String(e).slice(0, 200)}`); }
+// The app asks Android's FUSED provider for a fresh fix (MainActivity.findHere). On GitHub's
+// Google Play image it never passed on the emulator's GPS fixes (4 and 6 Nov: "could not find
+// where you are", reason none, location ON): so the fused and GPS providers get Android's own
+// test positions (cmd location providers, shell), sent again while the app looks.
+const AMITY = '28.5442,77.3331';
+for (const p of ['fused', 'gps']) {
+  for (const args of [['add-test-provider', p], ['set-test-provider-enabled', p, 'true']]) {
+    try { step(`location ${args.join(' ')}: ${adb('shell', 'cmd', 'location', 'providers', ...args).trim() || 'ok'}`); } catch (e) { step(`location ${args.join(' ')} failed: ${String(e).slice(0, 160)}`); }
+  }
+}
+const sendFix = () => {
+  for (const p of ['fused', 'gps']) {
+    try { adb('shell', 'cmd', 'location', 'providers', 'set-test-provider-location', p, '--location', AMITY, '--accuracy', '10'); } catch { /* logged once below */ }
+  }
+  try { adb('emu', 'geo', 'fix', '77.3331', '28.5442'); } catch { /* the next one */ }
+};
+try { adb('shell', 'cmd', 'location', 'providers', 'set-test-provider-location', 'fused', '--location', AMITY, '--accuracy', '10'); step('fused test position: ok'); } catch (e) { step(`fused test position failed: ${String(e).slice(0, 160)}`); }
 // Amity University, Noida (gate 3): the emulator's GPS says the phone is there.
 try { step(`geo fix: ${adb('emu', 'geo', 'fix', '77.3331', '28.5442').trim()}`); } catch (e) { step(`geo fix failed: ${String(e).slice(0, 200)}`); }
 adb('shell', 'am', 'start', '-n', 'app.britto.dev/app.britto.MainActivity');
@@ -145,7 +165,7 @@ function tapSystem(ids, texts) {
   // are"), and the app asks for a FRESH fix: keep sending Amity's while it looks, as a phone would.
   let pickup = null;
   for (let t = Date.now(); !pickup && Date.now() - t < 40000;) {
-    try { adb('emu', 'geo', 'fix', '77.3331', '28.5442'); } catch { /* the next one */ }
+    sendFix();
     pickup = await ev(`(() => { const i = document.querySelector('#ride-compare [name=pickup]'); return i.value && !/Finding/.test(i.placeholder) ? i.value : null; })()`).catch(() => null);
     if (!pickup) await sleep(2000);
   }
@@ -190,10 +210,12 @@ function tapSystem(ids, texts) {
   if (shopButton) {
     await ev(`document.querySelector('#shop-search-run').click(), 1`);
     const shopDone = await until(`(() => { const s = [...document.querySelectorAll('#other-stores .store-results')]; return s.length && s.every((x) => !['queued', 'loading'].includes(x.dataset.status)) ? s.length : null; })()`, 150000, 2000);
-    const stores = await ev(`[...document.querySelectorAll('#other-stores .store-results')].map((x) => ({ store: x.dataset.store, status: x.dataset.status, cards: x.querySelectorAll('.shop-card').length, first: x.querySelector('.shop-card')?.innerText.replace(/\\s+/g, ' ').slice(0, 120) ?? x.innerText.replace(/\\s+/g, ' ').slice(0, 120) }))`);
+    const stores = await ev(`[...document.querySelectorAll('#other-stores .store-results')].map((x) => ({ store: x.dataset.store, status: x.dataset.status, cards: x.querySelectorAll('.shop-card').length, first: x.querySelector('.shop-card')?.innerText.replace(/\\s+/g, ' ').slice(0, 160) ?? x.innerText.replace(/\\s+/g, ' ').slice(0, 160), priced: [...x.querySelectorAll('.shop-card')].filter((c) => /₹\\s?[\\d,]+/.test(c.innerText)).length }))`);
     check('every store searched on the phone ends with a status (no hang)', !!shopDone, stores);
     results.push({ name: 'store searches read in the app (info: which stores answered this US computer)', ok: true, got: stores });
-    check('a store that listed products shows them with a price', (stores ?? []).filter((x) => x.status === 'listed').every((x) => x.cards > 0 && /₹/.test(x.first ?? '')), stores);
+    // Every card of a store that listed products carries a price (long titles push it past any
+// text cut, so each card's whole text is checked).
+    check('a store that listed products shows them with a price', (stores ?? []).filter((x) => x.status === 'listed').every((x) => x.cards > 0 && x.priced === x.cards), stores);
     shot('06-shop-search');
   }
   check('no script errors on Britto\'s page', errors.length === 0, errors);
