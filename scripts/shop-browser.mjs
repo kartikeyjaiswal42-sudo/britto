@@ -86,6 +86,14 @@ try {
   const usualSale = product.product?.sale?.usualPrice;
   if (usualSale == null || usualSale === product.product?.stats?.median) console.log('SKIP the one-usual-price check: this product cannot tell the two apart (NOT verified); run with amazon:B01INWEX9U seeded');
   else check('the product page shows one usual price, the sale check\'s (not the plain middle price)', usualTile.includes(fmt(usualWant)) && !/median/i.test(await page.locator('#app').innerText()), `${usualTile} vs ${usualWant}`);
+  // The price scale (design v5): today's price placed between the lowest and highest seen.
+  const st = product.product?.stats ?? {};
+  if (st.lowest && st.highest && st.current != null && st.highest.price > st.lowest.price) {
+    const want = ((st.current - st.lowest.price) / (st.highest.price - st.lowest.price)) * 100;
+    const got = await page.locator('.price-scale .scale-dot').evaluate((d) => parseFloat(d.style.left)).catch(() => null);
+    const label = await page.locator('.price-scale').getAttribute('aria-label').catch(() => '');
+    check(`the price scale puts today at ${want.toFixed(1)}% between lowest and highest, and says so in words`, got != null && Math.abs(got - want) < 0.11 && label.includes(fmt(st.current)) && label.includes(fmt(st.lowest.price)) && label.includes(fmt(st.highest.price)), `${got} vs ${want} · ${label}`);
+  } else check('no price scale without a range of prices', (await page.locator('.price-scale').count()) === 0);
   const run = page.locator('#shop-run');
   await run.waitFor({ timeout: 10_000 }).catch(() => {});
   check(`in the app (0.8.0): "Check prices on ${want.length} stores"`, (await run.count()) === 1 && (await run.innerText()) === `Check prices on ${want.length} stores`, await run.count() ? await run.innerText() : 'no button');

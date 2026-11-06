@@ -278,7 +278,8 @@ async function productPage(key) {
       h('div', { class: 'cards2' },
         h('section', { class: `verdict ${VERDICT_CLASS[view.verdict.kind]}` },
           h('h2', {}, view.verdict.headline),
-          h('ul', {}, view.verdict.reasons.map((r) => h('li', {}, r)))),
+          h('ul', {}, view.verdict.reasons.map((r) => h('li', {}, r))),
+          priceScale(s)),
         h('section', { class: `verdict ${SALE_CLASS[view.sale.status]}` },
           h('h2', {}, SALE_TITLE[view.sale.status]),
           h('p', {}, view.sale.explanation),
@@ -1170,6 +1171,21 @@ async function travelPage() {
       : 'Enter your trip once and open the same search on each site. In the Britto Android app, Britto also reads the fares each site shows and compares them for you.'),
     list, travelTabsShow.bar, panels.cabs, panels.flights, panels.hotels);
   loadWatches();
+}
+
+/**
+ * Where today's price sits between the lowest and highest Britto has seen (design v5): readable
+ * at a glance, before the chart. Only with a real range and a price today. The dot is placed
+ * through CSSOM (the page's CSP refuses inline style attributes).
+ */
+function priceScale(s) {
+  if (!s.lowest || !s.highest || s.current == null || s.inStock === false || s.highest.price <= s.lowest.price) return null;
+  const at = Math.max(0, Math.min(1, (s.current - s.lowest.price) / (s.highest.price - s.lowest.price)));
+  const dot = h('span', { class: 'scale-dot' });
+  dot.style.left = `${(at * 100).toFixed(1)}%`;
+  return h('div', { class: 'price-scale', role: 'img', 'aria-label': `Today ${rupees(s.current)}, between the lowest ${rupees(s.lowest.price)} and the highest ${rupees(s.highest.price)} seen` },
+    h('div', { class: 'scale-bar' }, dot),
+    h('div', { class: 'scale-labels', 'aria-hidden': 'true' }, h('span', {}, `Lowest ${rupees(s.lowest.price)}`), h('span', {}, `Today ${rupees(s.current)}`), h('span', {}, `Highest ${rupees(s.highest.price)}`)));
 }
 
 function stat(label, value, note) {

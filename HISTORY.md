@@ -1738,3 +1738,88 @@ started); fixed, and every stage is now logged.
 
 **Measured:** Ola's booking page (book.olacabs.com) still renders nothing in a phone-size Chrome
 after 6 s (5 Nov), so Ola stays a link.
+
+## Compare prices across stores, design v5, GitHub runs, 2026-11-06 (app 0.8.0)
+
+**Asked (owner):** "it's not even 10 percent of BuyHatke … your features seem to be shown but
+they don't actually perform"; then "use Claude Design to create the best UI/UX for the app"; then
+"all your GitHub runs are failing" (and: the repo is now public).
+
+**Measured first (production, read-only, real Chrome at 390 px):** in the day before, the server
+read 596 Amazon pages and **0** Flipkart / Myntra pages (`/api/health/readers`); `/api/deals` held
+**1** product; most products say "too early"; "Check other stores" on every product page was
+only a row of search links; search showed prices from Amazon only; grocery and Spend Lens say
+"not working yet"; Telegram is off (no bot token). BuyHatke shows other stores' prices for the
+same product: that was the biggest gap.
+
+**Built: compare prices across stores (real prices, read on the phone).**
+- `core/shop.ts`: shop recipes (data, `web/shops.json`) read a store's own SEARCH page, the
+  fares way: one card selector, fields for title / price / M.R.P. / photo / link, cards nested in
+  cards read once, links only to the store's own site. Nine stores, each recipe written against
+  that store's phone search page opened ONCE in a real (headed) Chrome at phone size on
+  2026-11-06 (no robot check anywhere; JioMart's search address was wrong, left out): Flipkart,
+  Myntra, Croma, AJIO, Meesho, Reliance Digital, Tata CLiQ, Nykaa, Snapdeal. Fixtures = the
+  cards alone, cut the way the app hands them over (`scripts/shop-cards.mjs`). Flipkart's and
+  Myntra's phone pages use generated style names, so their prices are read from the card's
+  text with patterns (elements are joined by spaces, so "₹381" and "17% Off" never merge).
+  Nykaa's cards carry no link (it navigates by script): a Nykaa row opens its search.
+- `web/match.js`: "same product" only when the title says nothing otherwise: brand present,
+  every model number of the product's NAME (up to its first comma/bracket) present (141 ≠ 141
+  ANC, Gen 2 ≠ none), no variant word added or dropped (Plus, Pro, ANC…), no quantity clash
+  (pack of 10 ≠ 25, 128 GB ≠ 256 GB, 125 ml ≠ 250 ml); clothes (no model numbers) need near-equal
+  names both ways. Otherwise "Similar: <why>", never "same". Real pages: Flipkart has the same
+  boAt Airdopes 141 Gen 2 (₹799); Reliance Digital (141 ANC) and Croma do not.
+- `web/shop.js`: up to 6 stores per product by kind (clothes → Myntra, AJIO…; beauty → Nykaa
+  first; else Flipkart, Croma, Reliance Digital…), the search address (every `{q}`: Croma's has
+  two — a real bug the test caught), and the view order (same product cheapest first).
+- Product page (app 0.8.0+): "Check prices on N stores" (one tap; nothing asked before it), rows
+  as stores finish, "Cheaper elsewhere: ₹X on <store>, ₹Y less", kept on the phone 6 h. A
+  browser gets the server's Amazon.in match for products from other stores and a line about the
+  app; an older app is told to update. Search page in the app: "Search N more stores" shows
+  each store's first results with prices. Super Browse gains "More stores" (core/services.ts
+  sector `shop`: Croma, AJIO, Meesho, Tata CLiQ, Snapdeal). CSP `img-src` gains exactly their
+  image hosts.
+- App 0.8.0 (versionCode 10, built + signed with the release key, cert fbf25e7d…; NOT published
+  until the phone test passes): `android/js/fares.ts` reads shop recipes; FareJob: shop pages 3
+  at once, settled at 5 s, given up at 30 s (fares unchanged: 2, 15 s, 45 s), rows handed back
+  for status "listed"; `opensHere` = any site in the registry.
+- Product page fixes found while designing: ONE usual price (the tile said "Usual (median)
+  ₹100" while the sale check said "20% below its usual ₹125": the tile now shows the sale
+  check's, or the middle price "so far"); Amazon's same product with no price on its search page
+  (measured: boAt Airdopes 141 Gen 2) is shown as such instead of hidden.
+
+**Design v5 (Claude Design canvas, private to the owner):** https://claude.ai/artifact/TvtoSCBxXnwnWcmLTBioHA
+— 7 phone screens: Home, Product (price + verdict + a lowest/today/highest scale in one card,
+chart, compare, alert, offers, Buy/Alert bar under the thumb), Compare (checking on the phone),
+Search across stores, Real drops, Tracker (price + fare alerts), Cabs. Britto blue kept, savings
+green #0A7D4F, warning orange #B54708, Outfit + Manrope (self-hosted already). Every figure is
+from live data or the 6 Nov store pages; photos are placeholders; photo search, cashback and
+logins deliberately not drawn. Yesterday's canvas (NRNH…) could not be opened from this account.
+NOT yet built into `web/` (next session).
+
+**GitHub runs (public API, unauthenticated, now that the repo is public):** "Test and deploy"
+succeeded on every run (today's included; the live site serves today's code). "Phone test"
+failed on all 5 runs since it was created (4 Nov). Causes, from the results branch: (1) runs
+killed before writing anything (no time limits) — fixed 641e29d; (2) the cabs location: Android's
+fused provider never passed on the emulator's GPS fixes (location ON, reason "none") — 7636514
+feeds fused + GPS test positions; (3) my shop check cut card text at 120 characters before
+looking for "₹" — fixed. The shop step ran on the emulator (94a36e9, US network): Flipkart 4
+priced cards (₹799 / ₹3,990), Croma 8, Reliance Digital 8, Tata CLiQ 8; Snapdeal and Meesho
+showed no products to that US computer.
+
+**Design v5, first piece built:** the product verdict card now carries the price scale (lowest ·
+today · highest, dot placed through CSSOM because the CSP refuses style attributes, words in
+`aria-label`); shop-browser checks its position (1.8% for ₹100 between ₹99 and ₹155) and that a
+product with one price shows none; the dot placed backwards reddens it.
+
+**Gates (this session, on the Mac):** unit 164 · typecheck clean · check:readers clean ·
+prove 133 · prove --live 71 (Node 24) · browser 112 · `scripts/shop-browser.mjs` 24 (new; +1
+check that SKIPs unless the product's two figures differ: `amazon:B01INWEX9U` copied into the
+LOCAL database) · fares-reader 22 (13 + 9 new: the app's bundled reader on each store's LIVE
+page = the engine on the file) · test:app 32 + 36 Java (FareJobTest new case) · mutate: 8
+new/changed cases each red exactly as expected, every breakage point restored.
+
+**NOT verified:** shop compare on a real phone in India (the emulator is in the USA; Snapdeal and
+Meesho unknown from India in the app); recipes against live pages after today (stores change
+their pages: `web/shops.json` is data, fixable without a new app); cabs and the rest of 0.8.0 on
+the emulator until 7636514's phone run is green.
