@@ -24,11 +24,13 @@ to this list and removes what is done.
    the extension, press "Save this page for Britto" in the panel, and put the downloaded
    `britto-page-flipkart-….html` file into the `britto/test/fixtures/` folder (or attach it
    to the next session). That lets a session check and switch on the Flipkart reader.
-4. **Install the Android app on your phone** (5 minutes): open
+4. **Install (or update) the Android app on your phone** (5 minutes): open
    https://britto.amitynoidalibrary.workers.dev/app on the phone, tap **Download**, open the
-   file, allow installs from Chrome once, Install. (Version 0.6.1, 2026-11-04, signed with the
-   release key of item 6, so later versions install over it; 0.5.0 was seen installing over
-   0.4.0 with its data kept.) To send it to friends: in the app, **Get the app → Send Britto to
+   file, allow installs from Chrome once, Install. (Version 0.8.0, 2026-11-06, signed with the
+   release key of item 6, so it installs over 0.6.1 with your data kept.) **New in 0.8.0: open
+   any product → "Check prices on 6 stores"**: tell the next session which stores showed a price
+   and whether "Same product" was right (the emulator is in the USA; from India Snapdeal and
+   Meesho are still unknown in the app). To send it to friends: in the app, **Get the app → Send Britto to
    a friend** (WhatsApp or any app gets the download link), or send the file itself
    (`~/Downloads/Britto-0.6.1.apk` on the Mac) as a WhatsApp **Document**; the friend opens it
    and allows installs from WhatsApp once. It was tested end to end on an
@@ -1779,8 +1781,9 @@ same product: that was the biggest gap.
   each store's first results with prices. Super Browse gains "More stores" (core/services.ts
   sector `shop`: Croma, AJIO, Meesho, Tata CLiQ, Snapdeal). CSP `img-src` gains exactly their
   image hosts.
-- App 0.8.0 (versionCode 10, built + signed with the release key, cert fbf25e7d…; NOT published
-  until the phone test passes): `android/js/fares.ts` reads shop recipes; FareJob: shop pages 3
+- App 0.8.0 (versionCode 10, built + signed with the release key, cert fbf25e7d…, 303,725
+  bytes; PUBLISHED at /app on 2026-11-06 once the emulator had read four stores with it, because
+  the live site already told older apps to "update" while /app still served 0.6.1): `android/js/fares.ts` reads shop recipes; FareJob: shop pages 3
   at once, settled at 5 s, given up at 30 s (fares unchanged: 2, 15 s, 45 s), rows handed back
   for status "listed"; `opensHere` = any site in the registry.
 - Product page fixes found while designing: ONE usual price (the tile said "Usual (median)

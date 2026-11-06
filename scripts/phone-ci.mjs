@@ -53,6 +53,9 @@ try { step(`location on: ${adb('shell', 'cmd', 'location', 'set-location-enabled
 // where you are", reason none, location ON): so the fused and GPS providers get Android's own
 // test positions (cmd location providers, shell), sent again while the app looks.
 const AMITY = '28.5442,77.3331';
+// The shell may place test positions only once it holds the mock-location permission (6 Nov:
+// SecurityException without it).
+try { step(`mock location for the shell: ${adb('shell', 'appops', 'set', 'com.android.shell', 'android:mock_location', 'allow').trim() || 'ok'}`); } catch (e) { step(`mock location permission failed: ${String(e).slice(0, 160)}`); }
 for (const p of ['fused', 'gps']) {
   for (const args of [['add-test-provider', p], ['set-test-provider-enabled', p, 'true']]) {
     try { step(`location ${args.join(' ')}: ${adb('shell', 'cmd', 'location', 'providers', ...args).trim() || 'ok'}`); } catch (e) { step(`location ${args.join(' ')} failed: ${String(e).slice(0, 160)}`); }
@@ -69,25 +72,36 @@ try { adb('shell', 'cmd', 'location', 'providers', 'set-test-provider-location',
 try { step(`geo fix: ${adb('emu', 'geo', 'fix', '77.3331', '28.5442').trim()}`); } catch (e) { step(`geo fix failed: ${String(e).slice(0, 200)}`); }
 adb('shell', 'am', 'start', '-n', 'app.britto.dev/app.britto.MainActivity');
 
-// The WebView's DevTools socket (debug builds only).
+// The WebView's DevTools socket (debug builds only), matched EXACTLY (a substring match let pid
+// 345 take socket _3450). On 6 Nov the socket was listed but adbd could not connect to it while
+// Play services processes were dying on the emulator: so it is looked up again and re-forwarded,
+// three rounds at most, each logged.
 step('waiting for the app\'s WebView');
-let sock = null;
-for (let i = 0; i < 60 && !sock; i++) {
-  await sleep(2000);
-  let pid = '';
-  try { pid = adb('shell', 'pidof', 'app.britto.dev').trim(); } catch { /* not started yet: pidof exits 1 */ }
-  if (pid && adb('shell', 'cat', '/proc/net/unix').includes(`webview_devtools_remote_${pid}`)) sock = `webview_devtools_remote_${pid}`;
-}
-if (!sock) throw new Error('the app\'s WebView never opened');
-adb('forward', 'tcp:9223', `localabstract:${sock}`);
-step(`DevTools socket ${sock}`);
+const findSock = async (tries) => {
+  for (let i = 0; i < tries; i++) {
+    await sleep(2000);
+    let pid = '';
+    try { pid = adb('shell', 'pidof', 'app.britto.dev').trim().split(/\s+/)[0] ?? ''; } catch { /* not started yet: pidof exits 1 */ }
+    if (!pid) continue;
+    const name = `webview_devtools_remote_${pid}`;
+    if (adb('shell', 'cat', '/proc/net/unix').split('\n').some((l) => l.trim().endsWith(`@${name}`))) return { pid, name };
+  }
+  return null;
+};
 let target = null;
 let lastList = [];
-for (let i = 0; i < 30 && !target; i++) {
-  await sleep(2000);
-  const list = await fetch('http://127.0.0.1:9223/json').then((r) => r.json()).catch((e) => [{ error: String(e) }]);
-  lastList = list;
-  target = list.find((t) => t.type === 'page' && t.url.startsWith(`http://127.0.0.1:${port}`));
+for (let round = 1; round <= 3 && !target; round++) {
+  const sock = await findSock(round === 1 ? 60 : 15);
+  if (!sock) { step(`round ${round}: the app's WebView socket is not there`); continue; }
+  try { adb('forward', '--remove', 'tcp:9223'); } catch { /* none yet */ }
+  adb('forward', 'tcp:9223', `localabstract:${sock.name}`);
+  step(`round ${round}: DevTools socket ${sock.name}`);
+  for (let i = 0; i < 20 && !target; i++) {
+    await sleep(2000);
+    const list = await fetch('http://127.0.0.1:9223/json').then((r) => r.json()).catch((e) => [{ error: String(e) }]);
+    lastList = list;
+    target = list.find((t) => t.type === 'page' && t.url.startsWith(`http://127.0.0.1:${port}`));
+  }
 }
 if (!target) throw new Error(`Britto's page never loaded in the app; DevTools listed ${JSON.stringify(lastList).slice(0, 600)}`);
 step(`page ${target.url}`);
