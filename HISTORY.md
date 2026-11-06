@@ -1827,7 +1827,10 @@ emulator (fused + GPS test positions after the shell got the mock-location permi
 filled, Uber + Rapido compare finished saying "log in", the airport link from the location) and
 the shop step reading Flipkart (4 priced) and Reliance Digital (8); its one red was the test's:
 Croma's last reading said "listed" while it was still loading, so the sections now carry
-`data-state` and the test waits for "done".
+`data-state` and the test waits for "done". **272ac16: Phone test GREEN for the first time (14/14,
+run 42266841117)**, Test and deploy green: in the app on the emulator, Flipkart 4 / Croma 8 /
+Reliance Digital 8 / Tata CLiQ 8 products, every card priced; Snapdeal and Meesho showed none to
+GitHub's US computer (still unknown from India in the app).
 
 **NOT verified:** shop compare on a real phone in India (the emulator is in the USA; Snapdeal and
 Meesho unknown from India in the app); recipes against live pages after today (stores change
