@@ -1687,3 +1687,54 @@ fallback, and a fresh manual reading fills in when the automatic one found no fa
   once. The phone's place search failed right after each restart ("no such place found") and
   worked on the second try: an emulator start-up delay, not seen on a phone yet.
 
+
+## UI uplift + cabs like the design, 2026-11-05 (app 0.7.0)
+
+**Asked (owner):** "uplift the whole UI UX of the app" with Claude Design, and make it work "at
+the level of how BuyHatke works", e.g. Rapido prices beside Uber's. Mid-session: the laptop hung
+on the emulator ("use any online emulator").
+
+**Design:** Claude Design canvas https://claude.ai/artifact/NRNHzmm1rbYqhJLbh6f9W6 (private to
+the owner): the original "Britto Mobile App Design" v4 (32 screens, from `design/`, the
+standalone project itself cannot be opened from a session) plus 6 new phone screens: Home, Product,
+Travel → Cabs, Cab results (Uber + Rapido in one list), Flights results, Tracker. Their figures
+are real: products and drops from production (4 Nov), flights from the four saved DEL→BOM pages,
+ride rows from the two saved ride pages (Uber CP→T3 and Rapido Amity→Sector 18 are DIFFERENT
+trips, shown together only as sample data in the design).
+
+**Built (web, live):**
+- Travel = three tabs (Cabs / Flights / Hotels, kept in the address `/travel#cabs` and on the
+  device); Cabs opens first in the app, Flights in a browser.
+- Cabs (app): a trip card (pickup, drop, swap), the phone's own place suggestions as you type
+  (Geocoder, 400 ms after typing stops), "Use my current location" (app 0.7.0+, see below), the
+  ride apps' state from the last compare (`britto.rideApps`, on the device), recent trips (3,
+  on the device only).
+- Cab results: the cheapest ride first (dark card, how much less than the other app's
+  cheapest, "Book it in …"), kind chips (Bike / Auto / Cab / Premium / XL, only kinds present),
+  one list with each app's badge and pickup time. Same `data-*` hooks as before.
+- Home: Cabs shortcut, an "Uber and Rapido, one list" card (no fares on it: a stale fare on the
+  home page would mislead); Stores dropped from the shortcuts (still in the desktop nav).
+- Product page: the price history right under the verdict, then numbers, alert, other stores,
+  offers.
+- Greys: `--muted` #586079 (was #6B7390, 4.3:1 on the page background), `--subtle` #6E7691.
+
+**Built (app 0.7.0, versionCode 9):** the `here` bridge message (`SiteBridgeCore.Here`,
+`MainActivity.findHere`): Android's location permission asked only when the shopper taps, one
+fresh fix (fused / GPS / network, 15 s), else a fix under 10 minutes old, then the Geocoder's
+address. The place goes into the ride apps' pages on the phone, never to Britto's server. Ride to
+the airport uses it too. Pages read the app version from the User-Agent: apps before 0.7.0 get no
+location button and the old message; a 90 s limit covers an app that never answers.
+`ACCESS_COARSE_LOCATION` + `ACCESS_FINE_LOCATION` added (scripts/app.mjs pins them, argued in
+its comment).
+
+**Online emulator:** `.github/workflows/phone.yml` + `scripts/phone-ci.mjs`: GitHub's Linux
+machine boots an Android 14 Google Play emulator (KVM), a local `wrangler dev` serves the site,
+the debug app opens it, and the script drives Travel → Cabs like a person (permission dialog
+answered by its own id, the phone's suggestion picked, Compare cabs), screenshots + results to
+the run's artifact AND to the `phone-ci-results` branch (no GitHub CLI on the Mac:
+`git fetch origin phone-ci-results`). Runs on pushes touching android/, web/ or itself, and by
+hand. First run: the script ended before writing results (`pidof` exits 1 before the app has
+started); fixed, and every stage is now logged.
+
+**Measured:** Ola's booking page (book.olacabs.com) still renders nothing in a phone-size Chrome
+after 6 s (5 Nov), so Ola stays a link.

@@ -14,17 +14,27 @@ const [apk, port = '8799'] = process.argv.slice(2);
 if (!apk) throw new Error('usage: phone-ci.mjs <apk> [port]');
 const OUT = 'phone-ci';
 mkdirSync(OUT, { recursive: true });
-const adb = (...a) => execFileSync('adb', a, { encoding: 'utf8', maxBuffer: 64 << 20 });
-const shot = (name) => writeFileSync(`${OUT}/${name}.png`, execFileSync('adb', ['exec-out', 'screencap', '-p'], { maxBuffer: 64 << 20 }));
+// Every phone command has a time limit: one with none (likely `uiautomator dump` on a busy screen)
+// hung the 4 Nov run until GitHub killed the job, and nothing was written.
+const adb = (...a) => execFileSync('adb', a, { encoding: 'utf8', maxBuffer: 64 << 20, timeout: a[0] === 'install' ? 180_000 : 45_000 });
+const shot = (name) => { try { writeFileSync(`${OUT}/${name}.png`, execFileSync('adb', ['exec-out', 'screencap', '-p'], { maxBuffer: 64 << 20, timeout: 30_000 })); } catch (e) { step(`screenshot ${name} failed: ${String(e).slice(0, 120)}`); } };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const results = [];
 let failed = 0;
 const steps = [];
-const step = (what) => { const line = `${new Date().toISOString().slice(11, 19)} ${what}`; steps.push(line); console.log(line); };
+// Written after every step and check, so a run that is killed still leaves what it saw.
+const save = () => {
+  try {
+    writeFileSync(`${OUT}/results.json`, JSON.stringify(results, null, 2));
+    writeFileSync(`${OUT}/steps.txt`, steps.join('\n'));
+  } catch { /* the next save tries again */ }
+};
+const step = (what) => { const line = `${new Date().toISOString().slice(11, 19)} ${what}`; steps.push(line); console.log(line); save(); };
 const check = (name, ok, got) => {
   results.push({ name, ok: !!ok, got });
   if (!ok) failed++;
   console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}${ok ? '' : `  (got ${JSON.stringify(got)?.slice(0, 300)})`}`);
+  save();
 };
 
 let ws = null;
@@ -71,7 +81,13 @@ ws.onmessage = (e) => {
   pending.get(m.id)?.(m);
   pending.delete(m.id);
 };
-send = (method, params = {}) => new Promise((r) => { pending.set(++id, r); ws.send(JSON.stringify({ id, method, params })); });
+// A DevTools call that is never answered (a page torn down mid-call) gives up after 30 s.
+send = (method, params = {}) => new Promise((r) => {
+  const n = ++id;
+  const t = setTimeout(() => { pending.delete(n); r({ result: { exceptionDetails: { exception: { description: `${method}: no answer in 30 s` } } } }); }, 30_000);
+  pending.set(n, (m) => { clearTimeout(t); r(m); });
+  ws.send(JSON.stringify({ id: n, method, params }));
+});
 await send('Runtime.enable');
 ev = async (expression) => {
   const r = await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
@@ -89,8 +105,14 @@ const until = async (expression, ms, every = 500) => {
 };
 /** Taps an Android system button (the permission dialog) by its own id or text, never by guessing. */
 function tapSystem(ids, texts) {
-  adb('shell', 'uiautomator', 'dump', '/sdcard/ui.xml');
-  const xml = adb('shell', 'cat', '/sdcard/ui.xml');
+  let xml = '';
+  try {
+    adb('shell', 'uiautomator', 'dump', '/sdcard/ui.xml');
+    xml = adb('shell', 'cat', '/sdcard/ui.xml');
+  } catch (e) {
+    step(`screen dump failed: ${String(e).slice(0, 120)}`);
+    return null;
+  }
   for (const node of xml.match(/<node [^>]*>/g) ?? []) {
     const rid = /resource-id="([^"]*)"/.exec(node)?.[1] ?? '';
     const text = /text="([^"]*)"/.exec(node)?.[1] ?? '';
@@ -151,15 +173,24 @@ function tapSystem(ids, texts) {
   check('no script errors on Britto\'s page', errors.length === 0, errors);
 }
 
+// The whole run has 25 minutes (the job has 50): past that, it says where it was and stops.
+const watchdog = setTimeout(() => {
+  check('the run finished within 25 minutes', false, steps.at(-1));
+  finish();
+  process.exit(1);
+}, 25 * 60_000);
+function finish() {
+  save();
+  try { writeFileSync(`${OUT}/logcat.txt`, adb('logcat', '-d', '-t', '3000')); } catch { /* the phone is gone */ }
+}
 try {
   await main();
 } catch (e) {
   check('the run itself', false, String(e?.stack ?? e));
   try { shot('zz-error'); } catch { /* the phone is gone */ }
 } finally {
-  writeFileSync(`${OUT}/results.json`, JSON.stringify(results, null, 2));
-  writeFileSync(`${OUT}/steps.txt`, steps.join('\n'));
-  writeFileSync(`${OUT}/logcat.txt`, (() => { try { return adb('logcat', '-d', '-t', '3000'); } catch { return ''; } })());
+  clearTimeout(watchdog);
+  finish();
   ws?.close();
 }
 console.log(`\n${results.filter((r) => r.ok).length} ok, ${failed} failed`);
