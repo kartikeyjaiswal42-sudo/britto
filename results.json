@@ -1,0 +1,236 @@
+[
+  {
+    "name": "Travel opens on Cabs in the app, with pickup, drop and the ride apps",
+    "ok": true
+  },
+  {
+    "name": "Android asked for the location (and only when the button was tapped)",
+    "ok": true,
+    "got": "com.android.permissioncontroller:id/permission_allow_foreground_only_button"
+  },
+  {
+    "name": "the pickup is filled from the phone's location",
+    "ok": true,
+    "got": {
+      "pickup": "E2 Block, opposite Amity University Gate Number 2 Road",
+      "status": ""
+    }
+  },
+  {
+    "name": "the phone suggests places for the typed drop",
+    "ok": true,
+    "got": [
+      "Noida Sec-18"
+    ]
+  },
+  {
+    "name": "Compare cabs finished for Uber and Rapido (no hang)",
+    "ok": true,
+    "got": [
+      {
+        "site": "uber",
+        "status": "login",
+        "text": "Uber shows fares only after you log in. Open it and log in once. Open Uber"
+      },
+      {
+        "site": "rapido",
+        "status": "login",
+        "text": "Rapido shows fares only after you log in. Open it and log in once. Open Rapido"
+      }
+    ]
+  },
+  {
+    "name": "each app says where it stands (fares, or log in), never blank",
+    "ok": true,
+    "got": [
+      {
+        "site": "uber",
+        "status": "login",
+        "text": "Uber shows fares only after you log in. Open it and log in once. Open Uber"
+      },
+      {
+        "site": "rapido",
+        "status": "login",
+        "text": "Rapido shows fares only after you log in. Open it and log in once. Open Rapido"
+      }
+    ]
+  },
+  {
+    "name": "rides listed (info)",
+    "ok": true,
+    "got": []
+  },
+  {
+    "name": "ride apps state kept on the phone (info)",
+    "ok": true,
+    "got": {
+      "uber": {
+        "status": "login",
+        "at": 1794057287659
+      },
+      "rapido": {
+        "status": "login",
+        "at": 1794057298785
+      }
+    }
+  },
+  {
+    "name": "ride to the airport: an Uber link from the phone's location",
+    "ok": true,
+    "got": "https://m.uber.com/looking?pickup=%7B%22latitude%22%3A28.5442%2C%22longitude%22%3A77.3331%2C%22addressLine1%22%3A%22My%20location%22%7D&drop%5B0%5D=%7B%22latitude%22%3A28.5574%2C%22longitude%22%3A77.0833%2C%22addressLine1%22%3A%22Gate%207%2C%20Terminal%203%22%7D"
+  },
+  {
+    "name": "search page in the app offers \"Search N more stores\"",
+    "ok": true,
+    "got": "Also on Flipkart, Croma, Reliance Digital, Tata CLiQ, Snapdeal, Meesho?\n\nBritto opens each store’s own search on your phone and reads what it lists. About half a minute.\n\nSearch 6 more stores"
+  },
+  {
+    "name": "every store searched on the phone ends with a status (no hang)",
+    "ok": true,
+    "got": [
+      {
+        "store": "flipkart",
+        "status": "listed",
+        "cards": 4,
+        "first": "boAt Airdopes 141 Gen 2, 4 Mics ENx Tech,48H Battery,ASAP Charge,Low Latency,BT v5.4 Bluetooth Headset ₹799 ₹3,990",
+        "priced": 4
+      },
+      {
+        "store": "croma",
+        "status": "listed",
+        "cards": 8,
+        "first": "boAt Airdopes 213 PA0028 TWS Earbuds with Environmental Noise Cancellation (IPX4 Sweat & Splash Resistant, Insta Wake & Pair, Shadow Black) ₹849 ₹3,290",
+        "priced": 8
+      },
+      {
+        "store": "reliancedigital",
+        "status": "listed",
+        "cards": 8,
+        "first": "boAt Airdopes 141 ANC TWS in Ear Earbuds with 32 dB ANC, 42 Hrs Playback, 50 ms Low Latency Beast Mode, IWP Tech, Quad Mics with Enx, ASAP Charge, USB Type-C Po",
+        "priced": 8
+      },
+      {
+        "store": "tatacliq",
+        "status": "listed",
+        "cards": 8,
+        "first": "Bassheads 55 Wired Earphones with 10mm Drivers ₹325 ₹890",
+        "priced": 8
+      },
+      {
+        "store": "snapdeal",
+        "status": "waiting",
+        "cards": 0,
+        "first": "S Snapdeal On your phone Open showed no products for this",
+        "priced": 0
+      },
+      {
+        "store": "meesho",
+        "status": "waiting",
+        "cards": 0,
+        "first": "M Meesho On your phone Open showed no products for this",
+        "priced": 0
+      }
+    ]
+  },
+  {
+    "name": "store searches read in the app (info: which stores answered this US computer)",
+    "ok": true,
+    "got": [
+      {
+        "store": "flipkart",
+        "status": "listed",
+        "cards": 4,
+        "first": "boAt Airdopes 141 Gen 2, 4 Mics ENx Tech,48H Battery,ASAP Charge,Low Latency,BT v5.4 Bluetooth Headset ₹799 ₹3,990",
+        "priced": 4
+      },
+      {
+        "store": "croma",
+        "status": "listed",
+        "cards": 8,
+        "first": "boAt Airdopes 213 PA0028 TWS Earbuds with Environmental Noise Cancellation (IPX4 Sweat & Splash Resistant, Insta Wake & Pair, Shadow Black) ₹849 ₹3,290",
+        "priced": 8
+      },
+      {
+        "store": "reliancedigital",
+        "status": "listed",
+        "cards": 8,
+        "first": "boAt Airdopes 141 ANC TWS in Ear Earbuds with 32 dB ANC, 42 Hrs Playback, 50 ms Low Latency Beast Mode, IWP Tech, Quad Mics with Enx, ASAP Charge, USB Type-C Po",
+        "priced": 8
+      },
+      {
+        "store": "tatacliq",
+        "status": "listed",
+        "cards": 8,
+        "first": "Bassheads 55 Wired Earphones with 10mm Drivers ₹325 ₹890",
+        "priced": 8
+      },
+      {
+        "store": "snapdeal",
+        "status": "waiting",
+        "cards": 0,
+        "first": "S Snapdeal On your phone Open showed no products for this",
+        "priced": 0
+      },
+      {
+        "store": "meesho",
+        "status": "waiting",
+        "cards": 0,
+        "first": "M Meesho On your phone Open showed no products for this",
+        "priced": 0
+      }
+    ]
+  },
+  {
+    "name": "a store that listed products shows them with a price",
+    "ok": true,
+    "got": [
+      {
+        "store": "flipkart",
+        "status": "listed",
+        "cards": 4,
+        "first": "boAt Airdopes 141 Gen 2, 4 Mics ENx Tech,48H Battery,ASAP Charge,Low Latency,BT v5.4 Bluetooth Headset ₹799 ₹3,990",
+        "priced": 4
+      },
+      {
+        "store": "croma",
+        "status": "listed",
+        "cards": 8,
+        "first": "boAt Airdopes 213 PA0028 TWS Earbuds with Environmental Noise Cancellation (IPX4 Sweat & Splash Resistant, Insta Wake & Pair, Shadow Black) ₹849 ₹3,290",
+        "priced": 8
+      },
+      {
+        "store": "reliancedigital",
+        "status": "listed",
+        "cards": 8,
+        "first": "boAt Airdopes 141 ANC TWS in Ear Earbuds with 32 dB ANC, 42 Hrs Playback, 50 ms Low Latency Beast Mode, IWP Tech, Quad Mics with Enx, ASAP Charge, USB Type-C Po",
+        "priced": 8
+      },
+      {
+        "store": "tatacliq",
+        "status": "listed",
+        "cards": 8,
+        "first": "Bassheads 55 Wired Earphones with 10mm Drivers ₹325 ₹890",
+        "priced": 8
+      },
+      {
+        "store": "snapdeal",
+        "status": "waiting",
+        "cards": 0,
+        "first": "S Snapdeal On your phone Open showed no products for this",
+        "priced": 0
+      },
+      {
+        "store": "meesho",
+        "status": "waiting",
+        "cards": 0,
+        "first": "M Meesho On your phone Open showed no products for this",
+        "priced": 0
+      }
+    ]
+  },
+  {
+    "name": "no script errors on Britto's page",
+    "ok": true,
+    "got": []
+  }
+]
