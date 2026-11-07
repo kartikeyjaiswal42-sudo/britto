@@ -410,14 +410,14 @@ try {
         sent?.type === 'image/jpeg' && sent.header === 'image/jpeg' && sent.h === LENS.side && sent.w === Math.round(900 * LENS.side / 1600) && sent.bytes < LENS.maxBytes, JSON.stringify(sent));
       check('…then Britto\'s search for the words it named, saying they were read off the photo and can be changed',
         /\/search\?q=Cello%20Butterflow%20ball%20pens&photo=read$/.test(p.url()) && (await p.locator('#search-form input').inputValue()) === 'Cello Butterflow ball pens'
-        && /From your photo: Britto read “Cello Butterflow ball pens” on it\. Not it\? Change the words/.test(await p.locator('.photo-note').innerText().catch(() => '')), p.url());
+        && /From your photo, Britto’s AI read “Cello Butterflow ball pens”\. It can misread a name: if this is not it, change the words/.test(await p.locator('.photo-note').innerText().catch(() => '')), p.url());
       await c.close();
     }
     {
       const { c, p } = await lensPage({ reply: { status: 200, json: { lens: { found: true, words: 'steel water bottle', brand: null, sure: false }, neurons: 19.4, left: 14 } } });
       await choose(p);
       await p.waitForURL(/\/search\?q=/, { timeout: 10_000 }).catch(() => {});
-      check('…a guess from its look is called a guess', /photo=guess$/.test(p.url()) && /is a guess from how it looks/.test(await p.locator('.photo-note').innerText().catch(() => '')), p.url());
+      check('…a guess from its look is called a guess', /photo=guess$/.test(p.url()) && /AI guessed “steel water bottle” from how it looks/.test(await p.locator('.photo-note').innerText().catch(() => '')), p.url());
       await c.close();
     }
     {

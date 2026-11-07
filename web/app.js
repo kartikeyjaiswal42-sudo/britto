@@ -1379,7 +1379,8 @@ async function searchPage(q) {
   // From Lens: say where the words came from, and that the box above can change them.
   const photo = new URLSearchParams(location.search).get('photo');
   const fromPhoto = photo === 'read' || photo === 'guess' ? h('p', { class: 'notice photo-note' }, photo === 'read'
-    ? `From your photo: Britto read \u201c${q}\u201d on it.` : `From your photo: \u201c${q}\u201d is a guess from how it looks.`, ' Not it? Change the words in the box above.') : null;
+    // The model's own "sure" is not proof (live, 2026-11-07, it was sure of "bella" on a Cello pack).
+    ? `From your photo, Britto\u2019s AI read \u201c${q}\u201d. It can misread a name:` : `From your photo, Britto\u2019s AI guessed \u201c${q}\u201d from how it looks:`, ' if this is not it, change the words in the box above.') : null;
   put(app, h('h1', { class: 'search-title' }, `Results for \u201c${q}\u201d`), fromPhoto, chips, tracked, live, more, others);
   if (inApp && appCanShop() && siteBridge()) otherStoresSearch(more, q);
   searchProducts(q).then(({ results }) => {

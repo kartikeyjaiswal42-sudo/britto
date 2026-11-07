@@ -1970,3 +1970,15 @@ photos, one tilted on a coloured background); EXIF-rotated camera photos (the pa
 `imageOrientation: 'from-image'`, not tested); iPhone HEIC files (Chrome cannot open them: the
 page says to try a JPEG, PNG or screenshot); the day's budget and the account's real use by
 BookBot, truepen and palimpsest together (Lens's 1,000 is a choice, not a measurement of room).
+
+**Deployed 00c4aed, both GitHub runs green** (Test and deploy 42375017901 incl. `prove --live`
+with the two free Lens checks; Phone test 42375017888 14/14 with the new test config).
+**Verified LIVE (production):** `/api/config` says `lens: true`; a non-image gets 415; one real
+photo through the live page in Chrome (390 px) answered in 4.6 s and the PRODUCTION `ai_usage`
+row reads `2026-11-07 · 19.35 neurons · 1 call`. That photo (the Cello pack, shrunk on the page
+from 1000 px) came back as "bella Butterfly Simply Ball ball pens" with SURE: yes → the note no
+longer says "Britto read … on it": it says Britto's AI read it and can misread a name, and that
+the words can be changed (browser 150 again).
+**Owner's choice, not decided:** sharper photos (768 px) cost ~32 neurons (≈30 photos a day at
+the 1,000 cap) against ~19 at 512 px (≈50 a day); in my few tries 768 px read "Cello" where one
+512 px try read "bella". Too few photos to call it measured.
