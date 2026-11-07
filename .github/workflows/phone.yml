@@ -47,8 +47,10 @@ jobs:
       # Britto's site, local on the runner (no Cloudflare account involved), for the app to open.
       - name: Britto site on 127.0.0.1:8799
         run: |
-          npx wrangler d1 execute britto --local --persist-to .wrangler/ci --file=api/schema.sql
-          nohup npx wrangler dev --local --persist-to .wrangler/ci --port 8799 > wrangler.log 2>&1 &
+          # wrangler.jsonc without its Workers AI binding (that would need a Cloudflare login).
+          CONFIG="$(node scripts/test-config.mjs)"
+          npx wrangler d1 execute britto --config "$CONFIG" --local --persist-to .wrangler/ci --file=api/schema.sql
+          nohup npx wrangler dev --config "$CONFIG" --local --persist-to .wrangler/ci --port 8799 > wrangler.log 2>&1 &
           for i in $(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:8799/ && break; sleep 2; done
           curl -sf -o /dev/null http://127.0.0.1:8799/travel
       - name: The debug app, opening that site

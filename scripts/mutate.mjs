@@ -21,6 +21,7 @@ const TRAVEL = ['node', ['--test', 'core/travel.test.ts']];
 const LISTING = ['node', ['--test', 'api/listing.test.ts']];
 const FARES = ['node', ['--test', 'core/fares.test.ts']];
 const SHOP = ['node', ['--test', 'core/shop.test.ts']];
+const LENS = ['node', ['--test', 'core/lens.test.ts']];
 // The slow ones (a real Worker; prove also makes its real amazon.in requests): run them by name.
 const PROVE = ['node', ['scripts/prove.mjs']];
 const EXTENSION = ['node', ['scripts/extension.mjs']];
@@ -693,6 +694,47 @@ export const MUTANTS = [
     name: 'fare compare takes any text as a ride place',
     file: 'android/app/src/main/java/app/britto/FareJob.java', find: '|| !PLACE.matcher(p).matches() || !PLACE.matcher(d).matches()', replace: '',
     run: GRADLE_TEST, expect: [/FareJobTest > aRideTripIsTwoShortPlacesAndItsStepGoesBackToTheReader/],
+  },
+  // ---- Product Lens (P11 part 4): core/lens.ts and POST /api/lens (api/lens.ts)
+  {
+    name: 'Lens search words keep markup and links',
+    file: 'core/lens.ts', find: ".replace(/[^\\p{L}\\p{M}\\p{N}&+.\\-/' ]+/gu, ' ')", replace: ".replace(/[\\u0000]+/gu, ' ')",
+    run: LENS, expect: [/search words: no markup, no links/],
+  },
+  {
+    name: 'Lens calls two bytes a JPEG',
+    file: 'core/lens.ts', find: 'b[1] === 0xd8 && b[2] === 0xff', replace: 'b[1] === 0xd8',
+    run: LENS, expect: [/the photo is judged by its bytes/],
+  },
+  {
+    name: 'Lens ignores the neurons the reply reports',
+    file: 'core/lens.ts', find: "  if (typeof usage?.neurons === 'number' && Number.isFinite(usage.neurons)) return usage.neurons;\n", replace: '',
+    run: LENS, expect: [/neurons: the reply's own figure first/],
+  },
+  {
+    name: 'Lens reads "NAME: none" as a product called none',
+    file: 'core/lens.ts', find: "  if (/^(none|no product|nothing)\\b/i.test(name)) return { found: false, words: '', brand: null, sure: false };\n", replace: '',
+    run: LENS, expect: [/no product in the photo/],
+  },
+  {
+    name: 'Lens calls the model without checking the day\'s budget',
+    file: 'api/lens.ts', find: 'if ((await usedToday(env.DB, now)) + LENS.estimate > lensBudget(env)) {', replace: 'if (false) {',
+    run: PROVE, expect: [/Lens: when the day's budget has no room/, /the refused photo did not use up/, /the day counts every neuron/],
+  },
+  {
+    name: 'Lens without a per-network limit',
+    file: 'api/lens.ts', find: 'if (!(await allowed(`lens:${network}`, LENS.perNetworkPerDay, day))) {', replace: 'if (false) {',
+    run: PROVE, expect: [/Lens: a photo → the words/, /photos a day from one network/, /the refused photo did not use up/],
+  },
+  {
+    name: 'Lens keeps the words it read',
+    file: 'api/lens.ts', find: "  if (!answer) return no(502, 'lens_failed',", replace: "  if (answer) await env.DB.prepare(\"INSERT OR REPLACE INTO meta (k, v) VALUES ('lens-last', ?)\").bind(answer.words).run();\n  if (!answer) return no(502, 'lens_failed',",
+    run: PROVE, expect: [/no photo bytes and no words anywhere/],
+  },
+  {
+    name: 'Lens asks the model without the prompt',
+    file: 'core/lens.ts', find: "content: [{ type: 'text', text: LENS_PROMPT },", replace: "content: [{ type: 'text', text: 'What is this?' },",
+    run: PROVE, expect: [/the model got the photo's exact bytes/],
   },
 ];
 

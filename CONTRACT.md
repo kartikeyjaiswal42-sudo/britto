@@ -195,7 +195,29 @@ Britto say `User-Agent: BrittoApp/<version> (Android)`; its WebView of the Britt
 ` BrittoApp/<version>` to the phone's own User-Agent (store pages see the phone's WebView
 unchanged).
 
+## Product Lens: search by photo (P11 part 4)
+
+| Method & path | Body | 2xx response | Error codes |
+|---|---|---|---|
+| `POST /api/lens` | the photo's bytes, `Content-Type: image/jpeg`, `image/png` or `image/webp`, ≤ `LENS.maxBytes` (the page shrinks it on the device first) | `{ lens: { found, words, brand, sure }, neurons, left }` | `413 too_big` `415 bad_image` `429 rate_limited` `503 lens_off` `503 lens_budget` `502 lens_failed` |
+
+- One Workers AI vision call per photo (`LENS.model`, `core/lens.ts`). The AI only **names**
+  the product (`words`: what a shopper would type into a store's search, ≤ 10 words; `brand`
+  or null; `sure` = it read the brand/product off the photo). It never gives a price: the page
+  opens `/search?q=<words>`, so every result comes from Britto's own index or a labelled
+  store search (BLUEPRINT §19). `found: false` (and empty words) when no product is visible.
+- **Nothing is kept**: the photo is not written to D1, R2 or a log, and the words are not
+  stored. The only row is the day's total: `ai_usage (day, neurons, calls)`.
+- **Budget**: before a call, today's `ai_usage.neurons` + `LENS.estimate` must fit
+  `LENS_NEURONS_PER_DAY` (a Worker var; default `LENS.perDay`), else `503 lens_budget`
+  (resets 00:00 UTC = 05:30 IST). After it, the neurons the reply reports (or its tokens ×
+  the price table in `core/lens.ts`) are added. The account's free 10,000 a day is shared
+  with BookBot (5,000), truepen and palimpsest, so Lens takes a small slice.
+- **Per network**: `LENS.perNetworkPerDay` photos a day (`left` counts down).
+- No `AI` binding → `503 lens_off`. Tests only: `LENS_FAKE_AI=<url>` sends the model's input
+  to a fake server instead (like `TELEGRAM_API`).
+
 ## Planned (later sessions, not live)
 
-- Product Lens and AI look-alikes (need Workers AI on the account), indicative fares and
+- AI look-alikes (need Workers AI on the account), indicative fares and
   flight price alerts (need fares people saw; there are none yet), trying the page's codes in a cart (needs real carts), Spend Lens (P10).

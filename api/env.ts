@@ -36,6 +36,14 @@ export interface Env {
   PUSH_TEST_ORIGIN?: string;
   /** Tests only: how long (ms) an isolate keeps a reader config; default 60 000 (api/readers.ts). */
   READER_MEMO_MS?: string;
+  /** Workers AI (Product Lens). Without it, search by photo answers 503 lens_off. */
+  AI?: { run(model: string, input: unknown): Promise<unknown> };
+  /** Neurons Lens may spend per UTC day (default LENS.perDay in core/lens.ts). */
+  LENS_NEURONS_PER_DAY?: string;
+  /** A model id from core/lens.ts LENS_MODELS, to switch model without a code change. */
+  LENS_MODEL?: string;
+  /** Tests only: a fake model server; the Worker POSTs {model, input} to it instead of Workers AI. */
+  LENS_FAKE_AI?: string;
 }
 
 export interface Ctx {

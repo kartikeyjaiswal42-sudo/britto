@@ -1893,3 +1893,80 @@ after this push); the in-app pieces (Share through `shareApp`, the Fares switch,
 stores") only against a stand-in bridge here, the real app on the GitHub emulator; Real drops'
 filters with real drops in them (the local database has none, so only the empty states and the
 chip links were seen).
+
+**Phone test for 5d6b849: green, 14/14** (run 42367901562; Test and deploy 42367901535 green,
+deployed, `prove --live` passed). In the app on the emulator the v5 search page drew Flipkart and
+Croma results read on the phone; Amazon "did not answer" GitHub's US computer, as before.
+
+## P11 part 4 (first part), 2026-11-07 (local session): Product Lens, search by photo
+
+**What it does:** on the home page a camera button (next to Paste) takes a photo or screenshot;
+the page shrinks it to 512 px on the phone, sends it to `POST /api/lens`, one Workers AI vision
+call names the product, and the page opens Britto's own search for those words with a note
+("From your photo: Britto read … on it" or "… is a guess from how it looks", and that the box
+can change them). The AI never gives a price: every result is Britto's index or a store's own
+search (BLUEPRINT §19). Contract: CONTRACT.md "Product Lens". Code: `core/lens.ts` (prompt,
+reading the reply, image bytes, neurons), `api/lens.ts`, `web/app.js` (`photoSearch`).
+
+**Model chosen by measurement (2026-11-07, real Workers AI from the Mac, 21 calls ≈ 610 neurons
+in all):** prices from Cloudflare's pricing page the same day. Every reply carries
+`usage.neurons`, equal to tokens × the price table (Scout 1,609 × 24,545/M + 20 × 77,273/M =
+41.04, reported 41.039).
+- `llama-4-scout-17b-16e-instruct`: 1,609 prompt tokens at 768 px → ~41 neurons, 1.1–1.6 s;
+  dropped the answer's labels on the tilted photo (the reader now accepts three bare lines).
+- `mistral-small-3.1-24b-instruct`: 966 tokens at 768 px → ~32 neurons; **534–577 at 512 px →
+  18–19.5 neurons**, 1.1–2.0 s, kept the format on every photo. Chosen, at 512 px.
+- `llama-3.2-11b-vision-instruct` (cheapest input) was NOT tried: it needs the account to accept
+  Meta's licence by sending "agree", which is the owner's decision, not mine.
+- Quality on 6 Amazon catalogue photos (pen set, two slippers, shoes, flip-flops, one tilted on a
+  coloured background): brands read where printed (Cello, Frido, Doctor); the first prompt
+  invented sizes ("size 8", "30 count" for a 25-pack) → the prompt now forbids any size or count
+  not printed in the photo, and after that none were invented. Misreadings stay possible
+  ("Butterfly" for Butterflow, "Docios" for Doctor): Amazon's own search still found the Doctor
+  slippers, and the note says the words can be changed.
+- One real photo through the real page in Chrome (390 px) → real model: 4.3 s, 19.45 neurons.
+
+**Limits:** `LENS_NEURONS_PER_DAY` (Worker var) default **1,000 a day ≈ 50 photos**, checked
+BEFORE calling with 25 neurons of room; the account's free 10,000 is shared with BookBot (5,000
+cap), truepen and palimpsest. 15 photos a day per network (`left` counts down). A budget refusal
+does not use up the network's photo. Only the day's total is kept (`ai_usage`), never the photo
+or the words: prove searches every database file for the photo's bytes and the words.
+
+**Config:** `wrangler.jsonc` has `"ai": { "binding": "AI", "remote": true }`. Measured: in
+`wrangler dev --local` wrangler 4.153 says the AI binding is "not supported"; without `--local`
+and with `remote: true` it is remote while D1 stays local. **Every local test server now uses
+`wrangler.test.jsonc`** (made by `scripts/test-config.mjs` from wrangler.jsonc without `ai`,
+gitignored) so tests need no Cloudflare login and spend no neurons; prove points Lens at a fake
+model (`LENS_FAKE_AI`) that records what it is sent. The phone workflow uses the same file.
+
+**Not in the app yet:** its in-app browser has no `onShowFileChooser`, so a file picker would do
+nothing there; the camera button is hidden in the app until a new app version adds it.
+
+**Gates (this session, on the Mac, after Lens):** unit **174** (164 + 10 `core/lens.test.ts`) ·
+typecheck clean · check:readers clean · prove **145** (133 + 12 Lens checks against a fake model:
+refusals reach no model, the exact bytes and the prompt are sent, NONE / failed / out-of-format
+replies, 15 a network then 429, the day's budget refused BEFORE calling and without using up a
+network's photo, every reported neuron counted, no photo bytes or words in any of the 22 database
+files) · browser **150** (136 + 7 Lens checks per layout: the camera button, the photo sent is a
+JPEG at 288×512 from a 900×1600 picture, the search with its note, a guess, no product, the
+server's budget message, hidden when off and in the app) · shop-browser all passed · extension
+38 · app.mjs 32 · alerts 68. **mutate:** 8 new Lens breakages, each red exactly as expected; the
+first try of "two bytes called a JPEG" changed nothing (my test only tried 2 bytes, which the
+length check refuses anyway) → a 4-byte case added, now red. The extension's Spend Lens breakage
+needs `PW_DIR`; with it, red as expected (40 s).
+
+**alerts.mjs: "the cron re-reads Amazon" failed 3 runs in a row (12:52–12:58 UTC) and once this
+morning, before any Lens change.** Measured: after `/__scheduled` (answers "Ran scheduled event" in
+~10 ms; the run does happen, a planted expired `rate` row was swept) the product's
+`last_attempt_at` stayed empty with `fail_count` 0 and the Worker logged no `schedule` line: the
+run read no product at all. The test now triggers the run as prove does (the local explorer's
+route, which waits for the run, with a mid-hour time): 68/68. Why `/__scheduled`'s run read
+nothing is NOT found (a probe at 13:00 UTC seeded no best-sellers either); the check's failure
+now prints the row, the seconds waited and the Worker's log lines.
+
+**NOT verified:** Lens on the live site (needs this deploy; the deploy token's right to bind
+Workers AI is unchecked until the workflow runs); real phone photos (only Amazon catalogue
+photos, one tilted on a coloured background); EXIF-rotated camera photos (the page asks for
+`imageOrientation: 'from-image'`, not tested); iPhone HEIC files (Chrome cannot open them: the
+page says to try a JPEG, PNG or screenshot); the day's budget and the account's real use by
+BookBot, truepen and palimpsest together (Lens's 1,000 is a choice, not a measurement of room).

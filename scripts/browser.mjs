@@ -7,6 +7,17 @@ import { readFileSync } from 'node:fs';
 import { STORES, STORE_IDS } from '../core/stores.ts';
 import { SECTOR_NAMES, SERVICES } from '../core/services.ts';
 import { airportIndex, flightSearch, hotelSearch, rideSearch, todayIST } from '../web/travel.js';
+import { deflateSync, crc32 } from 'node:zlib';
+import { LENS } from '../core/lens.ts';
+
+/** A plain RGB PNG (a gradient), made here so no store's photo is needed for the Lens checks. */
+function pngOf(w, h) {
+  const raw = Buffer.alloc((w * 3 + 1) * h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) raw.set([x % 256, y % 256, 128], y * (w * 3 + 1) + 1 + x * 3);
+  const chunk = (type, data) => { const t = Buffer.from(type); const len = Buffer.alloc(4); len.writeUInt32BE(data.length); const c = Buffer.alloc(4); c.writeUInt32BE(crc32(Buffer.concat([t, data]))); return Buffer.concat([len, t, data, c]); };
+  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr.set([8, 2, 0, 0, 0], 8);
+  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
+}
 
 const base = (process.argv[2] ?? '').replace(/\/$/, '');
 if (!base) throw new Error('usage: browser.mjs <url>');
@@ -364,6 +375,74 @@ try {
     const cmp = flightSearch({ from: 'DEL', to: 'BOM', depart: day, adults: 1, cabin: 'economy' }, airportIndex(JSON.parse(readFileSync(new URL('../web/airports.json', import.meta.url), 'utf8')).airports));
     const opened = await page.locator('#flight-links li a').evaluateAll((as) => as.map((a) => a.href));
     check('…which opens Flights already searched for it', (await page.locator('#panel-flights').isVisible()) && cmp.ok && JSON.stringify(opened) === JSON.stringify(cmp.links.map((l) => l.url)), JSON.stringify(opened.slice(0, 2)));
+
+    // ---- Product Lens on the page. The server's two answers are stood in for (prove checks the
+    // server itself); what the page SENDS is recorded inside the page, because Chrome hides a Blob
+    // request body from Playwright.
+    const lensPage = async ({ on = true, reply = null, ua = '' } = {}) => {
+      const c = await browser.newContext({ viewport, colorScheme: scheme, ...(ua ? { userAgent: `${await page.evaluate(() => navigator.userAgent)} ${ua}` } : {}) });
+      await c.addInitScript(() => {
+        const real = window.fetch;
+        window.fetch = async (u, init) => {
+          if (String(u).endsWith('/api/lens') && init?.body instanceof Blob) {
+            const bmp = await createImageBitmap(init.body);
+            window.__lensSent = { type: init.body.type, header: init.headers?.['content-type'], bytes: init.body.size, w: bmp.width, h: bmp.height };
+          }
+          return real(u, init);
+        };
+      });
+      const p = await c.newPage();
+      p.on('pageerror', (e) => errors.push(String(e)));
+      await p.route('**/api/config', async (route) => { const r = await route.fetch(); route.fulfill({ response: r, json: { ...(await r.json()), lens: on } }); });
+      if (reply) await p.route('**/api/lens', (route) => route.fulfill({ status: reply.status, json: reply.json }));
+      await p.goto(base + '/', { waitUntil: 'networkidle' });
+      return { c, p };
+    };
+    const choose = (p) => p.locator('#paste input[type=file]').setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: pngOf(900, 1600) });
+    {
+      const { c, p } = await lensPage({ reply: { status: 200, json: { lens: { found: true, words: 'Cello Butterflow ball pens', brand: 'Cello', sure: true }, neurons: 19.4, left: 14 } } });
+      check('Lens: with search by photo on, the box has a camera button and says the photo is not kept',
+        (await p.locator('#photo-btn').isVisible()) && /not kept/.test(await p.locator('#photo-tip').innerText().catch(() => '')) && (await p.evaluate(() => { window.scrollTo(500, 0); return window.scrollX; })) === 0);
+      await choose(p);
+      await p.waitForURL(/\/search\?q=/, { timeout: 10_000 }).catch(() => {});
+      const sent = await p.evaluate(() => window.__lensSent ?? null);
+      check(`…the photo sent is a JPEG shrunk on the phone to ${LENS.side} px on its long side (a 900×1600 photo → 288×512)`,
+        sent?.type === 'image/jpeg' && sent.header === 'image/jpeg' && sent.h === LENS.side && sent.w === Math.round(900 * LENS.side / 1600) && sent.bytes < LENS.maxBytes, JSON.stringify(sent));
+      check('…then Britto\'s search for the words it named, saying they were read off the photo and can be changed',
+        /\/search\?q=Cello%20Butterflow%20ball%20pens&photo=read$/.test(p.url()) && (await p.locator('#search-form input').inputValue()) === 'Cello Butterflow ball pens'
+        && /From your photo: Britto read “Cello Butterflow ball pens” on it\. Not it\? Change the words/.test(await p.locator('.photo-note').innerText().catch(() => '')), p.url());
+      await c.close();
+    }
+    {
+      const { c, p } = await lensPage({ reply: { status: 200, json: { lens: { found: true, words: 'steel water bottle', brand: null, sure: false }, neurons: 19.4, left: 14 } } });
+      await choose(p);
+      await p.waitForURL(/\/search\?q=/, { timeout: 10_000 }).catch(() => {});
+      check('…a guess from its look is called a guess', /photo=guess$/.test(p.url()) && /is a guess from how it looks/.test(await p.locator('.photo-note').innerText().catch(() => '')), p.url());
+      await c.close();
+    }
+    {
+      const { c, p } = await lensPage({ reply: { status: 200, json: { lens: { found: false, words: '', brand: null, sure: false }, neurons: 19.4, left: 14 } } });
+      await choose(p);
+      await p.waitForFunction(() => /could not see a product/.test(document.querySelector('#paste .form-status')?.textContent ?? ''), null, { timeout: 10_000 }).catch(() => {});
+      check('…no product in the photo: says so and stays here (no empty search)', new URL(p.url()).pathname === '/' && /could not see a product/.test(await p.locator('#paste .form-status').innerText()));
+      await c.close();
+    }
+    {
+      const message = 'Today’s photo searches are used up. They come back at 5:30 am. Type the product’s name instead.';
+      const { c, p } = await lensPage({ reply: { status: 503, json: { error: { code: 'lens_budget', message } } } });
+      await choose(p);
+      await p.waitForFunction((m) => document.querySelector('#paste .form-status')?.textContent === m, message, { timeout: 10_000 }).catch(() => {});
+      check('…the day\'s photos used up: the server\'s words, on the page', (await p.locator('#paste .form-status').innerText()) === message);
+      await c.close();
+    }
+    {
+      const off = await lensPage({ on: false });
+      const app = await lensPage({ ua: 'BrittoApp/0.8.0' });
+      check('…no camera button when Lens is off, nor in the app (its in-app browser cannot pick a file yet)',
+        (await off.p.locator('#photo-btn').count()) === 1 && !(await off.p.locator('#photo-btn').isVisible()) && !(await app.p.locator('#photo-btn').isVisible()) && !(await app.p.locator('#photo-tip').isVisible()));
+      await off.c.close();
+      await app.c.close();
+    }
 
     // A null or undefined that reaches the page as text (the DOM's replaceChildren printed "null"
     // on /alerts whenever Telegram was off).

@@ -14,6 +14,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { testConfig } from './test-config.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const WRANGLER = join(ROOT, 'node_modules/.bin/wrangler');
@@ -125,8 +126,8 @@ writeFileSync(envFile, [
   `VAPID_PRIVATE_JWK='${VAPID_JWK}'`,
   `PUSH_TEST_ORIGIN=${pushOrigin}`,
 ].join('\n'));
-execFileSync(WRANGLER, ['d1', 'execute', 'britto', '--local', '--persist-to', state, '--file', 'api/schema.sql'], { cwd: ROOT, stdio: 'ignore' });
-const child = spawn(WRANGLER, ['dev', '--local', '--persist-to', state, '--port', String(port), '--ip', '127.0.0.1', '--test-scheduled', '--env-file', envFile, '--show-interactive-dev-session=false'], {
+execFileSync(WRANGLER, ['d1', 'execute', 'britto', '--config', testConfig(), '--local', '--persist-to', state, '--file', 'api/schema.sql'], { cwd: ROOT, stdio: 'ignore' });
+const child = spawn(WRANGLER, ['dev', '--config', testConfig(), '--local', '--persist-to', state, '--port', String(port), '--ip', '127.0.0.1', '--test-scheduled', '--env-file', envFile, '--show-interactive-dev-session=false'], {
   cwd: ROOT, detached: true, stdio: ['ignore', 'pipe', 'pipe'],
 });
 let log = '';
@@ -153,7 +154,7 @@ const api = async (path, { method = 'GET', body, token, ip } = {}) => {
   });
   return { status: res.status, body: await res.json().catch(() => null) };
 };
-const d1 = (sql) => JSON.parse(execFileSync(WRANGLER, ['d1', 'execute', 'britto', '--local', '--persist-to', state, '--json', '--command', sql], { cwd: ROOT, encoding: 'utf8' }))[0].results;
+const d1 = (sql) => JSON.parse(execFileSync(WRANGLER, ['d1', 'execute', 'britto', '--config', testConfig(), '--local', '--persist-to', state, '--json', '--command', sql], { cwd: ROOT, encoding: 'utf8' }))[0].results;
 const SECRET = createHash('sha256').update(`britto-webhook:${TOKEN}`).digest('hex').slice(0, 48);
 let updateId = 1;
 const hook = (update, secret = SECRET) => fetch(`${base}/api/telegram/webhook`, {
@@ -286,10 +287,22 @@ try {
     await sleep(1500);
     check('…but fires no alert (our server has the last word)', sentTo(555, tgFrom).length === 0, JSON.stringify(sentTo(555, tgFrom).map((c) => c.body.text)));
     const runCron = async () => {
-      await (await fetch(`${base}/__scheduled?cron=*/5+*+*+*+*`)).text();
+      // The local explorer's route (as prove): it waits for the run and takes the run's time, here
+      // the middle of the hour, so this is never the hour's best-seller run (api/app.ts firstOfHour).
+      // wrangler's /__scheduled answered "Ran scheduled event" in ~10 ms and the run read nothing.
+      const mid = Math.floor(Date.now() / 3_600_000) * 3_600_000 + 30 * 60_000;
+      const ran = await (await fetch(`${base}/cdn-cgi/local/explorer/api/local/scheduled?worker=britto`, {
+        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ cron: '*/3 * * * *', scheduled_time: mid }),
+      })).json().catch(() => null);
+      if (ran?.result?.outcome !== 'ok') console.log(`       scheduled run: ${JSON.stringify(ran)}`);
       return until(() => d1(`SELECT last_attempt_at FROM products WHERE key = '${KEY}'`)[0].last_attempt_at > 1, 20_000);
     };
-    check('the cron re-reads Amazon (queued by the report)', await runCron());
+    // When it fails, say which: never picked (attempt still empty) or Amazon slower than 20 s.
+    const cronFrom = Date.now();
+    const logFrom = log.length;
+    const reread = await runCron();
+    check('the cron re-reads Amazon (queued by the report)', reread,
+      `${Math.round((Date.now() - cronFrom) / 1000)} s; ${JSON.stringify(d1(`SELECT last_attempt_at, last_status, fail_count FROM products WHERE key = '${KEY}'`)[0])}; worker: ${log.slice(logFrom).split('\n').filter((l) => /schedul|refresh|popular|error|warn/i.test(l)).slice(-6).join(' | ').replace(/\x1b\[[0-9;]*m/g, '').slice(0, 600)}`);
     await sleep(1000);
     const back = d1(`SELECT price FROM products WHERE key = '${KEY}'`)[0].price;
     check('the server\'s reading replaced the forged price, and still no alert', back === P && sentTo(555, tgFrom).length === 0, `${back} vs ${P}`);

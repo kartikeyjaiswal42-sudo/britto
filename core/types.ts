@@ -251,4 +251,6 @@ export interface AppConfig {
   /** The VAPID public key (base64url, uncompressed P-256), or null when push is not set up. */
   push: { publicKey: string } | null;
   maxAlerts: number;
+  /** Search by photo (Product Lens) is on: the Worker has Workers AI (CONTRACT.md). */
+  lens: boolean;
 }

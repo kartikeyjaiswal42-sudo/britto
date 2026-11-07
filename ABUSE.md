@@ -23,6 +23,7 @@ below is checked by `npm run prove` against a real local Worker unless it says o
 | Coupon votes | 30 an hour per network; only codes the store's own page showed the server can be voted on |
 | Grocery compares | 300 an hour per network |
 | Telemetry | 600 an hour per network |
+| Search by photo (`/api/lens`, Workers AI) | 15 photos a day per network; the whole site stops at `LENS_NEURONS_PER_DAY` (1,000 by default ≈ 50 photos) before calling the model, so it can never use up the AMITY account's shared free 10,000; only a JPEG/PNG/WebP whose first bytes say so, under 400 KB; nothing about a photo is kept but the day's total |
 | New devices (`POST /api/me`) | 60 an hour per network |
 | Alert changes | 120 an hour per device; test messages 5 an hour; Telegram connect attempts 20 an hour |
 | Telegram webhook | refused without Telegram's secret header (derived from the bot token) |

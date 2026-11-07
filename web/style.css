@@ -97,6 +97,7 @@ button:disabled { opacity: .6; cursor: progress; }
 .track-row { display: flex; gap: 8px; }
 .track input { flex: 1 1 auto; min-width: 0; height: 50px; padding: 0 14px; border: 1.5px solid var(--line-2); border-radius: 14px; background: var(--field); color: var(--ink); font: 600 15px 'Manrope', sans-serif; }
 .track .paste-btn { flex: none; width: 50px; height: 50px; padding: 0; border-radius: 14px; background: var(--primary-tint); color: var(--primary); }
+.photo-note { margin: 0 0 12px; }
 .track button[type="submit"] { width: 100%; height: 50px; border-radius: 14px; background: var(--cta); color: var(--on-cta); font: 800 16px 'Manrope', sans-serif; }
 .tip-line { margin: 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
 .tip-line:empty, .paste-card .form-status:empty { display: none; }

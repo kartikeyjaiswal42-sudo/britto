@@ -5,6 +5,10 @@
 import { spawn, execFileSync } from 'node:child_process';
 import { SERVICES } from '../core/services.ts';
 import { createServer } from 'node:net';
+import { createServer as createHttpServer } from 'node:http';
+import { randomBytes } from 'node:crypto';
+import { readdirSync, readFileSync as readBytes, statSync } from 'node:fs';
+import { LENS, LENS_PROMPT } from '../core/lens.ts';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
@@ -12,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { configFromServed } from '../core/recipe.ts';
 import { bundledReader } from '../readers/index.ts';
 import { STORE_IDS } from '../core/stores.ts';
+import { testConfig } from './test-config.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const WRANGLER = join(ROOT, 'node_modules/.bin/wrangler');
@@ -43,16 +48,33 @@ async function freePort() {
 let base;
 let child;
 let state;
+// Lens's model, faked (tests only; the Worker's LENS_FAKE_AI): records every input it is sent and
+// answers with `lensReply` ({status, body}). Never Workers AI, so prove spends no neurons.
+const lensCalls = [];
+let lensReply = { status: 200, body: {} };
+let lensServer = null;
 if (live) {
   base = process.argv[process.argv.indexOf('--live') + 1]?.replace(/\/$/, '');
   if (!base?.startsWith('https://')) throw new Error('usage: prove.mjs --live https://…');
 } else {
   state = mkdtempSync(join(tmpdir(), 'britto-prove-'));
-  execFileSync(WRANGLER, ['d1', 'execute', 'britto', '--local', '--persist-to', state, '--file', 'api/schema.sql'], { cwd: ROOT, stdio: 'ignore' });
+  execFileSync(WRANGLER, ['d1', 'execute', 'britto', '--config', testConfig(), '--local', '--persist-to', state, '--file', 'api/schema.sql'], { cwd: ROOT, stdio: 'ignore' });
   const port = await freePort();
   base = `http://127.0.0.1:${port}`;
+  lensServer = createHttpServer((req, res) => {
+    let body = '';
+    req.on('data', (d) => { body += d; });
+    req.on('end', () => {
+      try { lensCalls.push(JSON.parse(body)); } catch { lensCalls.push({ bad: body.slice(0, 200) }); }
+      res.writeHead(lensReply.status, { 'content-type': 'application/json' });
+      res.end(JSON.stringify(lensReply.body));
+    });
+  });
+  await new Promise((r) => lensServer.listen(0, '127.0.0.1', r));
   // READER_MEMO_MS 0: a D1 reader override is seen at once (production keeps a config 60 s).
-  child = spawn(WRANGLER, ['dev', '--local', '--persist-to', state, '--port', String(port), '--ip', '127.0.0.1', '--test-scheduled', '--show-interactive-dev-session=false', '--var', 'READER_MEMO_MS:0'], {
+  // Lens: the fake model above, and a day's budget small enough to reach (60 neurons).
+  child = spawn(WRANGLER, ['dev', '--config', testConfig(), '--local', '--persist-to', state, '--port', String(port), '--ip', '127.0.0.1', '--test-scheduled', '--show-interactive-dev-session=false', '--var', 'READER_MEMO_MS:0',
+    '--var', `LENS_FAKE_AI:http://127.0.0.1:${lensServer.address().port}/`, '--var', 'LENS_NEURONS_PER_DAY:60'], {
     cwd: ROOT, detached: true, stdio: ['ignore', 'pipe', 'pipe'],
   });
   let log = '';
@@ -66,6 +88,7 @@ if (live) {
   }
 }
 const stop = () => {
+  lensServer?.close();
   if (child) { try { process.kill(-child.pid, 'SIGTERM'); } catch { /* gone */ } }
   if (state) rmSync(state, { recursive: true, force: true });
 };
@@ -89,13 +112,20 @@ const scheduled = (time) => fetch(`${base}/cdn-cgi/local/explorer/api/local/sche
 }).then(async (r) => { const b = await r.json(); if (b?.result?.outcome !== 'ok') throw new Error(`scheduled run: ${JSON.stringify(b)}`); });
 /** The network id the Worker derives from an address (api/app.ts clientId). */
 const netId = async (ip) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`britto:${ip}`))).slice(0, 8)].map((b) => b.toString(16).padStart(2, '0')).join('');
-const d1 = (sql) => JSON.parse(execFileSync(WRANGLER, ['d1', 'execute', 'britto', '--local', '--persist-to', state, '--json', '--command', sql], { cwd: ROOT, encoding: 'utf8' }))[0].results;
+const d1 = (sql) => JSON.parse(execFileSync(WRANGLER, ['d1', 'execute', 'britto', '--config', testConfig(), '--local', '--persist-to', state, '--json', '--command', sql], { cwd: ROOT, encoding: 'utf8' }))[0].results;
 
 try {
   console.log(`Proving ${base}${live ? ' (live)' : ' (local wrangler dev)'}`);
 
   const health = await j('/api/health');
   check('health answers JSON', health.status === 200 && health.body?.ok === true);
+  // Lens on the live site too, without spending a neuron: on, and a non-image refused before any call.
+  if (live) {
+    const c = await j('/api/config');
+    check('Lens: config says search by photo is on (live)', c.body?.lens === true, c.text.slice(0, 120));
+    const r = await fetch(`${base}/api/lens`, { method: 'POST', body: 'not a photo', headers: { 'content-type': 'text/plain' } });
+    check('Lens: a non-image is refused before any model call (live)', r.status === 415, String(r.status));
+  }
 
   const home = await j('/');
   check('home page is the app shell', home.status === 200 && home.text.includes('id="app"'));
@@ -504,6 +534,79 @@ try {
     check('look-alikes: cheaper, in stock, sharing title words; not itself, not unrelated items', sim.status === 200 && simKeys.includes('myntra:3100002') && !simKeys.includes('myntra:3100001') && !simKeys.includes('myntra:3100003')
       && sim.body.results.every((r) => r.price < 30000 && r.inStock) && /not the same product/.test(sim.body?.basis ?? ''), sim.text.slice(0, 200));
     check('look-alikes of an untracked product: 404', (await j(`/api/products/${encodeURIComponent('myntra:3199999')}/similar`)).status === 404);
+
+    // ---- Product Lens (POST /api/lens) against the fake model: what is sent, counted, refused, kept.
+    {
+    const lensPost = (bytes, type, ip) => fetch(`${base}/api/lens`, { method: 'POST', body: bytes, headers: { 'content-type': type, 'cf-connecting-ip': ip } })
+      .then(async (r) => ({ status: r.status, body: await r.json().catch(() => null) }));
+    // Bytes a JPEG starts and ends with, random in between: the server judges an image by its
+    // first bytes and hands it on unread; the random middle is searched for on disk afterwards.
+    const photo = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), randomBytes(3000), Buffer.from([0xff, 0xd9])]);
+    const said = (words, neurons) => ({ status: 200, body: { response: `NAME: ${words}\nBRAND: Zephyrine\nSURE: yes`, usage: { prompt_tokens: 577, completion_tokens: 19, neurons } } });
+    const cfgLens = await j('/api/config');
+    check('Lens: config says search by photo is on', cfgLens.body?.lens === true, cfgLens.text.slice(0, 120));
+    const refused = [
+      await lensPost(photo, 'text/plain', '10.0.9.1'),
+      await lensPost(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>'), 'image/jpeg', '10.0.9.1'),
+      await lensPost(Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), randomBytes(100)]), 'image/jpeg', '10.0.9.1'),
+      await lensPost(Buffer.concat([photo, Buffer.alloc(LENS.maxBytes)]), 'image/jpeg', '10.0.9.1'),
+    ];
+    check('Lens: a non-image, an SVG and a PNG called a JPEG are refused (415); a photo over the limit too (413)',
+      refused.map((r) => `${r.status} ${r.body?.error?.code}`).join() === '415 bad_image,415 bad_image,415 bad_image,413 too_big', refused.map((r) => r.status).join());
+    check('…and none of them reached the model or counted', lensCalls.length === 0 && d1('SELECT COUNT(*) AS n FROM ai_usage')[0].n === 0);
+
+    lensReply = said('Zephyrine Quill ball pens', 19.4);
+    const one = await lensPost(photo, 'image/jpeg', '10.0.9.1');
+    check('Lens: a photo → the words, the brand, read (not guessed), its neurons and photos left today',
+      one.status === 200 && JSON.stringify(one.body?.lens) === JSON.stringify({ found: true, words: 'Zephyrine Quill ball pens', brand: 'Zephyrine', sure: true })
+      && one.body?.neurons === 19.4 && one.body?.left === LENS.perNetworkPerDay - 1, JSON.stringify(one.body));
+    const sent = lensCalls[0];
+    const parts = sent?.input?.messages?.[0]?.content ?? [];
+    check('…the model got the photo\'s exact bytes as a data: URI, the prompt, and a short answer budget',
+      sent?.model === LENS.model && parts.find((p) => p.type === 'text')?.text === LENS_PROMPT
+      && parts.find((p) => p.type === 'image_url')?.image_url?.url === `data:image/jpeg;base64,${photo.toString('base64')}` && sent.input.max_tokens === LENS.maxTokens,
+      JSON.stringify({ model: sent?.model, types: parts.map((p) => p.type) }));
+
+    lensReply = { status: 200, body: { response: 'NONE', usage: { neurons: 0.1 } } };
+    const none = await lensPost(photo, 'image/jpeg', '10.0.9.1');
+    check('Lens: no product in the photo → found false and nothing to search', none.status === 200 && none.body?.lens?.found === false && none.body.lens.words === '', JSON.stringify(none.body));
+    lensReply = { status: 500, body: { error: 'down' } };
+    const down = await lensPost(photo, 'image/jpeg', '10.0.9.1');
+    lensReply = { status: 200, body: { response: 'I think this is a pen.', usage: { neurons: 0.2 } } };
+    const garbled = await lensPost(photo, 'image/jpeg', '10.0.9.1');
+    check('Lens: a failed model call and an answer out of format both say "could not read" (502), never guess words',
+      down.status === 502 && garbled.status === 502 && down.body?.error?.code === 'lens_failed' && garbled.body?.error?.code === 'lens_failed', `${down.status} ${garbled.status}`);
+
+    // One network's photos a day (replies that cost nothing, so the day's budget is untouched).
+    lensReply = said('Zephyrine Quill ball pens', 0);
+    const before = lensCalls.length;
+    let ok = 0;
+    for (let i = 0; i < LENS.perNetworkPerDay; i++) if ((await lensPost(photo, 'image/jpeg', '10.0.9.2')).status === 200) ok++;
+    const over = await lensPost(photo, 'image/jpeg', '10.0.9.2');
+    check(`Lens: ${LENS.perNetworkPerDay} photos a day from one network, then 429, without asking the model`,
+      ok === LENS.perNetworkPerDay && over.status === 429 && over.body?.error?.code === 'rate_limited' && lensCalls.length === before + LENS.perNetworkPerDay, `${ok} then ${over.status}`);
+
+    // The day's budget (60 here): checked BEFORE calling, with LENS.estimate of room.
+    lensReply = said('Zephyrine Quill ball pens', 19.4);
+    const fits = await lensPost(photo, 'image/jpeg', '10.0.9.3');
+    const calls = lensCalls.length;
+    const spent = await lensPost(photo, 'image/jpeg', '10.0.9.3');
+    const usage = d1('SELECT day, neurons, calls FROM ai_usage');
+    check('Lens: when the day\'s budget has no room for another call, 503 lens_budget and the model is not asked',
+      fits.status === 200 && spent.status === 503 && spent.body?.error?.code === 'lens_budget' && lensCalls.length === calls, `${fits.status} ${spent.status} ${spent.body?.error?.code}`);
+    check('…the refused photo did not use up one of that network\'s photos',
+      d1(`SELECT count FROM rate WHERE bucket LIKE 'lens:${await netId('10.0.9.3')}:%'`)[0]?.count === 1);
+    check('…the day counts every neuron the model reported (19.4 + 0.1 + 0.2 + 19.4), and only calls that cost',
+      usage.length === 1 && usage[0].day === new Date().toISOString().slice(0, 10) && Math.abs(usage[0].neurons - 39.1) < 1e-9 && usage[0].calls === 4, JSON.stringify(usage));
+
+    // Nothing of the photo or its words is kept: searched for in every file of the local database.
+    const files = [];
+    const walk = (dir) => { for (const f of readdirSync(dir)) { const p = join(dir, f); statSync(p).isDirectory() ? walk(p) : files.push(p); } };
+    walk(state);
+    const chunk = photo.subarray(1000, 1032);
+    const kept = files.filter((f) => { const b = readBytes(f); return b.includes(chunk) || b.includes(Buffer.from(photo.subarray(1000, 1032).toString('base64'))) || b.includes(Buffer.from('Zephyrine')); });
+    check(`Lens: no photo bytes and no words anywhere in the database files (${files.length} files searched)`, files.length > 0 && kept.length === 0, kept.join(', '));
+    }
 
     // ---- rate limit on adding new products (Myntra ids: no fetch is made for them)
     let lastStatus = 0;

@@ -21,6 +21,7 @@ import { SEARCHES_PER_HOUR, searchWords, searchableStores, seedPopular, storeSea
 import { countReading, getReader, healthReport, type HealthSource } from './readers.ts';
 import { ADDS_PER_HOUR, addProduct, background, refresh, resolveLink } from './refresh.ts';
 import { handleTelegram } from './telegram.ts';
+import { lens } from './lens.ts';
 import { metaFor, withMeta } from './meta.ts';
 import { allowedEndpoint, parseSubscription } from './webpush.ts';
 
@@ -292,6 +293,7 @@ async function config(env: Env): Promise<Response> {
     telegram: await telegramBot(env).then((bot) => (bot ? { bot } : null)).catch(() => null),
     push: keys ? { publicKey: keys.publicKey } : null,
     maxAlerts: ALERTS.maxPerOwner,
+    lens: !!(env.AI || env.LENS_FAKE_AI),
   };
   return json(body);
 }
@@ -431,6 +433,11 @@ async function api(request: Request, env: Env, ctx: Ctx, url: URL): Promise<Resp
     return json({ results: await deals(env.DB, { ...(store ? { store: store as StoreId } : {}), ...(minPct !== undefined ? { minPct } : {}) }), computedAt: Date.now() });
   }
   if (path === '/api/store-search' && method === 'GET') return storeSearchRoute(request, env, url);
+  if (path === '/api/lens' && method === 'POST') {
+    const net = await clientId(request);
+    const r = await lens(request, env, net, (bucket, max, windowMs) => rateLimit(env.DB, bucket, max, windowMs, Date.now()));
+    return r.ok ? json(r.body) : fail(r.status, r.code, r.message);
+  }
   if (path === '/api/drops' && method === 'GET') {
     const store = url.searchParams.get('store');
     if (store && !STORE_IDS.includes(store as never)) return fail(400, 'bad_store', 'Unknown store.');

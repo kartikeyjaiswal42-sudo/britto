@@ -2,7 +2,7 @@
 // store (titles, image URLs) goes in via textContent / setAttribute — never innerHTML.
 import {
   ago, connectTelegram, date, deletePush, deviceToken, disconnectTelegram, getConfig, getDeals, getDrops, getMe, getPopular, getProduct, getRecent, getStores,
-  pct, removeAlert, rupees, savePush, searchProducts, sendTest, setAlert, storeSearch, toPaise, trackProduct, getGroceryPlatforms, getSimilar, voteCoupon,
+  lensPhoto, pct, removeAlert, rupees, savePush, searchProducts, sendTest, setAlert, storeSearch, toPaise, trackProduct, getGroceryPlatforms, getSimilar, voteCoupon,
 } from './api.js';
 import { drawChart } from './chart.js';
 import { mergeOrders, summarize } from './spend.js';
@@ -39,6 +39,7 @@ const ICONS = {
   taxi: ['M5 17h14l-1.5-6.5a2 2 0 0 0-2-1.5h-7a2 2 0 0 0-2 1.5z', 'M6 17.5a1.5 1.5 0 103 0 1.5 1.5 0 10-3 0', 'M15 17.5a1.5 1.5 0 103 0 1.5 1.5 0 10-3 0', 'M9 9l1-4h4l1 4'],
   globe: ['M2 12h20', 'M12 2a15 15 0 0 1 0 20a15 15 0 0 1 0-20', 'M12 2a10 10 0 100 20 10 10 0 100-20'],
   warning: ['M12 9v4', 'M12 17h.01', 'M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z'],
+  camera: ['M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z', 'M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z'],
   paste: ['M9 2h6a1 1 0 011 1v2a1 1 0 01-1 1H9a1 1 0 01-1-1V3a1 1 0 011-1z', 'M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2'],
   phone: ['M7 2h10a2 2 0 012 2v16a2 2 0 01-2 2H7a2 2 0 01-2-2V4a2 2 0 012-2z', 'M12 18h.01'],
   close: ['M18 6L6 18', 'M6 6l12 12'],
@@ -178,9 +179,45 @@ function linkForm(initial = '') {
       status.textContent = 'Press and hold the box, then tap Paste.';
     }
   } }, icon('paste')) : null;
+  // Search by photo: shown by home() once the server says Lens is on (config().lens).
+  const file = h('input', { type: 'file', accept: 'image/*', class: 'sr', tabindex: '-1', 'aria-hidden': 'true', onchange: () => { if (file.files?.[0]) photoSearch(file.files[0], status); file.value = ''; } });
+  const photo = h('button', { type: 'button', class: 'paste-btn', id: 'photo-btn', 'aria-label': 'Search by photo', hidden: true, onclick: () => file.click() }, icon('camera'));
   const form = h('form', { class: 'track', onsubmit: (e) => { e.preventDefault(); submit(input.value); } },
-    h('div', { class: 'track-row' }, input, paste), h('button', { type: 'submit' }, 'Check price history'));
-  return h('div', {}, form, status);
+    h('div', { class: 'track-row' }, input, photo, paste), h('button', { type: 'submit' }, 'Check price history'));
+  return h('div', {}, form, file, status);
+}
+
+/** Matches core/lens.ts LENS.side: the photo is shrunk on this device before it is sent. */
+const LENS_SIDE = 512;
+
+/** A photo shrunk to LENS_SIDE px on its long side (upright, as the camera saw it), as a JPEG. */
+async function shrinkPhoto(file) {
+  const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  const k = Math.min(1, LENS_SIDE / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(bmp.width * k));
+  c.height = Math.max(1, Math.round(bmp.height * k));
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  bmp.close?.();
+  return await new Promise((ok, no) => c.toBlob((b) => (b ? ok(b) : no(new Error('This photo could not be read.'))), 'image/jpeg', 0.82));
+}
+
+/** Product Lens: the photo names the product; Britto's own search does the rest. */
+async function photoSearch(file, status) {
+  status.textContent = 'Reading your photo\u2026';
+  let small;
+  try { small = await shrinkPhoto(file); } catch {
+    status.textContent = 'This phone could not open that photo. Try a JPEG or PNG, or a screenshot.';
+    return;
+  }
+  try {
+    const { lens } = await lensPhoto(small);
+    if (!lens.found) { status.textContent = 'Britto could not see a product in that photo. Try again closer, or type its name.'; return; }
+    go(`/search?q=${encodeURIComponent(lens.words)}&photo=${lens.sure ? 'read' : 'guess'}`);
+  } catch (e) {
+    // The server's own words (budget, limit, unreadable); a dropped connection has no status.
+    status.textContent = e.status ? e.message : 'The photo could not be sent. Check the connection and try again.';
+  }
 }
 
 async function addByLink(link, status, replace = false) {
@@ -208,6 +245,7 @@ async function home() {
       h('label', { class: 'eyebrow', for: 'track-box' }, 'Search or paste a link'),
       linkForm(),
       h('p', { class: 'tip-line' }, 'Links work from Amazon, Flipkart, Myntra, Nykaa, Reliance Digital, Vijay Sales and ShopClues.'),
+      h('p', { class: 'tip-line', id: 'photo-tip', hidden: true }, 'Or tap the camera for a photo or screenshot of the product. It is read once to name the product and not kept.'),
       h('p', { class: 'tip-line', id: 'bot-tip' })),
     h('nav', { class: 'shortcuts', 'aria-label': 'Britto features' },
       shortcut('Real drops', '/deals', 'drop', 'tint-green'),
@@ -234,6 +272,12 @@ async function home() {
     h('section', {}, h('div', { class: 'section-head' }, h('h2', {}, 'Recently checked')), h('div', { id: 'recent' }, h('p', { class: 'muted' }, 'Loading\u2026'))));
   config().then((cfg) => {
     if (cfg?.telegram) put(document.getElementById('bot-tip'), 'On your phone? Send any product link to ', botLink(cfg.telegram.bot), ' on Telegram. No app or extension needed.');
+    // Not in the app yet: its in-app browser cannot open a file picker (no onShowFileChooser).
+    const photo = document.getElementById('photo-btn');
+    if (cfg?.lens && !inApp && photo && typeof createImageBitmap === 'function') {
+      photo.hidden = false;
+      document.getElementById('photo-tip').hidden = false;
+    }
   });
   const [dr, d, r] = await Promise.allSettled([getDrops(), getDeals(), getRecent()]);
   // The confirmed ones (below the usual price) first, then "cheaper than at the last reading".
@@ -1332,7 +1376,11 @@ async function searchPage(q) {
     type: 'button', class: 'chip', 'aria-pressed': String(id === searchFilter), 'data-filter': id,
     onclick: () => { searchFilter = id; chips.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filter === id))); applySearchFilter(); },
   }, label)));
-  put(app, h('h1', { class: 'search-title' }, `Results for \u201c${q}\u201d`), chips, tracked, live, more, others);
+  // From Lens: say where the words came from, and that the box above can change them.
+  const photo = new URLSearchParams(location.search).get('photo');
+  const fromPhoto = photo === 'read' || photo === 'guess' ? h('p', { class: 'notice photo-note' }, photo === 'read'
+    ? `From your photo: Britto read \u201c${q}\u201d on it.` : `From your photo: \u201c${q}\u201d is a guess from how it looks.`, ' Not it? Change the words in the box above.') : null;
+  put(app, h('h1', { class: 'search-title' }, `Results for \u201c${q}\u201d`), fromPhoto, chips, tracked, live, more, others);
   if (inApp && appCanShop() && siteBridge()) otherStoresSearch(more, q);
   searchProducts(q).then(({ results }) => {
     if (results.length) {

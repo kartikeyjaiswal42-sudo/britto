@@ -49,6 +49,9 @@ export const getPopular = () => call('/api/popular');
 /** -> { stores: Store[] } with the measured "can our server read it" line for each. */
 export const getStores = () => call('/api/stores');
 
+/** Product Lens: a photo (already shrunk on the device) → the words to search for (CONTRACT.md). */
+export const lensPhoto = (blob) => call('/api/lens', { method: 'POST', body: blob, headers: { 'content-type': 'image/jpeg' } });
+
 // ---- alerts: no account and no password. The browser holds a random device token (kept in
 // localStorage; the server stores only its hash). Telegram, once connected, carries alerts to
 // the phone, and the bot can be used without this website at all.

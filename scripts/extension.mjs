@@ -15,6 +15,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { confirmIdentity, readPage } from '../core/interpret.ts';
 import { parseProductLink } from '../core/stores.ts';
 import { bundledReader } from '../readers/index.ts';
+import { testConfig } from './test-config.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const WRANGLER = join(ROOT, 'node_modules/.bin/wrangler');
@@ -39,17 +40,17 @@ const state = mkdtempSync(join(tmpdir(), 'britto-ext-'));
 const EXT_VERSION = JSON.parse(readFileSync(join(ROOT, 'extension/static/manifest.json'), 'utf8')).version;
 const extDir = join(state, 'ext');
 const profile = join(state, 'profile');
-execFileSync(WRANGLER, ['d1', 'execute', 'britto', '--local', '--persist-to', join(state, 'd1'), '--file', 'api/schema.sql'], { cwd: ROOT, stdio: 'ignore' });
+execFileSync(WRANGLER, ['d1', 'execute', 'britto', '--config', testConfig(), '--local', '--persist-to', join(state, 'd1'), '--file', 'api/schema.sql'], { cwd: ROOT, stdio: 'ignore' });
 execFileSync('node', ['scripts/build-ext.mjs', '--api', API, '--out', extDir, '--test'], { cwd: ROOT, stdio: 'ignore' });
 // READER_MEMO_MS 0: a config written to D1 is served at once (production keeps one 60 s).
-const worker = spawn(WRANGLER, ['dev', '--local', '--persist-to', join(state, 'd1'), '--port', String(port), '--ip', '127.0.0.1', '--show-interactive-dev-session=false', '--var', 'READER_MEMO_MS:0'], { cwd: ROOT, detached: true, stdio: 'ignore' });
+const worker = spawn(WRANGLER, ['dev', '--config', testConfig(), '--local', '--persist-to', join(state, 'd1'), '--port', String(port), '--ip', '127.0.0.1', '--show-interactive-dev-session=false', '--var', 'READER_MEMO_MS:0'], { cwd: ROOT, detached: true, stdio: 'ignore' });
 for (const until = Date.now() + 60_000; ;) {
   try { if ((await fetch(`${API}/api/health`)).ok) break; } catch { /* starting */ }
   if (Date.now() > until) throw new Error('wrangler dev did not start');
   await new Promise((r) => setTimeout(r, 500));
 }
 const api = async (path) => { const r = await fetch(API + path); return { status: r.status, body: await r.json().catch(() => null) }; };
-const d1 = (sql) => JSON.parse(execFileSync(WRANGLER, ['d1', 'execute', 'britto', '--local', '--persist-to', join(state, 'd1'), '--json', '--command', sql], { cwd: ROOT, encoding: 'utf8' }))[0].results;
+const d1 = (sql) => JSON.parse(execFileSync(WRANGLER, ['d1', 'execute', 'britto', '--config', testConfig(), '--local', '--persist-to', join(state, 'd1'), '--json', '--command', sql], { cwd: ROOT, encoding: 'utf8' }))[0].results;
 const AMAZON = bundledReader('amazon');
 
 /** Parity (BLUEPRINT §22): what the extension read in the browser vs Node on the saved page. */

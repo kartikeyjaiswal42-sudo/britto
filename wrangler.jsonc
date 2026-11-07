@@ -20,6 +20,9 @@
   // PER_RUN products (api/app.ts) so it stays inside the 10 ms CPU limit.
   "triggers": { "crons": ["*/3 * * * *"] },
   "observability": { "enabled": true },
+  // Workers AI for Product Lens (search by photo; core/lens.ts). Local test servers use
+  // wrangler.test.jsonc, made without it by scripts/test-config.mjs.
+  "ai": { "binding": "AI", "remote": true },
   // Named in the bot's User-Agent. AMITY's workers.dev subdomain is account-wide and shared
   // with a paying client's URL — never change the subdomain itself (workspace rule).
   // VAPID_PUBLIC_KEY is public by design (browsers need it to subscribe to push). Its private

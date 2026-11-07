@@ -47,9 +47,11 @@
 > (https://claude.ai/artifact/TvtoSCBxXnwnWcmLTBioHA) (HISTORY "Compare prices across stores").
 > **Design v5 built into `web/` 2026-11-07** (every screen; browser suite 136 with 24 v5 checks)
 > (HISTORY "Design v5 built into the site").
-> **Next: P11 part 4**: photo search ("Lens", Workers AI: the owner allowed it on AMITY
-> 2026-11-04; measure neurons per search and cap it per day before switching it on); check
-> MakeMyTrip/Goibibo again from a phone (they refused the test emulator after many searches);
+> **P11 part 4, first part done 2026-11-07: search by photo ("Lens") on the website**
+> (Workers AI mistral-small-3.1 at 512 px ≈ 19 neurons a photo, measured; 1,000 neurons a day
+> cap, 15 photos per network) (HISTORY "Product Lens").
+> **Next: P11 part 4, rest**: Lens in the app (its in-app browser needs `onShowFileChooser`, a
+> new app version); check MakeMyTrip/Goibibo again from a phone (they refused the test emulator after many searches);
 > the sites' own round-trip pages (measure in the app first); MakeMyTrip hotels (needs its city
 > codes); food compare (needs the owner's logged-in pages, as Rapido did).
 > Owner-only steps: top of HISTORY.md, "Waiting for the owner".

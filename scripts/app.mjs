@@ -19,6 +19,7 @@ import { confirmIdentity, readPage } from '../core/interpret.ts';
 import { STORES, STORE_IDS, parseProductLink } from '../core/stores.ts';
 import { SERVICES } from '../core/services.ts';
 import { bundledReader } from '../readers/index.ts';
+import { testConfig } from './test-config.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const WRANGLER = join(ROOT, 'node_modules/.bin/wrangler');
@@ -80,17 +81,17 @@ const port = await new Promise((res) => { const s = createServer(); s.listen(0, 
 const API = `http://127.0.0.1:${port}`;
 const state = mkdtempSync(join(tmpdir(), 'britto-app-'));
 const d1dir = join(state, 'd1');
-execFileSync(WRANGLER, ['d1', 'execute', 'britto', '--local', '--persist-to', d1dir, '--file', 'api/schema.sql'], { cwd: ROOT, stdio: 'ignore' });
+execFileSync(WRANGLER, ['d1', 'execute', 'britto', '--config', testConfig(), '--local', '--persist-to', d1dir, '--file', 'api/schema.sql'], { cwd: ROOT, stdio: 'ignore' });
 execFileSync('node', ['scripts/build-app-assets.mjs', '--out', join(state, 'assets'), '--site', API, '--test'], { cwd: ROOT, stdio: 'ignore' });
 const READER_JS = readFileSync(join(state, 'assets/britto-reader.js'), 'utf8');
-const worker = spawn(WRANGLER, ['dev', '--local', '--persist-to', d1dir, '--port', String(port), '--ip', '127.0.0.1', '--show-interactive-dev-session=false', '--var', 'READER_MEMO_MS:0'], { cwd: ROOT, detached: true, stdio: 'ignore' });
+const worker = spawn(WRANGLER, ['dev', '--config', testConfig(), '--local', '--persist-to', d1dir, '--port', String(port), '--ip', '127.0.0.1', '--show-interactive-dev-session=false', '--var', 'READER_MEMO_MS:0'], { cwd: ROOT, detached: true, stdio: 'ignore' });
 for (const until = Date.now() + 60_000; ;) {
   try { if ((await fetch(`${API}/api/health`)).ok) break; } catch { /* starting */ }
   if (Date.now() > until) throw new Error('wrangler dev did not start');
   await new Promise((r) => setTimeout(r, 500));
 }
 const api = async (path) => { const r = await fetch(API + path); return { status: r.status, body: await r.json().catch(() => null) }; };
-const d1 = (sql) => JSON.parse(execFileSync(WRANGLER, ['d1', 'execute', 'britto', '--local', '--persist-to', d1dir, '--json', '--command', sql], { cwd: ROOT, encoding: 'utf8' }))[0].results;
+const d1 = (sql) => JSON.parse(execFileSync(WRANGLER, ['d1', 'execute', 'britto', '--config', testConfig(), '--local', '--persist-to', d1dir, '--json', '--command', sql], { cwd: ROOT, encoding: 'utf8' }))[0].results;
 
 const libs = readdirSync(join(HARNESS, 'libs')).map((f) => join(HARNESS, 'libs', f));
 const java = spawn('java', [`-Dbritto.site=${API}`, `-Dbritto.version=${VERSION}`, `-Dbritto.stores=${STORE_IDS.join(',')}`, '-cp', [join(HARNESS, 'classes'), ...libs].join(':'), 'app.britto.HarnessMain'], { stdio: ['pipe', 'pipe', 'ignore'] });

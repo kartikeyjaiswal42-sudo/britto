@@ -202,3 +202,11 @@ CREATE TABLE IF NOT EXISTS drops (
   at         INTEGER NOT NULL              -- when the cheaper price was first seen
 );
 CREATE INDEX IF NOT EXISTS drops_at ON drops (at);
+
+-- Product Lens (P11 part 4): the ONLY thing kept about photo searches, a day's Workers AI
+-- neurons and calls (UTC day, as Workers AI counts its allowance). No photo, no words.
+CREATE TABLE IF NOT EXISTS ai_usage (
+  day     TEXT PRIMARY KEY,
+  neurons REAL NOT NULL,
+  calls   INTEGER NOT NULL
+);
