@@ -34,6 +34,14 @@ const ICONS = {
   clock: ['M12 3a9 9 0 100 18 9 9 0 100-18', 'M12 7v5l3 2'],
   check: ['M5 12l5 5L20 7'],
   arrow: ['M5 12h14', 'M13 6l6 6-6 6'],
+  bell: ['M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9', 'M10.3 21a1.94 1.94 0 0 0 3.4 0'],
+  drop: ['M22 17l-8.5-8.5-5 5L2 7', 'M16 17h6v-6'],
+  taxi: ['M5 17h14l-1.5-6.5a2 2 0 0 0-2-1.5h-7a2 2 0 0 0-2 1.5z', 'M6 17.5a1.5 1.5 0 103 0 1.5 1.5 0 10-3 0', 'M15 17.5a1.5 1.5 0 103 0 1.5 1.5 0 10-3 0', 'M9 9l1-4h4l1 4'],
+  globe: ['M2 12h20', 'M12 2a15 15 0 0 1 0 20a15 15 0 0 1 0-20', 'M12 2a10 10 0 100 20 10 10 0 100-20'],
+  warning: ['M12 9v4', 'M12 17h.01', 'M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z'],
+  paste: ['M9 2h6a1 1 0 011 1v2a1 1 0 01-1 1H9a1 1 0 01-1-1V3a1 1 0 011-1z', 'M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2'],
+  phone: ['M7 2h10a2 2 0 012 2v16a2 2 0 01-2 2H7a2 2 0 01-2-2V4a2 2 0 012-2z', 'M12 18h.01'],
+  close: ['M18 6L6 18', 'M6 6l12 12'],
 };
 function icon(name) {
   const NS = 'http://www.w3.org/2000/svg';
@@ -70,6 +78,7 @@ function put(node, ...kids) {
 }
 
 function go(path) {
+  moved++;
   history.pushState(null, '', path);
   route();
 }
@@ -80,7 +89,7 @@ document.addEventListener('click', (e) => {
   e.preventDefault();
   go(a.getAttribute('href'));
 });
-window.addEventListener('popstate', route);
+window.addEventListener('popstate', () => { moved = Math.max(0, moved - 1); route(); });
 
 document.getElementById('search-form').addEventListener('submit', (e) => {
   e.preventDefault();
@@ -88,7 +97,7 @@ document.getElementById('search-form').addEventListener('submit', (e) => {
   if (!q) return;
   // Measured in the app: after searching, the phone keyboard stayed up over the results.
   e.target.querySelector('input')?.blur();
-  if (/^(https?:\/\/)?([a-z0-9-]+\.)+[a-z]{2,}\//i.test(q)) addByLink(q);
+  if (isLink(q)) addByLink(q);
   else go(`/search?q=${encodeURIComponent(q)}`);
 });
 
@@ -119,7 +128,7 @@ function listedCard(item, tracked) {
   const href = t ? `/p/${encodeURIComponent(item.key)}` : `/p/${encodeURIComponent(item.key)}?add=1`;
   const badge = t?.saleStatus === 'real_drop' && t.realPct != null ? h('span', { class: 'badge good' }, `↓ ${pct(t.realPct)} below usual`)
     : t ? h('span', { class: 'badge' }, 'History on Britto') : null;
-  return h('a', { class: 'card', href, 'data-nav': true },
+  return h('a', { class: 'card', href, 'data-nav': true, 'data-price': item.price ?? 0, 'data-history': t ? 1 : 0 },
     h('div', { class: 'thumb' }, item.image ? h('img', { src: thumbUrl(item.image), alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }) : null, badge),
     h('div', { class: 'card-body' },
       h('span', { class: 'store' }, STORE_NAMES[item.store] ?? item.store),
@@ -145,11 +154,32 @@ function row(cards, empty) {
   return cards.length ? h('div', { class: 'row' }, cards.map(productCard)) : h('p', { class: 'muted' }, empty);
 }
 
+const isLink = (v) => /^(https?:\/\/)?([a-z0-9-]+\.)+[a-z]{2,}\//i.test(v);
+
+/** The one box: a store link opens that product's history, any other words search. */
 function linkForm(initial = '') {
   const status = h('p', { class: 'form-status', role: 'status' });
-  const input = h('input', { name: 'url', type: 'url', required: true, value: initial, placeholder: 'Paste an Amazon, Flipkart or Myntra product link', 'aria-label': 'Product link' });
-  const form = h('form', { class: 'track', onsubmit: (e) => { e.preventDefault(); addByLink(input.value, status); } },
-    input, h('button', { type: 'submit' }, 'Check price history'));
+  const input = h('input', { id: 'track-box', name: 'url', type: 'text', value: initial, placeholder: 'Product name or store link', autocomplete: 'off', enterkeyhint: 'search', 'aria-label': 'Search or paste a link' });
+  const submit = (v) => {
+    const q = v.trim();
+    if (!q) { input.focus(); return; }
+    input.blur();
+    if (isLink(q)) addByLink(q, status);
+    else go(`/search?q=${encodeURIComponent(q)}`);
+  };
+  const paste = navigator.clipboard?.readText ? h('button', { type: 'button', class: 'paste-btn', 'aria-label': 'Paste link', onclick: async () => {
+    try {
+      const text = (await navigator.clipboard.readText()).trim();
+      if (!text) { status.textContent = 'Nothing is copied on this phone yet.'; return; }
+      input.value = text;
+      if (isLink(text)) submit(text);
+    } catch {
+      input.focus();
+      status.textContent = 'Press and hold the box, then tap Paste.';
+    }
+  } }, icon('paste')) : null;
+  const form = h('form', { class: 'track', onsubmit: (e) => { e.preventDefault(); submit(input.value); } },
+    h('div', { class: 'track-row' }, input, paste), h('button', { type: 'submit' }, 'Check price history'));
   return h('div', {}, form, status);
 }
 
@@ -165,65 +195,55 @@ async function addByLink(link, status, replace = false) {
   }
 }
 
-const focusPaste = (e) => { e.preventDefault(); const input = document.querySelector('.track input'); input?.scrollIntoView({ block: 'center' }); input?.focus(); };
-
-function shortcut(label, href, iconName, tint, onclick) {
-  return h('a', { class: 'shortcut', href, 'data-nav': onclick ? null : true, onclick }, h('i', { class: tint }, icon(iconName)), label);
+function shortcut(label, href, iconName, tint) {
+  return h('a', { class: 'shortcut', href, 'data-nav': true }, h('i', { class: tint }, icon(iconName)), label);
 }
 
 async function home() {
-  put(app, 
+  put(app,
     h('section', { class: 'hero' },
-      h('h1', {}, 'Know the real price before you buy.'),
-      h('p', { class: 'lede' }, 'Price history, honest discount checks and price-drop alerts for Indian stores.')),
+      h('h1', {}, 'The real price, before you buy.'),
+      h('p', { class: 'lede' }, 'Price history, honest sale checks and the same product\u2019s price on other stores, read on your phone.')),
     h('section', { class: 'paste-card', id: 'paste' },
-      h('div', { class: 'paste-head' }, h('span', { class: 'icon' }, icon('link')),
-        h('div', {}, h('b', {}, 'Paste a product link'), h('span', {}, 'Check price history & fake sales'))),
+      h('label', { class: 'eyebrow', for: 'track-box' }, 'Search or paste a link'),
       linkForm(),
-      h('div', { class: 'tip-row' },
-        h('p', { class: 'tip-line' }, 'Tip: put ', h('code', {}, `${location.host}/`), ' in front of any product link.'),
-        h('p', { class: 'tip-line', id: 'bot-tip' }))),
-    h('div', { class: 'promos' },
-      h('a', { class: 'promo fake', href: '#paste', onclick: focusPaste }, h('span', { class: 'tag' }, 'Fake sale detector'), h('b', {}, 'Is that sale real?'), h('span', {}, 'We check the price against the product’s own usual price, not its M.R.P.')),
-      h('a', { class: 'promo deals', href: '/deals', 'data-nav': true }, h('span', { class: 'tag' }, 'Real drops'), h('b', {}, 'Biggest real price drops'), h('span', {}, 'Only drops below what each product usually costs.')),
-      h('a', { class: 'promo travel', href: '/travel#flights', 'data-nav': true }, h('span', { class: 'tag' }, 'Travel'), h('b', {}, 'One search, every site'), h('span', {}, 'Flights and hotels from every site, side by side.'))),
-    h('section', { class: 'cab-promo', id: 'cab-promo' },
-      h('span', { class: 'eyebrow' }, inApp ? 'Cabs' : 'Cabs, in the Britto app'),
-      h('b', {}, 'Uber and Rapido, one list'),
-      h('p', {}, 'Enter where you are going once. Britto reads both apps\u2019 fares on your phone and puts the cheapest ride first. It never books.'),
-      inApp
-        ? h('a', { class: 'button light', href: '/travel#cabs', 'data-nav': true }, 'Compare cabs', icon('arrow'))
-        : h('a', { class: 'button light', href: '/app', 'data-nav': true }, 'Get the app')),
+      h('p', { class: 'tip-line' }, 'Links work from Amazon, Flipkart, Myntra, Nykaa, Reliance Digital, Vijay Sales and ShopClues.'),
+      h('p', { class: 'tip-line', id: 'bot-tip' })),
     h('nav', { class: 'shortcuts', 'aria-label': 'Britto features' },
-      shortcut('Fake sale', '#paste', 'shield', 'tint-red', focusPaste),
-      shortcut('Price tracker', '/alerts', 'trend', 'tint-blue'),
-      shortcut('Cabs', '/travel#cabs', 'car', 'tint-gold'),
-      shortcut('Flights', '/travel#flights', 'plane', 'tint-sky'),
-      shortcut('Deals', '/deals', 'tag', 'tint-orange'),
-      shortcut('Shop', '/browse', 'bag', 'tint-green'),
-      shortcut('Spend Lens', '/spend', 'wallet', 'tint-violet'),
-      inApp ? shortcut('Grocery', '/grocery', 'basket', 'tint-pink') : shortcut('Get the app', '/app', 'bag', 'tint-pink')),
-    h('section', { class: 'quick' }, h('h2', {}, 'Search Amazon with price history'),
-      h('div', { class: 'chips' }, QUICK.map((w) => h('a', { class: 'chip', href: `/search?q=${encodeURIComponent(w)}`, 'data-nav': true }, w)))),
-    h('section', { id: 'drops-sec' }, h('div', { class: 'section-head' }, h('h2', {}, 'Price dropped'), h('a', { href: '/deals', 'data-nav': true }, 'View all')),
-      h('p', { class: 'section-note' }, 'Cheaper now than at our reading before, and still in stock.'), h('div', { id: 'drops' }, h('p', { class: 'muted' }, 'Loading…'))),
-    h('section', { id: 'deals-sec', hidden: true }, h('div', { class: 'section-head' }, h('h2', {}, 'Biggest real price drops'), h('a', { href: '/deals', 'data-nav': true }, 'View all')),
-      h('p', { class: 'section-note' }, 'Below each product’s own usual price over 90 days, not its M.R.P.'), h('div', { id: 'deals' })),
-    h('section', {}, h('div', { class: 'section-head' }, h('h2', {}, 'Recently checked')), h('div', { id: 'recent' }, h('p', { class: 'muted' }, 'Loading…'))));
+      shortcut('Real drops', '/deals', 'drop', 'tint-green'),
+      shortcut('Alerts', '/alerts', 'bell', 'tint-blue'),
+      shortcut('Cabs', '/travel#cabs', 'taxi', 'tint-orange'),
+      shortcut('Flights', '/travel#flights', 'globe', 'tint-violet')),
+    h('section', { class: 'feature-card' },
+      h('span', { class: 'tag' }, inApp ? 'Compare prices' : 'In the Britto app'),
+      h('h2', {}, 'One product, its price on other stores.'),
+      h('p', {}, 'Open any product and tap ', h('b', {}, 'Check prices'), '. The app opens up to six stores\u2019 own searches on your phone and shows the same product\u2019s price, cheapest first. Nothing is bought.'),
+      inApp ? null : h('a', { class: 'button light', href: '/app', 'data-nav': true }, 'Get the app')),
+    h('section', { id: 'drops-sec' },
+      h('div', { class: 'section-head' }, h('h2', {}, 'Real price drops'), h('a', { href: '/deals', 'data-nav': true }, 'See all')),
+      h('p', { class: 'section-note' }, 'Measured against each product\u2019s own earlier prices, not its M.R.P.'),
+      h('div', { id: 'drops' }, h('p', { class: 'muted' }, 'Loading\u2026'))),
+    h('section', {}, h('div', { class: 'section-head' }, h('h2', {}, 'Is that sale real?')),
+      h('div', { class: 'info-card' }, h('span', { class: 'ic tint-orange' }, icon('warning')),
+        h('p', {}, '\u201c70% off\u201d is often off an M.R.P. nobody pays. Britto compares today\u2019s price with what the product ', h('b', {}, 'usually'), ' costs, and says when the price was raised just before the sale.'))),
+    h('section', {}, h('div', { class: 'section-head' }, h('h2', {}, 'Travel, compared on your phone')),
+      h('div', { class: 'travel-cards' },
+        h('a', { href: '/travel#cabs', 'data-nav': true }, h('b', {}, 'Cabs'), h('span', {}, 'Uber + Rapido')),
+        h('a', { href: '/travel#flights', 'data-nav': true }, h('b', {}, 'Flights'), h('span', {}, '4 sites')),
+        h('a', { href: '/travel#hotels', 'data-nav': true }, h('b', {}, 'Hotels'), h('span', {}, 'per night')))),
+    h('section', {}, h('div', { class: 'section-head' }, h('h2', {}, 'Recently checked')), h('div', { id: 'recent' }, h('p', { class: 'muted' }, 'Loading\u2026'))));
   config().then((cfg) => {
     if (cfg?.telegram) put(document.getElementById('bot-tip'), 'On your phone? Send any product link to ', botLink(cfg.telegram.bot), ' on Telegram. No app or extension needed.');
   });
   const [dr, d, r] = await Promise.allSettled([getDrops(), getDeals(), getRecent()]);
-  put(document.getElementById('drops'), dr.status === 'fulfilled' ? row(dr.value.results, 'No drops in the last two weeks yet: Britto reads each product about twice a day, so they appear as prices change.') : h('p', { class: 'error' }, dr.reason.message));
-  if (d.status === 'fulfilled' && d.value.results.length) {
-    document.getElementById('deals-sec').hidden = false;
-    put(document.getElementById('deals'), row(d.value.results, ''));
-  }
+  // The confirmed ones (below the usual price) first, then "cheaper than at the last reading".
+  const deals = d.status === 'fulfilled' ? d.value.results : [];
+  const drops = dr.status === 'fulfilled' ? dr.value.results.filter((c) => !deals.some((x) => x.key === c.key)) : [];
+  put(document.getElementById('drops'), deals.length || drops.length ? row([...deals, ...drops], '')
+    : dr.status === 'rejected' ? h('p', { class: 'error' }, dr.reason.message)
+      : h('p', { class: 'muted' }, 'No drops in the last two weeks yet: Britto reads each product about twice a day, so they appear as prices change.'));
   put(document.getElementById('recent'), r.status === 'fulfilled' ? grid(r.value.results, 'Nothing tracked yet. Paste a link above.') : h('p', { class: 'error' }, r.reason.message));
 }
-
-/** Quick searches on the home page (Amazon's own results, read by our server). */
-const QUICK = ['Earbuds', 'Smartwatch', 'iPhone 17', 'Air fryer', 'Running shoes', 'Pressure cooker', 'Power bank', 'Trimmer', 'Backpack', 'Face wash'];
 
 const VERDICT_CLASS = { buy: 'good', fair: 'neutral', wait: 'bad', too_early: 'neutral', unavailable: 'neutral' };
 const SALE_TITLE = {
@@ -234,6 +254,46 @@ const SALE_TITLE = {
   unavailable: 'Not on sale: unavailable',
 };
 const SALE_CLASS = { real_drop: 'good', hike_then_drop: 'bad', no_real_drop: 'neutral', too_early: 'neutral', unavailable: 'neutral' };
+
+/** The line beside the big price: how it stands against the product's own usual price. */
+function priceNote(view) {
+  const { sale, stats } = view;
+  if (stats.inStock === false || stats.current == null) return null;
+  if (sale.status === 'real_drop' && sale.realPct != null && sale.usualPrice != null) return h('span', { class: 'price-note good' }, `${pct(sale.realPct)} below its usual ${rupees(sale.usualPrice)}`);
+  if (sale.status === 'hike_then_drop') return h('span', { class: 'price-note bad' }, 'Raised before this sale');
+  if (sale.status === 'no_real_drop' && sale.usualPrice != null) return h('span', { class: 'price-note neutral' }, `Usual price ${rupees(sale.usualPrice)}`);
+  return null;
+}
+
+/** The fake-sale check, inside the verdict card. A product too new to check says so once, in the verdict. */
+function saleCheck(view) {
+  const { sale } = view;
+  if (sale.status === 'unavailable' || (sale.status === 'too_early' && view.verdict.kind === 'too_early' && sale.claimedPct == null)) return null;
+  return h('div', { class: 'sale-check', 'data-sale': sale.status },
+    h('span', { class: `badge ${SALE_CLASS[sale.status]}` }, SALE_TITLE[sale.status]),
+    h('p', {}, sale.explanation),
+    sale.claimedPct != null ? h('p', { class: 'small' }, `Claimed: ${pct(sale.claimedPct)} off M.R.P. \u00b7 Real: ${sale.realPct == null ? 'not known yet' : pct(sale.realPct) + ' vs usual'}`) : null);
+}
+
+/** Top bar's share button on a product page: the phone's share sheet, or the address copied. */
+let shareThis = null;
+document.getElementById('top-share').addEventListener('click', async () => {
+  const url = location.origin + location.pathname;
+  const text = shareThis ? `${shareThis.title}${shareThis.price ? ` at ${shareThis.price}` : ''}: its real price history on Britto` : 'Its real price history on Britto';
+  const bridge = inApp ? siteBridge() : null;
+  if (bridge) { await bridge({ type: 'shareApp', text: `${text.slice(0, 380)} ${url}` }); return; }
+  if (navigator.share) { await navigator.share({ title: 'Britto', text, url }).catch(() => {}); return; }
+  try { await navigator.clipboard.writeText(url); say('Link copied'); } catch { say('Copy the address from your browser'); }
+});
+
+/** A short message at the bottom of the screen. */
+function say(text) {
+  const old = document.getElementById('toast');
+  old?.remove();
+  const t = h('div', { class: 'toast', id: 'toast', role: 'status' }, text);
+  document.body.append(t);
+  setTimeout(() => t.remove(), 2500);
+}
 
 async function productPage(key) {
   put(app, h('p', { class: 'muted' }, 'Loading…'));
@@ -252,52 +312,59 @@ async function productPage(key) {
   const s = view.stats;
   const chartHost = h('div', { class: 'chart-host' });
   let range = 0;
-  const ranges = [['1M', 30], ['3M', 90], ['6M', 180], ['All', 0]];
+  const ranges = [['1M', 30], ['3M', 90], ['All', 0]];
   const rangeBar = h('div', { class: 'ranges', role: 'group', 'aria-label': 'Chart range' },
     ranges.map(([label, days]) => h('button', {
       type: 'button', 'aria-pressed': String(days === range),
       onclick: (e) => { range = days; rangeBar.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b === e.target))); drawChart(chartHost, view, range); },
     }, label)));
+  const days = Math.max(1, Math.floor(s.daysTracked));
+  const readBy = view.store.serverFetch === 'yes' ? 'by Britto\u2019s server' : 'by shoppers\u2019 phones and browsers';
+  const showAlert = (e) => { e.preventDefault(); document.getElementById('alert')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); };
+  const priced = s.inStock !== false && s.current != null;
+  shareThis = { title: view.title ?? 'A product on Britto', price: priced ? rupees(s.current) : null };
 
-  put(app, 
+  put(app,
     h('article', { class: 'product' },
-      h('div', { class: 'product-head' },
-        h('div', { class: 'product-img' }, view.image ? h('img', { src: view.image, alt: '', referrerpolicy: 'no-referrer' }) : null),
-        h('div', {},
-          h('span', { class: 'store' }, view.store.name),
-          h('h1', { class: 'product-title' }, view.title ?? 'Product details not read yet'),
-          h('div', { class: 'now' },
+      h('section', { class: 'p-card' },
+        h('div', { class: 'p-head' },
+          h('div', { class: 'product-img' }, view.image ? h('img', { src: view.image, alt: '', referrerpolicy: 'no-referrer' }) : null),
+          h('div', { class: 'p-name' },
+            h('span', { class: 'store' }, view.store.name),
+            h('h1', { class: 'product-title' }, view.title ?? 'Product details not read yet'),
+            h('p', { class: 'muted small' }, `Checked ${ago(s.lastCheckedAt)} \u00b7 watched since ${date(s.trackedSince)}`))),
+        h('div', { class: 'now' },
+          h('span', { class: 'now-price' },
             h('span', { class: 'big-price' }, s.inStock === false ? 'Out of stock' : rupees(s.current)),
             s.currentMrp && s.current && s.currentMrp > s.current ? h('span', { class: 'mrp' }, 'M.R.P. ', h('s', {}, rupees(s.currentMrp))) : null),
-          h('p', { class: 'muted small' }, `Checked ${ago(s.lastCheckedAt)} · tracking since ${date(s.trackedSince)}`),
-          h('div', { class: 'product-actions' },
-            h('a', { class: 'button warn', href: view.url, target: '_blank', rel: 'noopener noreferrer nofollow', title: `Opens ${view.store.name}` },
-              s.inStock !== false && s.current ? `Buy at ${rupees(s.current)}` : `Open on ${view.store.name}`),
-            h('a', { class: 'button secondary', href: '#alert', onclick: (e) => { e.preventDefault(); document.getElementById('alert')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); } }, 'Price alert')))),
-      view.pending ? h('p', { class: 'notice' }, view.pending) : null,
-      h('div', { class: 'cards2' },
+          priceNote(view)),
+        view.pending ? h('p', { class: 'notice' }, view.pending) : null,
         h('section', { class: `verdict ${VERDICT_CLASS[view.verdict.kind]}` },
           h('h2', {}, view.verdict.headline),
-          h('ul', {}, view.verdict.reasons.map((r) => h('li', {}, r))),
-          priceScale(s)),
-        h('section', { class: `verdict ${SALE_CLASS[view.sale.status]}` },
-          h('h2', {}, SALE_TITLE[view.sale.status]),
-          h('p', {}, view.sale.explanation),
-          view.sale.claimedPct != null ? h('p', { class: 'small' }, `Claimed: ${pct(view.sale.claimedPct)} off M.R.P. · Real: ${view.sale.realPct == null ? 'not known yet' : pct(view.sale.realPct) + ' vs usual'}`) : null)),
-      // The price history right under the verdict (what a shopper came for), then its numbers,
-      // the alert, and only then other stores and the store's own offers.
-      h('section', {}, h('div', { class: 'chart-head' }, h('h2', {}, 'Price history'), rangeBar), chartHost),
-      h('dl', { class: 'stats' },
-        stat('Lowest', s.lowest ? `${rupees(s.lowest.price)}` : '—', s.lowest ? date(s.lowest.at) : ''),
-        stat('Highest', s.highest ? `${rupees(s.highest.price)}` : '—', s.highest ? date(s.highest.at) : ''),
-        // ONE usual price on the page: the sale check's (90 days, leaving out the last 2, so a new
-        // sale is not its own baseline); a product too new for it shows the middle price so far.
-        stat('Usual price', rupees(view.sale.usualPrice ?? s.median), view.sale.usualPrice != null ? '90 days, before the last 2' : 'so far: too new to be sure'),
-        stat('Price changes', String(s.changes), `${Math.floor(s.daysTracked)} days watched`)),
-      alertBox(view),
+          h('p', {}, view.verdict.reasons.join(' ')),
+          saleCheck(view),
+          priceScale(s))),
+      // The price history right under the verdict (what a shopper came for), then other stores'
+      // prices (design v5), the alert and only then the store's own offers.
+      h('section', { class: 'p-card' },
+        h('div', { class: 'chart-head' }, h('h2', {}, 'Price history'), rangeBar),
+        chartHost,
+        h('p', { class: 'tip-line' }, `${s.changes} price change${s.changes === 1 ? '' : 's'} in ${days} day${days === 1 ? '' : 's'}, read from ${view.store.name}\u2019s own page ${readBy}.`),
+        h('dl', { class: 'stats' },
+          stat('Lowest', s.lowest ? `${rupees(s.lowest.price)}` : '\u2014', s.lowest ? date(s.lowest.at) : ''),
+          stat('Highest', s.highest ? `${rupees(s.highest.price)}` : '\u2014', s.highest ? date(s.highest.at) : ''),
+          // ONE usual price on the page: the sale check's (90 days, leaving out the last 2, so a new
+          // sale is not its own baseline); a product too new for it shows the middle price so far.
+          stat('Usual price', rupees(view.sale.usualPrice ?? s.median), view.sale.usualPrice != null ? '90 days, before the last 2' : 'so far: too new to be sure'),
+          stat('Price changes', String(s.changes), `${Math.floor(s.daysTracked)} days watched`))),
       compareSection(view),
+      alertBox(view),
       offersSection(view),
-      h('section', { id: 'similar' })));
+      h('section', { id: 'similar' }),
+      h('div', { class: 'buy-bar' },
+        h('a', { class: 'button warn', href: view.url, target: '_blank', rel: 'noopener noreferrer nofollow', title: `Opens ${view.store.name}` },
+          h('b', {}, priced ? `Buy on ${view.store.name}` : `Open on ${view.store.name}`), priced ? h('span', {}, rupees(s.current)) : null),
+        h('a', { class: 'button secondary', href: '#alert', onclick: showAlert }, 'Alert me'))));
   drawChart(chartHost, view, range);
   // Look-alikes (BLUEPRINT §10.3): shown only when there are some, and labelled for what they are.
   getSimilar(key).then(({ results, basis }) => {
@@ -340,26 +407,28 @@ const SHOP_STATUS = {
 function compareSection(view) {
   const words = searchWordsFor(view.title ?? '');
   if (!words) return null;
-  const box = h('section', { class: 'compare', id: 'compare' });
+  const box = h('section', { class: 'compare p-card', id: 'compare' });
   const here = view.stats?.inStock !== false ? view.stats?.current ?? null : null;
   Promise.all([storesOnce(), loadShopRecipes()]).then(([stores, recipes]) => {
     const recipesHere = storesFor(view.title, recipes, view.store.id);
     const names = new Map([...stores.map((s) => [s.id, s.name]), ...(servicesCache ?? []).map((s) => [s.id, s.name])]);
     const links = stores.filter((s) => s.id !== view.store.id).map((s) => ({ store: s.id, name: s.name, url: searchLink(s, words) }));
-    const head = h('div', { class: 'section-head' }, h('h2', {}, 'Compare prices'));
+    const head = h('h2', {}, 'Compare prices');
     const out = h('div', { class: 'shop-out' });
     const server = h('div', { class: 'shop-server' });
     const more = h('details', { class: 'shop-more' }, h('summary', {}, 'Search other stores yourself'),
       h('p', { class: 'muted small' }, `Searches for \u201c${words}\u201d. Stores name products differently, so check it is the same item.`), storeButtons(links));
     const sites = recipesHere.map((r) => ({ id: r.store, name: names.get(r.store) ?? r.store, url: shopSearchUrl(r, words), recipe: r }));
     if (inApp && appCanShop() && sites.length) {
-      const run = h('button', { type: 'button', class: 'button', id: 'shop-run' }, `Check prices on ${sites.length} stores`);
+      const run = h('button', { type: 'button', class: 'button big', id: 'shop-run' }, `Check prices on ${sites.length} stores`);
       const saved = savedCompare(view.key);
       run.onclick = () => {
         run.textContent = 'Check again';
         liveShop(out, sites, (read) => drawShop(out, view, read, here, null), (read) => saveCompare(view.key, read));
       };
-      put(box, head, h('p', { class: 'muted small' }, `Britto opens each store\u2019s own search for \u201c${words}\u201d on your phone and reads its prices. Nothing is bought or added to a cart.`), run, out, server, more);
+      put(box, head, h('p', { class: 'p-text' }, `Britto opens each store\u2019s own search for \u201c${words}\u201d on your phone and reads its prices. Nothing is bought or added to a cart.`),
+        h('div', { class: 'tag-list' }, sites.map((x) => h('span', { class: 'tag-item' }, x.name))), run,
+        h('p', { class: 'tip-line' }, 'Takes about half a minute. The last check stays on this phone for 6 hours.'), out, server, more);
       if (saved) { run.textContent = 'Check again'; drawShop(out, view, saved.sites, here, saved.at); }
     } else {
       put(box, head, server, inApp
@@ -425,36 +494,42 @@ function otherStoresSearch(box, q) {
   Promise.all([storesOnce(), loadShopRecipes()]).then(([stores, recipes]) => {
     const names = new Map([...stores.map((s) => [s.id, s.name]), ...(servicesCache ?? []).map((s) => [s.id, s.name])]);
     const sites = storesFor(q, recipes, 'amazon').map((r) => ({ id: r.store, name: names.get(r.store) ?? r.store, url: shopSearchUrl(r, q), recipe: r }));
-    if (!sites.length) return;
-    const out = h('div', { class: 'shop-search-out' });
+    if (!sites.length || !box.isConnected) return;
+    // Asked for by a tap, never on its own: each search opens up to six store pages on the
+    // shopper's phone (their data and battery), and stores block a phone that loads them too often.
     const go = h('button', { type: 'button', class: 'button', id: 'shop-search-run' }, `Search ${sites.length} more stores`);
-    go.onclick = () => { go.remove(); liveShop(out, sites, (read) => drawStoreResults(out, read)); };
-    put(box, h('div', { class: 'section-head' }, h('h2', {}, 'On other stores')),
-      h('p', { class: 'section-note' }, `${sites.map((s) => s.name).join(', ')}: each store\u2019s own search, opened and read on your phone.`), go, out);
+    go.onclick = () => liveShop(box, sites, (read) => { drawStoreResults(box, read); applySearchFilter(); });
+    put(box, h('section', { class: 'still-card' },
+      h('b', {}, `Also on ${sites.map((s) => s.name).join(', ')}?`),
+      h('p', {}, 'Britto opens each store’s own search on your phone and reads what it lists. About half a minute.'),
+      go));
   }).catch(() => {});
 }
 
 function drawStoreResults(box, sites) {
-  const done = sites.filter((s) => s.state === 'done').length;
+  const waiting = sites.filter((s) => s.state !== 'done');
+  const finished = sites.length - waiting.length;
   put(box,
-    done < sites.length ? h('p', { class: 'fare-progress small' }, `Searching on your phone: ${done} of ${sites.length} stores done\u2026`) : null,
     // data-state: a store's LAST reading can already say "listed" while it is still loading (the
-    // app waits for its products to stop changing), so "done" is the state, not the status.
-    sites.map((s) => h('section', { class: 'store-results', 'data-store': s.id, 'data-status': s.status ?? 'queued', 'data-state': s.state ?? 'queued' },
-      h('div', { class: 'section-head' }, h('h3', {}, s.name), h('a', { class: 'small', href: s.url, rel: 'noopener' }, 'Open')),
-      s.state !== 'done' ? h('p', { class: 'small muted' }, SHOP_STATUS[s.status] ?? SHOP_STATUS.loading)
-        : s.status === 'listed' && s.rows?.length ? h('div', { class: 'row' }, s.rows.slice(0, 8).map((r) => h('a', { class: 'card shop-card', href: r.link ?? s.url, rel: 'noopener' },
-          h('div', { class: 'thumb' }, r.image ? h('img', { src: r.image, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }) : null),
-          h('span', { class: 'title' }, r.title),
-          h('span', { class: 'price-line' }, h('b', {}, rupees(r.price)), r.mrp ? h('s', { class: 'small muted' }, rupees(r.mrp)) : null))))
-          : h('p', { class: 'small muted' }, SHOP_STATUS[s.status] ?? SHOP_STATUS.waiting))),
-    done === sites.length ? h('p', { class: 'muted small' }, 'Prices as each store\u2019s search showed them on your phone just now. Tap one to open it in that store: Britto shows its price history there.') : null);
+    // app waits for its products to stop changing), so "done" is the state, not the status. A store
+    // still being read waits in the card below, not as an empty section.
+    sites.map((s) => h('section', { class: 'store-results filterable', 'data-store': s.id, 'data-status': s.status ?? 'queued', 'data-state': s.state ?? 'queued', hidden: s.state !== 'done' },
+      storeHead(s.name, s.status === 'listed' ? 'Read on your phone \u00b7 just now' : 'On your phone', s.url),
+      s.status === 'listed' && s.rows?.length ? h('div', { class: 'row' }, s.rows.slice(0, 8).map((r) => h('a', { class: 'card shop-card', href: r.link ?? s.url, rel: 'noopener', 'data-price': r.price ?? 0, 'data-history': 0 },
+        h('div', { class: 'thumb' }, r.image ? h('img', { src: r.image, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }) : null),
+        h('span', { class: 'title' }, r.title),
+        h('span', { class: 'price-line' }, h('b', {}, rupees(r.price)), r.mrp ? h('s', { class: 'small muted' }, rupees(r.mrp)) : null))))
+        : h('p', { class: 'small muted' }, SHOP_STATUS[s.status] ?? SHOP_STATUS.waiting))),
+    h('section', { class: 'still-card' },
+      waiting.length ? h('b', {}, `Still checking: ${waiting.map((s) => s.name).join(', ')}`) : h('b', {}, `Checked ${sites.length} more stores`),
+      waiting.length ? h('progress', { max: sites.length, value: finished, class: 'fare-bar' }) : null,
+      h('p', {}, 'Each store\u2019s own search, opened and read on your phone. Tap a product to open it in that store: Britto shows its price history there.')));
 }
 
 function drawShop(box, view, sites, here, savedAt) {
   const v = compareView(view.title, sites, here);
   const best = v.cheapest;
-  const summary = !v.done ? h('p', { class: 'fare-progress small' }, `Checking prices on your phone: ${v.checked} of ${sites.length} stores done\u2026`)
+  const summary = !v.done ? h('p', { class: 'shop-progress' }, h('span', {}, 'Checking prices on your phone\u2026'), h('span', { class: 'muted' }, `${v.checked} of ${sites.length} stores`))
     : best && (here == null || best.best.row.price < here)
       ? h('div', { class: 'shop-best' }, h('span', { class: 'small' }, here == null ? 'Lowest price found' : 'Cheaper elsewhere'), h('strong', {}, `${rupees(best.best.row.price)} on ${best.name}`),
         here == null ? h('span', { class: 'small' }, `${view.store.name} shows no price for it now`) : h('span', { class: 'small' }, `${rupees(here - best.best.row.price)} less than on ${view.store.name}`))
@@ -499,9 +574,9 @@ function searchLink(store, words) {
 // the page put them, not checked by Britto. Offer text from shoppers' browsers is never shown here.
 function offersSection(view) {
   if (!view.offers?.items.length) return null;
-  return h('section', { class: 'offers', id: 'offers' },
+  return h('section', { class: 'offers p-card', id: 'offers' },
     h('h2', {}, `Offers on ${view.store.name}'s page`),
-    h('ul', {}, view.offers.items.map((o) => h('li', {}, h('b', {}, o.title), ' ', o.text, o.count ? h('span', { class: 'muted small' }, ` · ${o.count}`) : null,
+    h('ul', {}, view.offers.items.map((o) => h('li', {}, h('b', { class: 'offer-kind' }, o.title), ' ', o.text, o.count ? h('span', { class: 'muted small' }, ` · ${o.count}`) : null,
       o.code ? couponBox(view.store.id, o) : null))),
     h('p', { class: 'muted small' }, `As the page showed them ${ago(view.offers.at)}. Britto does not check offers or their terms: read them on ${view.store.name} before you pay.`));
 }
@@ -1167,12 +1242,19 @@ async function travelPage() {
     hotels: h('section', { class: 'tab-panel', id: 'panel-hotels', role: 'tabpanel', 'aria-labelledby': 'tab-hotels' }, hotels),
   };
   travelTabsShow = tabs(panels, [['cabs', 'Cabs', 'car'], ['flights', 'Flights', 'plane'], ['hotels', 'Hotels', 'hotel']], inApp ? 'cabs' : 'flights');
-  put(app, h('h1', {}, 'Travel'),
+  put(app, h('header', { class: 'page-head' }, h('h1', {}, 'Travel'), travelTabsShow.bar),
     h('p', { class: 'muted travel-lede' }, inApp
       ? 'Enter your trip once. Britto opens each app’s own page on this phone, reads the prices it shows and lists them side by side. Britto’s server never sees your trip, and nothing is booked.'
       : 'Enter your trip once and open the same search on each site. In the Britto Android app, Britto also reads the fares each site shows and compares them for you.'),
-    list, travelTabsShow.bar, panels.cabs, panels.flights, panels.hotels);
+    list, panels.cabs, panels.flights, panels.hotels);
   loadWatches();
+  // "Compare now" on a Tracker fare alert: its route and day, compared straight away.
+  const asked = new URLSearchParams(location.search);
+  if (asked.get('from') && asked.get('to') && asked.get('date')) {
+    from.value = asked.get('from'); to.value = asked.get('to'); depart.value = asked.get('date'); ret.value = '';
+    travelTabsShow.show('flights', false);
+    flights.requestSubmit();
+  }
 }
 
 /**
@@ -1212,19 +1294,52 @@ const STATUS_NOTE = {
   failed: 'Amazon did not answer our search just now. Try again in a minute, or use the store buttons below.',
 };
 
+/** A store's heading on the search page: who, how its prices were read, and its own search. */
+function storeHead(name, how, url) {
+  return h('div', { class: 'store-head' }, h('span', { class: 'store-mono' }, monogram(name)),
+    h('div', { class: 'store-who' }, h('b', {}, name), h('span', {}, how)),
+    url ? h('a', { href: url, rel: 'noopener', target: inApp ? null : '_blank' }, 'Open') : null);
+}
+
+const SEARCH_FILTERS = [
+  ['all', 'All stores', () => true],
+  ['history', 'Has price history', (c) => c.dataset.history === '1'],
+  ['under', 'Under \u20b91,000', (c) => Number(c.dataset.price) > 0 && Number(c.dataset.price) < 100_000],
+];
+let searchFilter = 'all';
+/** Hides what the chosen chip leaves out, and a store left with nothing to show. Run after every draw. */
+function applySearchFilter() {
+  const keep = SEARCH_FILTERS.find(([id]) => id === searchFilter)?.[2] ?? (() => true);
+  document.querySelectorAll('[data-price]').forEach((c) => { c.hidden = !keep(c); });
+  document.querySelectorAll('.filterable').forEach((sec) => {
+    if (sec.dataset.state && sec.dataset.state !== 'done') return;
+    const cards = [...sec.querySelectorAll('[data-price]')];
+    sec.hidden = searchFilter !== 'all' && !cards.some((c) => !c.hidden);
+  });
+}
+
 async function searchPage(q) {
   const box = document.querySelector('#search-form input');
   if (box && box !== document.activeElement) box.value = q;
-  const tracked = h('section', { id: 'tracked' });
-  const live = h('section', { id: 'live' }, h('div', { class: 'section-head' }, h('h2', {}, 'On Amazon.in now')), h('div', { class: 'grid skeleton' }, Array.from({ length: 6 }, () => h('div', { class: 'card ghost' }))));
+  searchFilter = 'all';
+  const tracked = h('section', { id: 'tracked', class: 'filterable' });
+  const live = h('section', { id: 'live', class: 'filterable' }, storeHead('Amazon.in', 'Reading its search\u2026'), h('div', { class: 'grid skeleton' }, Array.from({ length: 2 }, () => h('div', { class: 'card ghost' }))));
   const others = h('section', { id: 'others' });
   // In the app (0.8.0+), the other stores' own searches, read on the phone: not waiting for (or
   // depending on) the server's Amazon search below.
   const more = h('section', { id: 'other-stores' });
-  put(app, h('h1', {}, `Results for “${q}”`), tracked, live, more, others);
+  const chips = h('div', { class: 'chips filter-chips', role: 'group', 'aria-label': 'Show' }, SEARCH_FILTERS.map(([id, label]) => h('button', {
+    type: 'button', class: 'chip', 'aria-pressed': String(id === searchFilter), 'data-filter': id,
+    onclick: () => { searchFilter = id; chips.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filter === id))); applySearchFilter(); },
+  }, label)));
+  put(app, h('h1', { class: 'search-title' }, `Results for \u201c${q}\u201d`), chips, tracked, live, more, others);
   if (inApp && appCanShop() && siteBridge()) otherStoresSearch(more, q);
   searchProducts(q).then(({ results }) => {
-    if (results.length) put(tracked, h('div', { class: 'section-head' }, h('h2', {}, 'With price history on Britto')), row(results, ''));
+    if (results.length) {
+      put(tracked, storeHead('Britto', 'Products Britto already watches'), row(results, ''));
+      tracked.querySelectorAll('.card').forEach((c, i) => { c.dataset.history = '1'; c.dataset.price = String(results[i].price ?? 0); });
+      applySearchFilter();
+    }
   }).catch(() => {});
   let res;
   try {
@@ -1235,15 +1350,17 @@ async function searchPage(q) {
   }
   const known = new Map(res.tracked.map((c) => [c.key, c]));
   for (const s of res.stores) {
-    put(live, h('div', { class: 'section-head' }, h('h2', {}, `On ${s.name} now`)),
+    const open = res.links.find((l) => l.store === s.store)?.url;
+    put(live, storeHead(s.name, s.status === 'listed' ? `Read by Britto \u00b7 ${ago(s.at)}` : 'Not read just now', open),
       s.status === 'listed'
-        ? [h('p', { class: 'section-note' }, `Prices as ${s.name}’s search page showed them ${ago(s.at)}; the product’s own page can differ. Tap one to see its price history: Britto starts watching it then.`),
-          s.items.length ? h('div', { class: 'grid' }, s.items.map((i) => listedCard(i, known))) : h('p', { class: 'muted' }, `${s.name} found nothing for that.`)]
+        ? [s.items.length ? h('div', { class: inApp ? 'row' : 'grid' }, s.items.map((i) => listedCard(i, known))) : h('p', { class: 'muted' }, `${s.name} found nothing for that.`),
+          h('p', { class: 'section-note below' }, 'Prices as its search page showed them; the product\u2019s own page can differ. Tap one to see its price history: Britto starts watching it then.')]
         : h('p', { class: 'notice' }, STATUS_NOTE[s.status]));
   }
   if (!res.stores.length) put(live);
-  put(others, h('div', { class: 'section-head' }, h('h2', {}, 'Search other stores')),
-    h('p', { class: 'section-note' }, inApp ? 'Opens the store inside Britto: its product pages show their price history.' : 'Opens the store’s own search. With the Britto extension or app, its product pages show their price history.'),
+  applySearchFilter();
+  put(others, h('div', { class: 'section-head' }, h('h2', {}, inApp ? 'Open a store yourself' : 'Search other stores')),
+    h('p', { class: 'section-note' }, inApp ? 'Opens the store inside Britto: its product pages show their price history.' : 'Opens the store\u2019s own search. With the Britto extension or app, its product pages show their price history.'),
     storeButtons(res.links.filter((l) => l.store !== 'amazon' || !res.stores.some((s) => s.store === 'amazon' && s.status === 'listed'))));
 }
 
@@ -1268,31 +1385,46 @@ function sparkline(points) {
   return svg;
 }
 
+/** A confirmed real drop: its photo, how far below the usual price, and its last 90 days. */
+function dealCard(c) {
+  return h('a', { class: 'card wide', href: `/p/${encodeURIComponent(c.key)}`, 'data-nav': true },
+    h('div', { class: 'thumb' }, c.image ? h('img', { src: thumbUrl(c.image), alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }) : null),
+    h('div', { class: 'card-body' },
+      h('span', { class: 'badge solid' }, `${pct(c.realPct)} below usual`),
+      h('span', { class: 'title' }, c.title),
+      h('span', { class: 'deal-line' },
+        h('span', { class: 'price-line' }, h('b', { class: 'price' }, rupees(c.price)), c.usualPrice ? h('span', { class: 'small muted' }, `usual ${rupees(c.usualPrice)}`) : null),
+        sparkline(c.spark))));
+}
+
 async function dealsPage() {
   const params = new URLSearchParams(location.search);
   const filter = { store: params.get('store') ?? '', min: Number(params.get('min')) || 0 };
-  put(app, h('h1', {}, 'Real price drops'), h('p', { class: 'muted' }, 'Loading…'));
-  const [{ stores }, d, p, dr] = await Promise.all([getStores(), getDeals(filter), getPopular(), getDrops(filter.store || undefined)]);
-  const apply = (next) => go(`/deals?${new URLSearchParams(Object.entries({ ...filter, ...next }).filter(([, v]) => v)).toString()}`);
-  const storeSelect = h('select', { 'aria-label': 'Store', onchange: (e) => apply({ store: e.target.value }) },
-    h('option', { value: '' }, 'All stores'), stores.map((s) => h('option', { value: s.id, selected: s.id === filter.store }, s.name)));
-  const minSelect = h('select', { 'aria-label': 'Smallest real drop', onchange: (e) => apply({ min: Number(e.target.value) }) },
-    [0, 10, 20, 30, 50].map((m) => h('option', { value: m, selected: m === filter.min }, m ? `${m}% or more below usual` : 'Any real drop (5%+)')));
-  const cards = d.results.map((c) => {
-    const card = productCard(c);
-    const spark = sparkline(c.spark);
-    if (spark) card.querySelector('.card-body')?.append(spark);
-    return card;
-  });
-  put(app, 
-    h('h1', {}, 'Real price drops'),
-    h('p', { class: 'muted' }, 'Only products at least 5% below their own usual price (90-day time-weighted median, M.R.P. ignored), and not raised just before the “sale”. The line under each shows its last 90 days.'),
-    h('div', { class: 'filters' }, storeSelect, minSelect),
-    cards.length ? h('div', { class: 'grid' }, cards) : h('p', { class: 'muted' }, 'No confirmed drops for this filter yet. A drop is only confirmed after a week of watching a product.'),
-    h('div', { class: 'section-head' }, h('h2', {}, 'Price dropped since our reading before')),
-    h('p', { class: 'section-note' }, 'Cheaper now than at the reading before, in the last two weeks. This says nothing about the usual price: that takes a week of history.'),
-    grid(dr.results, 'None in the last two weeks yet.'),
-    h('h2', {}, 'Most viewed'), grid(p.results, 'Nothing yet.'));
+  const head = h('header', { class: 'page-head' }, h('h1', {}, 'Real drops'),
+    h('p', {}, 'Cheaper than the product ', h('b', {}, 'usually'), ' costs on its own store, never measured against its M.R.P.'));
+  put(app, head, h('p', { class: 'muted page-wait' }, 'Loading\u2026'));
+  const [d, p, dr] = await Promise.all([getDeals(filter), getPopular(), getDrops(filter.store || undefined)]);
+  const chip = (label, next, on) => {
+    const q = new URLSearchParams(Object.entries({ ...filter, ...next }).filter(([, v]) => v)).toString();
+    return h('a', { class: `chip${on ? ' on' : ''}`, href: `/deals${q ? `?${q}` : ''}`, 'data-nav': true, 'aria-current': on ? 'true' : null }, label);
+  };
+  // "10% or more" means the same on both lists: below the usual price here, below the last reading there.
+  const drops = dr.results.filter((c) => !filter.min || (c.drop && ((c.drop.from - c.price) / c.drop.from) * 100 >= filter.min));
+  put(app, head,
+    h('div', { class: 'chips filter-band', role: 'group', 'aria-label': 'Filter' },
+      chip('All stores', { store: '', min: 0 }, !filter.store && !filter.min),
+      chip('10% or more', { min: filter.min === 10 ? 0 : 10 }, filter.min === 10),
+      chip('30% or more', { min: filter.min === 30 ? 0 : 30 }, filter.min === 30),
+      chip('Amazon.in', { store: filter.store === 'amazon' ? '' : 'amazon' }, filter.store === 'amazon')),
+    h('section', {}, h('div', { class: 'section-head' }, h('h2', {}, 'Below their usual price')),
+      d.results.length ? h('div', { class: 'deal-list' }, d.results.map(dealCard)) : null,
+      h('p', { class: d.results.length ? 'section-note below' : 'muted' }, d.results.length
+        ? 'A product needs a week of prices before Britto knows what it usually costs, so this list grows as Britto watches more products.'
+        : 'No confirmed drops for this filter yet. A drop is only confirmed after a week of watching a product.')),
+    h('section', {}, h('div', { class: 'section-head' }, h('h2', {}, 'Cheaper than at the last check')),
+      h('p', { class: 'section-note' }, 'Too new to know the usual price, but cheaper now than Britto\u2019s reading before.'),
+      grid(drops, 'None in the last two weeks yet.')),
+    h('section', {}, h('div', { class: 'section-head' }, h('h2', {}, 'Most viewed')), grid(p.results, 'Nothing yet.')));
 }
 
 async function storesPage() {
@@ -1489,16 +1621,18 @@ function botLink(bot) {
 function alertBox(view) {
   const s = view.stats;
   const priced = s.current != null && s.inStock !== false;
-  const box = h('section', { class: 'alert-box', id: 'alert' }, h('h2', {}, 'Price alert'));
+  const box = h('section', { class: 'alert-box p-card', id: 'alert' }, h('h2', {}, 'Price alert'));
   const mine = h('ul', { class: 'my-alerts' });
   const status = h('p', { class: 'form-status', role: 'status' });
   const channels = h('div', { class: 'channels' });
 
   const suggested = priced ? Math.floor((s.current * 95) / 100 / 100) * 100 : null;
-  const target = h('input', { name: 'target', inputmode: 'decimal', autocomplete: 'off', 'aria-label': 'Target price in rupees', value: suggested ? String(suggested / 100) : '', size: 8 });
-  const option = (value, label, extra, checked) => h('label', { class: 'opt' },
-    h('input', { type: 'radio', name: 'kind', value, checked }), ' ', label, extra ?? null);
-  const form = h('form', { class: 'alert-form', onsubmit: async (e) => {
+  const target = h('input', { id: 'alert-target', name: 'target', inputmode: 'decimal', autocomplete: 'off', value: suggested ? String(suggested / 100) : '', size: 8 });
+  const option = (value, label, checked) => h('label', { class: 'seg-opt' }, h('input', { type: 'radio', name: 'kind', value, checked }), h('span', {}, label));
+  const targetLabel = h('label', { class: 'target-label', for: 'alert-target' }, 'Tell me when it is at or below');
+  const targetBox = h('span', { class: 'target-box' }, h('b', {}, '\u20b9'), target);
+  const syncTarget = () => { const below = new FormData(form).get('kind') === 'below'; targetLabel.hidden = !below; targetBox.hidden = !below; };
+  const form = h('form', { class: 'alert-form', onchange: syncTarget, onsubmit: async (e) => {
     e.preventDefault();
     const kind = new FormData(form).get('kind');
     let rule;
@@ -1517,10 +1651,13 @@ function alertBox(view) {
       status.textContent = err.message;
     }
   } },
-    priced ? option('drop', 'Any price drop', null, true) : null,
-    priced ? option('below', 'At or below ₹', target, false) : null,
-    option('in_stock', s.current == null && s.inStock !== false ? 'When it first has a price' : 'When it is back in stock', null, !priced),
-    h('button', { type: 'submit' }, 'Set alert'));
+    h('div', { class: 'seg-radio', role: 'radiogroup', 'aria-label': 'Tell me when' },
+      priced ? option('drop', 'Any drop', false) : null,
+      priced ? option('below', 'Below a price', true) : null,
+      option('in_stock', s.current == null && s.inStock !== false ? 'First price' : 'Back in stock', !priced)),
+    targetLabel,
+    h('div', { class: 'target-row' }, targetBox, h('button', { type: 'submit' }, 'Set alert')));
+  syncTarget();
 
   function show(me) {
     const here = (me?.alerts ?? []).filter((a) => a.key === view.key);
@@ -1531,7 +1668,9 @@ function alertBox(view) {
       } }, 'Remove'))));
     if (here.length) (inApp ? appAlertHint(channels) : channelHint(channels, me));
   }
-  box.append(mine, form, status, channels);
+  box.append(mine, form, status,
+    h('p', { class: 'tip-line' }, `${view.store.serverFetch === 'yes' ? 'Britto re-checks the price every few hours' : 'Britto sees a new price when someone opens this page in the app or extension'}. No account, no password.`),
+    channels);
   getMe().then(show).catch(() => {});
   return box;
 }
@@ -1648,36 +1787,79 @@ async function pushControl(cfg, me, refresh) {
   return h('span', {}, btn, msg);
 }
 
+/** One alert on the Tracker: how close the price is, or, once it has fired, what to do now. */
+function trackerRow(a) {
+  const fired = a.lastFiredAt != null;
+  const link = keyToLink(a.key);
+  const page = `/p/${encodeURIComponent(a.key)}`;
+  const near = a.rule?.kind === 'below' && a.price && a.inStock !== false ? Math.min(100, (a.rule.target / a.price) * 100) : null;
+  const bar = near == null ? null : h('span', { class: 'near-bar', role: 'img', 'aria-label': `Alert price is ${Math.round(near)}% of today\u2019s price` }, h('span', {}));
+  if (bar) bar.firstChild.style.width = `${near.toFixed(1)}%`;
+  return h('li', { class: `alert-row${fired ? ' fired' : ''}`, 'data-alert': a.id },
+    h('div', { class: 'thumb small-thumb' }, a.image ? h('img', { src: thumbUrl(a.image), alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }) : null),
+    h('div', { class: 'alert-main' },
+      fired ? h('span', { class: 'badge solid' }, `Alert sent \u00b7 ${date(a.lastFiredAt)}`) : null,
+      h('a', { href: page, 'data-nav': true, class: 'title' }, a.title ?? a.key),
+      h('span', { class: 'alert-state' }, `${STORE_NAMES[a.store] ?? a.store} \u00b7 ${a.inStock === false ? 'out of stock' : `${rupees(a.price)} now`} \u00b7 alert: ${a.description}`),
+      bar,
+      fired ? h('span', { class: 'muted small' }, a.lastMessage) : h('span', { class: 'muted small' }, `Waiting since ${date(a.createdAt)}`)),
+    h('button', { type: 'button', class: 'icon-btn plain', 'aria-label': 'Remove this alert', onclick: async () => {
+      try { await removeAlert(a.id); alertsPage(); } catch (err) { alert(err.message); }
+    } }, icon('close'), h('span', { class: 'sr' }, 'Remove')),
+    fired ? h('div', { class: 'alert-actions' },
+      h('a', { class: 'button warn', href: link ?? page, target: link ? '_blank' : null, rel: 'noopener noreferrer nofollow', 'data-nav': link ? null : true }, a.price && a.inStock !== false ? `Buy at ${rupees(a.price)}` : 'Open it'),
+      h('a', { class: 'button secondary', href: `${page}#compare`, 'data-nav': true }, 'Compare stores')) : null);
+}
+
+/** The fare alerts this phone keeps (android FareWatches): a flight route and day, re-read on the phone. */
+function fareWatchCard(w, refresh) {
+  const q = new URLSearchParams({ from: w.from, to: w.to, date: w.date });
+  return h('li', { class: 'fare-watch', 'data-watch': w.id },
+    h('span', { class: 'eyebrow' }, 'Fare alert'),
+    h('b', {}, `${w.from} \u2192 ${w.to} \u00b7 ${dayName(w.date)}`),
+    // The app's own rule (FareWatches.checked): at least ₹100, and at least 1% of the lowest fare.
+    h('p', {}, `Tells you when a fare is at least ${rupees(Math.max(10_000, Math.floor(w.low / 100)))} below ${rupees(w.low)} (${w.lowSite}, the lowest seen). Checked on this phone every 6 hours; last ${ago(w.checkedAt)}: ${rupees(w.last)} on ${w.lastSite}.`),
+    h('div', { class: 'alert-actions' },
+      h('a', { class: 'button light', href: `/travel?${q}#flights`, 'data-nav': true }, 'Compare now'),
+      h('button', { type: 'button', class: 'button ghost-light', onclick: async () => { await siteBridge()?.({ type: 'unwatchFare', id: w.id }); refresh(); } }, 'Stop')));
+}
+
 async function alertsPage() {
-  put(app, h('h1', {}, 'Price Tracker'), h('p', { class: 'muted' }, 'Loading…'));
-  const [cfg, me] = await Promise.all([config(), getMe()]);
-  const list = (me?.alerts ?? []);
+  const head = h('header', { class: 'page-head' }, h('h1', {}, 'Tracker'),
+    h('p', {}, inApp ? 'Your alerts belong to this phone: no account, no password.' : 'Your alerts belong to this browser: no account, no password.'));
+  put(app, head, h('p', { class: 'muted page-wait' }, 'Loading\u2026'));
+  const [cfg, me, fares] = await Promise.all([config(), getMe(), inApp ? siteBridge()?.({ type: 'fareWatches' }) : null]);
+  const list = me?.alerts ?? [];
+  const watches = fares?.ok ? fares.watches : null;
   const channels = h('div', { class: 'channels' });
   const testStatus = h('span', { class: 'small', role: 'status' });
-  put(app, 
-    h('h1', {}, 'Price Tracker'),
-    h('p', { class: 'muted' }, inApp ? 'No account and no password: your alerts belong to this phone.' : 'No account and no password: your alerts belong to this browser. Connect Telegram to get them on your phone too.'),
-    cfg?.telegram ? h('p', { class: 'notice' }, 'On your phone? Send any product link to ', botLink(cfg.telegram.bot), ' on Telegram. It replies with the price history and sets alerts with one tap.') : null,
-    h('section', { class: 'alert-box' }, h('h2', {}, 'Where alerts go'), channels,
+  const prices = h('section', { id: 'tracker-prices' },
+    h('h2', {}, list.length ? `${list.length} alert${list.length === 1 ? '' : 's'}` : 'No alerts yet'),
+    list.length ? h('ul', { class: 'alert-list' }, list.map(trackerRow))
+      : h('p', { class: 'muted' }, 'Open any product and tap \u201cAlert me\u201d at the bottom of its page.'));
+  const farePanel = watches ? h('section', { id: 'tracker-fares', hidden: true },
+    watches.length ? h('ul', { class: 'alert-list' }, watches.map((w) => fareWatchCard(w, alertsPage)))
+      : h('p', { class: 'muted' }, 'No fare alerts yet. Compare a one-way flight in Travel, then tap \u201cAlert me if it gets cheaper\u201d.')) : null;
+  const seg = watches ? h('div', { class: 'seg', role: 'tablist', 'aria-label': 'Alerts' }, [['prices', `Prices (${list.length})`, prices], ['fares', `Fares (${watches.length})`, farePanel]].map(([id, label, panel], i) => h('button', {
+    type: 'button', role: 'tab', 'aria-selected': String(i === 0),
+    onclick: (e) => {
+      prices.hidden = id !== 'prices';
+      farePanel.hidden = id !== 'fares';
+      e.target.parentNode.querySelectorAll('button').forEach((b) => b.setAttribute('aria-selected', String(b === e.target)));
+    },
+  }, label))) : null;
+  put(app, head,
+    cfg?.telegram ? h('p', { class: 'notice page-gap' }, 'On your phone? Send any product link to ', botLink(cfg.telegram.bot), ' on Telegram. It replies with the price history and sets alerts with one tap.') : null,
+    h('section', { class: 'alert-box p-card page-gap' }, h('h2', {}, 'Where alerts go'), channels,
       me ? h('p', {}, h('button', { type: 'button', class: 'secondary', onclick: async () => {
-        testStatus.textContent = ' Sending…';
+        testStatus.textContent = ' Sending\u2026';
         try {
           const { result } = await sendTest();
           const tg = { sent: 'Telegram: sent.', failed: 'Telegram: failed.', blocked: 'Telegram: you blocked the bot.', not_connected: '', off: '' }[result.telegram];
           testStatus.textContent = ` ${tg} Browsers: ${result.push.sent} sent${result.push.failed ? `, ${result.push.failed} failed` : ''}.`;
         } catch (err) { testStatus.textContent = ` ${err.message}`; }
       } }, 'Send a test alert'), testStatus) : null),
-    h('h2', {}, list.length ? `${list.length} alert${list.length === 1 ? '' : 's'}` : 'No alerts yet'),
-    list.length ? h('ul', { class: 'alert-list' }, list.map((a) => h('li', { class: 'alert-row' },
-      h('div', { class: 'thumb small-thumb' }, a.image ? h('img', { src: a.image, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }) : null),
-      h('div', { class: 'alert-main' },
-        h('a', { href: `/p/${encodeURIComponent(a.key)}`, 'data-nav': true, class: 'title' }, a.title ?? a.key),
-        h('span', {}, `${STORE_NAMES[a.store] ?? a.store} · now ${a.inStock === false ? 'out of stock' : rupees(a.price)} · alert: ${a.description}`),
-        h('span', { class: 'muted small' }, a.lastFiredAt ? `Sent ${date(a.lastFiredAt)}: ${a.lastMessage}` : `Waiting since ${date(a.createdAt)}`)),
-      h('button', { type: 'button', class: 'link', onclick: async () => {
-        try { await removeAlert(a.id); alertsPage(); } catch (err) { alert(err.message); }
-      } }, 'Remove'))))
-      : h('p', { class: 'muted' }, 'Open any product and press "Set alert" under its price history.'));
+    seg, prices, farePanel);
   if (me && inApp) await appAlertHint(channels);
   else if (me) channelHint(channels, me);
   else put(channels, h('p', { class: 'small muted' }, 'Set your first alert on a product page, then choose where it reaches you.'));
@@ -1706,12 +1888,26 @@ function reportBars() {
 }
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', reportBars);
 
+// What the top bar shows on a phone, page by page (style.css; index.html holds every part).
+const CHROME = { '/': 'home', '/p': 'back', '/search': 'search', '/deals': 'page', '/alerts': 'page', '/travel': 'page' };
+function setChrome(mode, title = '') {
+  document.documentElement.dataset.chrome = mode;
+  document.getElementById('top-title').textContent = title;
+}
+let moved = 0; // pages opened inside the site this visit: Back goes there, or home when none.
+document.getElementById('top-back').addEventListener('click', (e) => {
+  e.preventDefault();
+  if (moved > 0) history.back();
+  else go('/');
+});
+
 function route() {
   const { pathname, search } = location;
   window.scrollTo(0, 0);
   // The tab (and desktop nav link) for this page, by its first path segment.
   const section = `/${pathname.split('/')[1] ?? ''}`;
   document.documentElement.classList.toggle('is-home', section === '/');
+  setChrome(CHROME[section] ?? 'none', section === '/p' ? 'Price history' : '');
   reportBars();
   document.querySelectorAll('.tabbar a, .top nav a').forEach((a) => {
     if (a.getAttribute('href') === section) a.setAttribute('aria-current', 'page');

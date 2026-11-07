@@ -16,10 +16,14 @@
 </head>
 <body>
   <header class="top">
+    <a class="top-btn back" id="top-back" href="/" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></a>
     <a class="logo" href="/" data-nav>Brit<span>to</span></a>
+    <span class="top-title" id="top-title"></span>
     <form id="search-form" class="search" role="search">
-      <input name="q" type="search" placeholder="Search Amazon, or paste any product link" aria-label="Search products or paste a link">
+      <input name="q" type="search" placeholder="Search products, or paste a link" aria-label="Search products or paste a link" enterkeyhint="search">
     </form>
+    <a class="top-btn bell" href="/alerts" data-nav aria-label="Price alerts"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></a>
+    <button class="top-btn share" id="top-share" type="button" aria-label="Share this product"><svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg></button>
     <nav><a href="/browse" data-nav>Shop</a><a href="/deals" data-nav>Deals</a><a href="/travel" data-nav>Travel</a><a href="/alerts" data-nav>Alerts</a><a href="/stores" data-nav>Stores</a></nav>
   </header>
   <main id="app"></main>

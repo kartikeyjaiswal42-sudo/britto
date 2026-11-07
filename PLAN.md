@@ -45,8 +45,9 @@
 > AJIO, Meesho, Reliance Digital, Tata CLiQ, Nykaa and Snapdeal, read from each store's own search
 > page on the phone (`core/shop.ts`, `web/shops.json`, `web/match.js`); design v5 on Claude Design
 > (https://claude.ai/artifact/TvtoSCBxXnwnWcmLTBioHA) (HISTORY "Compare prices across stores").
-> **Next: build design v5 into `web/`** (one screen at a time, the browser suites at 390 px),
-> then **P11 part 4**: photo search ("Lens", Workers AI: the owner allowed it on AMITY
+> **Design v5 built into `web/` 2026-11-07** (every screen; browser suite 136 with 24 v5 checks)
+> (HISTORY "Design v5 built into the site").
+> **Next: P11 part 4**: photo search ("Lens", Workers AI: the owner allowed it on AMITY
 > 2026-11-04; measure neurons per search and cap it per day before switching it on); check
 > MakeMyTrip/Goibibo again from a phone (they refused the test emulator after many searches);
 > the sites' own round-trip pages (measure in the app first); MakeMyTrip hotels (needs its city

@@ -45,7 +45,7 @@ try {
 
     // Paste the link the way a shopper would.
     await page.fill('.track input', 'https://www.amazon.in/dp/B09X5DK382?tag=x');
-    await page.click('.track button');
+    await page.click('.track button[type=submit]');
     await page.waitForURL(/\/p\/amazon%3AB09X5DK382|\/p\/amazon:B09X5DK382/, { timeout: 30_000 });
     await page.waitForSelector('.big-price');
     const price = await page.locator('.big-price').innerText();
@@ -109,7 +109,7 @@ try {
 
     const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
     // The design's background (design/README.md): #F4F6FB, and the dark theme's deep navy #0F1424.
-    check(`${scheme} theme background applied`, scheme === 'dark' ? bg === 'rgb(15, 20, 36)' : bg === 'rgb(244, 246, 251)', bg);
+    check(`${scheme} theme background applied`, scheme === 'dark' ? bg === 'rgb(15, 20, 36)' : bg === 'rgb(243, 244, 247)', bg);
 
     // The prefix trick in a real browser.
     await page.goto(`${base}/https://www.amazon.in/Cello/dp/B09X5DK382/ref=x`, { waitUntil: 'networkidle' });
@@ -286,6 +286,84 @@ try {
     await spendPage.evaluate(() => window.scrollTo(500, 0));
     check('…no horizontal scroll on Spend Lens', (await spendPage.evaluate(() => window.scrollX)) === 0);
     await spendCtx.close();
+
+    // ---- Design v5 (2026-11-07): one box for words or links, the top bar by page, the buy bar,
+    // the alert form's kinds, the search page's chips, and a fare alert's "Compare now".
+    const phone = viewport.width < 760;
+    await page.goto(base + '/', { waitUntil: 'networkidle' });
+    await page.fill('.track input', 'cello pen');
+    await page.click('.track button[type=submit]');
+    await page.waitForURL(/\/search\?q=/, { timeout: 10_000 }).catch(() => {});
+    check('v5: words in the one box search for them (a link adds the product)', /\/search\?q=cello(%20|\+)pen$/.test(page.url()), page.url());
+
+    await page.goto(`${base}/p/${encodeURIComponent('amazon:B09X5DK382')}`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('.big-price');
+    const top = await page.evaluate(() => ({
+      chrome: document.documentElement.dataset.chrome, title: document.getElementById('top-title')?.textContent,
+      back: document.getElementById('top-back')?.getClientRects().length > 0, tabs: document.querySelector('header.top nav')?.getClientRects().length > 0,
+    }));
+    check('v5 product page: the top bar says "Price history"' + (phone ? ', with Back and no tab bar' : ''),
+      top.chrome === 'back' && top.title === 'Price history' && (!phone || (top.back && !top.tabs)), JSON.stringify(top));
+    if (phone) {
+      const bar = await page.evaluate(() => { const b = document.querySelector('.buy-bar'); const r = b.getBoundingClientRect(); return { pos: getComputedStyle(b).position, top: r.top, bottom: r.bottom, text: b.innerText }; });
+      check('…the buy bar stays on screen at the bottom, with the store and today\'s price', bar.pos === 'fixed' && bar.bottom <= 844 && bar.top > 600 && /Buy on Amazon\.in/.test(bar.text) && /₹280/.test(bar.text), JSON.stringify(bar));
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      const clear = await page.evaluate(() => document.querySelector('footer.foot').getBoundingClientRect().bottom <= document.querySelector('.buy-bar').getBoundingClientRect().top + 1);
+      check('…and the end of the page scrolls clear of it', clear);
+    }
+    const priceBox = () => page.locator('#alert-target').isVisible();
+    check('v5 alert form: "Below a price" chosen first, with its price box', (await page.locator('#alert input[value=below]').isChecked()) && (await priceBox()));
+    await page.locator('#alert .seg-opt', { hasText: 'Any drop' }).click();
+    check('…"Any drop" hides the price box', (await page.locator('#alert input[value=drop]').isChecked()) && !(await priceBox()));
+    await page.locator('#alert .seg-opt', { hasText: 'Below a price' }).click();
+    check('…and "Below a price" brings it back', await priceBox());
+
+    // Chips on the search page, judged by the prices and links the visible cards SHOW.
+    await page.goto(`${base}/search?q=cello`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('#live .card', { timeout: 30_000 }).catch(() => {});
+    const cards = () => page.evaluate(() => [...document.querySelectorAll('[data-price]')].filter((c) => c.getClientRects().length > 0).map((c) => ({
+      rupees: Number((/₹([\d,]+(?:\.\d\d)?)/.exec(c.innerText)?.[1] ?? '').replace(/,/g, '')) || null, href: c.getAttribute('href') ?? '' })));
+    const chip = (name) => page.locator('.filter-chips button', { hasText: name }).click();
+    const all = await cards();
+    if (!all.some((c) => c.rupees >= 1000) || !all.some((c) => c.rupees && c.rupees < 1000)) {
+      console.log(`SKIP  v5 search chips: the search did not list prices on both sides of ₹1,000 (${all.length} cards) — NOT verified`);
+    } else {
+      await chip('Under ₹1,000');
+      const under = await cards();
+      check('v5 search: "Under ₹1,000" leaves only cards that show a price under ₹1,000', under.length > 0 && under.length < all.length && under.every((c) => c.rupees && c.rupees < 1000), JSON.stringify(under.map((c) => c.rupees)));
+      await chip('Has price history');
+      const known = await cards();
+      check('…"Has price history" leaves only products Britto already tracks (they open their history, not an add)', known.length > 0 && known.length < all.length && known.every((c) => /^\/p\//.test(c.href) && !/add=1/.test(c.href)), JSON.stringify(known.map((c) => c.href)));
+      await chip('All stores');
+      check('…"All stores" shows every card again', (await cards()).length === all.length);
+    }
+
+    // A fare alert in the app (its watches come from the app's bridge): the threshold is the
+    // app's own rule, and "Compare now" opens that route and day, compared straight away.
+    const day = new Date(Date.parse(`${todayIST()}T00:00:00Z`) + 20 * 86_400_000).toISOString().slice(0, 10);
+    const fareCtx = await browser.newContext({ viewport, colorScheme: scheme, userAgent: `${await page.evaluate(() => navigator.userAgent)} BrittoApp/0.8.0` });
+    await fareCtx.addInitScript((watch) => {
+      window.BrittoBridge = { onmessage: null, postMessage(data) {
+        const { id, msg } = JSON.parse(data);
+        const reply = msg.type === 'fareWatches' ? { ok: true, watches: [watch] } : null;
+        setTimeout(() => this.onmessage?.({ data: JSON.stringify({ id, reply }) }), 10);
+      } };
+    }, { id: `DEL-BOM-${day}`, from: 'DEL', to: 'BOM', date: day, low: 1_250_000, lowSite: 'ixigo', last: 1_310_000, lastSite: 'Goibibo', checkedAt: Date.now() - 3_600_000, createdAt: Date.now() - 86_400_000 });
+    const fp = await fareCtx.newPage();
+    fp.on('pageerror', (e) => errors.push(String(e)));
+    await fp.goto(base + '/alerts', { waitUntil: 'networkidle' });
+    await fp.locator('.seg button', { hasText: 'Fares (1)' }).click().catch(() => {});
+    const card = await fp.locator('.fare-watch').innerText().catch(() => '');
+    // ₹12,500 lowest → 1% is ₹125, more than the ₹100 floor (FareWatches.checked: Math.max(MIN_DROP_PAISE, low / 100)).
+    check('v5 Tracker: a fare alert says the app\'s real rule (₹125 below ₹12,500, not a flat ₹100)', /at least ₹125 below ₹12,500/.test(card) && /DEL → BOM/.test(card), card.replace(/\s+/g, ' '));
+    const compareHref = await fp.locator('.fare-watch a', { hasText: 'Compare now' }).getAttribute('href').catch(() => null);
+    check('…"Compare now" links to that route and day', compareHref === `/travel?from=DEL&to=BOM&date=${day}#flights`, compareHref);
+    await fareCtx.close();
+    await page.goto(`${base}/travel?from=DEL&to=BOM&date=${day}#flights`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('#flight-links li', { timeout: 10_000 }).catch(() => {});
+    const cmp = flightSearch({ from: 'DEL', to: 'BOM', depart: day, adults: 1, cabin: 'economy' }, airportIndex(JSON.parse(readFileSync(new URL('../web/airports.json', import.meta.url), 'utf8')).airports));
+    const opened = await page.locator('#flight-links li a').evaluateAll((as) => as.map((a) => a.href));
+    check('…which opens Flights already searched for it', (await page.locator('#panel-flights').isVisible()) && cmp.ok && JSON.stringify(opened) === JSON.stringify(cmp.links.map((l) => l.url)), JSON.stringify(opened.slice(0, 2)));
 
     // A null or undefined that reaches the page as text (the DOM's replaceChildren printed "null"
     // on /alerts whenever Telegram was off).

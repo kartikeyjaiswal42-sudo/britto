@@ -1836,3 +1836,60 @@ GitHub's US computer (still unknown from India in the app).
 Meesho unknown from India in the app); recipes against live pages after today (stores change
 their pages: `web/shops.json` is data, fixable without a new app); cabs and the rest of 0.8.0 on
 the emulator until 7636514's phone run is green.
+
+## Design v5 built into the site, 2026-11-07 (local session)
+
+Design v5 (Claude Design, https://claude.ai/artifact/TvtoSCBxXnwnWcmLTBioHA, 7 screens) is now the
+site's look: `web/index.html`, `web/style.css`, `web/app.js`. No server, schema or app change.
+
+- **Tokens:** ink #0E1328, page #F3F4F7, blue #1F5BFF, green #0A7D4F, orange #B54708; the
+  design's CTA orange #FF6A13 is 2.87:1 on white, so the Buy button uses #CF4A06 (4.53:1,
+  measured); `--subtle` #6E7691 was 4.09:1 on the page → #5F6780. Dark set redone to match.
+- **Top bar by page** (`<html data-chrome>`, set by `route()`): home = logo + bell on blue;
+  product = Back · "Price history" · Share (in the app the app's `shareApp`, else
+  `navigator.share`, else copy); search = Back + the box; Deals/Tracker/Travel = their own white
+  page head. On a phone the tab bar is hidden on the product page and the Buy bar is fixed at the
+  bottom ("Buy on Amazon.in · ₹price" + "Alert me").
+- **Home:** one box for words OR a link (a link adds the product, words open `/search?q=`), a
+  paste button where the clipboard can be read, shortcuts (Real drops, Alerts, Cabs, Flights),
+  the compare card, "Real price drops", "Is that sale real?", travel cards, recently checked.
+- **Product:** head card (photo, store, title clamped to 3 lines, checked/watched), price with
+  "X% below its usual ₹Y", verdict card with the sale check and the price scale; history card
+  with 1M/3M/All (6M dropped), where the prices came from, and the four figures; Compare prices,
+  Price alert (Any drop / Below a price / Back in stock as one segmented choice; the price box
+  only for "Below a price"), offers, similar.
+- **Search:** filter chips (All stores · Has price history · Under ₹1,000) that hide cards by
+  the price each card carries; one head per store (monogram, who read it, Open). In the app the
+  other stores' searches still start **only on a tap** ("Search N more stores"): I had made them
+  start by themselves and put the tap back, because each search opens up to six store pages on
+  the shopper's phone (data, battery) and stores block a phone that loads them often.
+- **Real drops:** chips as links (`?min=10|30`, `?store=amazon`), "10% or more" meaning the same
+  on both lists; wide deal cards with the sparkline.
+- **Tracker** (was Price Tracker): one row per alert (thumb, state, a bar for how near the price
+  is to a "below" target, Remove as a 44 px icon button), a fired alert gets Buy + Compare
+  stores; in the app a Prices/Fares switch with the phone's fare alerts. **The fare card first
+  said "at least ₹100 below"; the app's rule is ₹100 or 1% of the lowest fare, whichever is
+  more (`FareWatches.checked`, `Math.max(MIN_DROP_PAISE, low / 100)`)** → the card now states
+  that figure. "Compare now" opens `/travel?from&to&date#flights`, which fills and searches.
+- **Travel:** page head with the Cabs/Flights/Hotels switch.
+
+**Gates (this session, on the Mac):** unit 164 · typecheck clean · check:readers clean ·
+prove 133 · alerts 68 (+ `--browser`: every [chrome] check green incl. a real FCM push; that
+first run had 3 red in the cron's re-read of real amazon.in, not touched by this work, and the
+re-run was 68/68 — cause not looked into) · browser **136** (112 + 24 new v5 checks, 12 per
+layout; the light background check updated to the v5 colour rgb(243,244,247)); **the new checks
+proved able to fail**: 9 breakages one at a time (words treated as a link · no top-bar title ·
+Buy bar not fixed · no room under the page for it · price box never hides · each search chip
+keeping everything · fare card back to a flat ₹100 · "Compare now" not searching), each reddened
+exactly its own checks (the first also "no console errors": the server refuses "cello pen" as a
+link), every original restored and re-checked · shop-browser
+all passed (amazon:B01INWEX9U) · screenshots at 390 px (light, dark, app) of Home, Product,
+Search, Real drops, Tracker, Travel, Browse: no sideways scroll, no console errors. Not re-run:
+mutate (no breakage touches `web/app.js` or `web/style.css`), extension (it uses only
+`web/api.js` and `web/chart.js`, unchanged), fares-reader and test:app (no app or recipe change).
+
+**NOT verified:** the new look on a real phone (only Chrome at 390 px, and the emulator on GitHub
+after this push); the in-app pieces (Share through `shareApp`, the Fares switch, "Search N more
+stores") only against a stand-in bridge here, the real app on the GitHub emulator; Real drops'
+filters with real drops in them (the local database has none, so only the empty states and the
+chip links were seen).
