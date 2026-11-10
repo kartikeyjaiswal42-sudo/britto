@@ -50,6 +50,7 @@ and end with the prompt to paste next. Use they/them for the owner.
 `node scripts/alerts.mjs [--browser]` · `scripts/browser.mjs <url>` · `scripts/extension.mjs` ·
 `npm run test:app` (Android: Robolectric, APK checks, reader through the real Java bridge) ·
 `node scripts/travel.mjs` (travel links opened on the real sites) · `scripts/push-live.mjs <url>` ·
+`scripts/score-browser.mjs` (deal score drawn in real Chrome, own throwaway server) ·
 `scripts/shop-browser.mjs [url] [key]` (compare prices in real Chrome; the one-usual-price check
 needs `amazon:B01INWEX9U` with its history in the local database) · `scripts/fares-reader.mjs`
 (the app's bundled reader, fares AND shop recipes). GitHub runs: public API

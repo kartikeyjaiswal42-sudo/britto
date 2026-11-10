@@ -54,6 +54,12 @@
 > new app version); check MakeMyTrip/Goibibo again from a phone (they refused the test emulator after many searches);
 > the sites' own round-trip pages (measure in the app first); MakeMyTrip hotels (needs its city
 > codes); food compare (needs the owner's logged-in pages, as Rapido did).
+> **BuyHatke parity (2026-11-10): `BUYHATKE-STUDY.md` is the measured comparison and its last
+> table is the order of work.** Done that day: deal score 0–100 with its parts on every product,
+> Vijay Sales' newer links. Next, one session each: (1) other stores' prices on the WEBSITE
+> product page (server-readable stores + prices reported by app/extension users for the same
+> product); (2) a bigger catalogue (more best-seller categories; measure the free limits first);
+> (3) deals by category with filters; then the score in the extension panel and the app.
 > Owner-only steps: top of HISTORY.md, "Waiting for the owner".
 
 ## Unattended runs (the owner is away and cannot answer)

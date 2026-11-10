@@ -106,6 +106,51 @@ to this list and removes what is done.
    network error); on your phone they should answer normally. A fare alert notification comes
    only when a fare drops at least ₹100 below the lowest seen, so it may take days.
 
+
+## BuyHatke study, deal score, Vijay Sales' newer links (2026-11-10)
+
+The owner said Britto is "not even 10 percent" of BuyHatke and asked for a close study of how
+BuyHatke works. Full write-up: `BUYHATKE-STUDY.md` (what was measured, feature by feature, and
+the ordered list of what closes the gap).
+
+**Measured (this session, real Chrome as a logged-out visitor; BuyHatke's app and extension were
+not taken apart):** BuyHatke's page for an iPhone 15 showed 26 store prices, a 0–100 deal score
+with a points breakup and a graph from July 2025. Britto live: `/api/deals` returned 0 deals;
+37 of 48 products on the home lists said "too early"; 47 of 48 were Amazon; a product tracked
+14 days had 4 price points. Pasting a Croma link is refused; a Flipkart link is accepted with no
+price. The gap is data age, catalogue and cross-store prices on the website, not missing screens.
+
+**Built:**
+- **Deal score** (`core/judge.ts dealScore`, contract in `core/types.ts`, `score` on every
+  product answer, drawn in the verdict card by `web/app.js scoreBlock`): usual price 50 + share
+  of watched time it cost more 35 + not raised before the drop 15. A flat price scores 40; no
+  usual price yet means `score: null` and nothing is drawn. The first design (points for "at the
+  lowest seen") scored a never-changing price 85 "Great deal": caught by working the flat case
+  by hand before any test was written, and redesigned.
+- **Vijay Sales newer links** `/p/P<sku>/<id>/<name>` (measured: 200 with all three parts, 404
+  with any one missing) were refused as `not_a_product`. Product id is `P<sku>.<id>`; the page's
+  `#parentSku` says `P<sku>`, so the identity check compares the part before the dot (as for
+  Flipkart). The older `/p/<id>/<name>` form still answers (200 with the full name). My first
+  probe used a shortened name, got 404 and I wrongly said the old form was dead: corrected by
+  fetching the saved page's own canonical link.
+
+**Verified:** `npm test` 180 (was 174: 1 link test, 5 score tests worked by hand) ·
+`npm run typecheck` clean · `npm run check:readers` all as expected incl. the new real page
+`vijaysales-iphone17pro-newlink.html` (₹1,26,900 / M.R.P. ₹1,34,900, fetched 2026-11-10 from the
+Mac with the BrittoBot name) · `npm run prove` 145/0 · `scripts/score-browser.mjs` 14/0 in
+Chrome 157 at 390 px (number, parts, bar width measured, parts add up to the number).
+**Proved able to fail:** identity check reverted → 4 DIFFs on the new page only; link pattern
+broken → the 1 new test; score: cheaper-time counted instead of dearer → 3, hike still earning
+points → 1, no-usual scored anyway → 1, flat price given full points → 3; browser: bar always
+full → 2, score drawn when too early → 1. All restored, all green.
+
+**NOT verified:** `scripts/browser.mjs` (150), `alerts.mjs`, `extension.mjs`, `shop-browser.mjs`
+and `mutate` were not re-run (the product answer only gained a field); the extension panel and
+the app do not show the score yet; Vijay Sales' search is drawn by a third-party search service
+with the store's own key, so it is not read. Wrangler on the Mac is logged out (`wrangler
+whoami`: token expired), so production D1 was not queried directly: the live numbers above come
+from the site's public API.
+
 ## S1, 2026-10-26: foundations
 
 **Asked:** a BuyHatke-class site with every feature working, the UI to come from a Claude
