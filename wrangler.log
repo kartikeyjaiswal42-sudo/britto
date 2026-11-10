@@ -1,0 +1,77 @@
+
+ ⛅️ wrangler 4.153.0 (update available 4.160.0)
+───────────────────────────────────────────────
+
+Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md
+Your Worker has access to the following bindings:
+Binding                                                                Resource                  Mode
+env.DB (britto)                                                        D1 Database               local
+env.ASSETS                                                             Assets                    local
+env.SITE_URL ("https://britto.amitynoidalibrary.work...")              Environment Variable      local
+env.VAPID_PUBLIC_KEY ("BBAsF88eTCPtJXgVv2xFbz4a1o-F9UnX_gURA...")      Environment Variable      local
+
+⎔ Starting local server...
+[wrangler:info] ✨ Parsed 3 valid header rules.
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mScheduled Workers are not automatically triggered during local development.[0m
+
+  To manually trigger a scheduled event, run:
+    curl "http://localhost:8799/cdn-cgi/local/scheduled"
+  For more details, see [4mhttps://developers.cloudflare.com/workers/configuration/cron-triggers/#test-cron-triggers-locally[0m
+
+
+[wrangler:info] Ready on http://localhost:8799
+[wrangler:info] GET / 200 OK (218ms)
+[wrangler:info] GET /travel 200 OK (4ms)
+[wrangler:info] GET / 200 OK (11ms)
+[wrangler:info] GET /fonts/Outfit.woff2 200 OK (16ms)
+[wrangler:info] GET /fonts/Manrope.woff2 200 OK (32ms)
+[wrangler:info] GET /style.css 200 OK (34ms)
+[wrangler:info] GET /app.js 200 OK (34ms)
+[wrangler:info] GET /api.js 200 OK (70ms)
+[wrangler:info] GET /spend.js 200 OK (102ms)
+[wrangler:info] GET /chart.js 200 OK (119ms)
+[wrangler:info] GET /compare.js 200 OK (134ms)
+[wrangler:info] GET /travel.js 200 OK (139ms)
+[wrangler:info] GET /match.js 200 OK (105ms)
+[wrangler:info] GET /shop.js 200 OK (86ms)
+[wrangler:info] GET /api/config 200 OK (6ms)
+[wrangler:info] GET /api/drops 200 OK (31ms)
+[wrangler:info] GET /api/deals 200 OK (39ms)
+[wrangler:info] GET /api/recent 200 OK (33ms)
+[wrangler:info] GET /favicon.svg 200 OK (11ms)
+[wrangler:info] GET /travel 200 OK (13ms)
+[wrangler:info] GET /fonts/Outfit.woff2 304 Not Modified (6ms)
+[wrangler:info] GET /fonts/Manrope.woff2 304 Not Modified (63ms)
+[wrangler:info] GET /app.js 304 Not Modified (115ms)
+[wrangler:info] GET /style.css 304 Not Modified (116ms)
+[wrangler:info] GET /api.js 304 Not Modified (88ms)
+[wrangler:info] GET /match.js 304 Not Modified (100ms)
+[wrangler:info] GET /chart.js 304 Not Modified (105ms)
+[wrangler:info] GET /spend.js 304 Not Modified (102ms)
+[wrangler:info] GET /travel.js 304 Not Modified (104ms)
+[wrangler:info] GET /compare.js 304 Not Modified (104ms)
+[wrangler:info] GET /shop.js 304 Not Modified (18ms)
+[wrangler:info] GET /rides.json 200 OK (25ms)
+[wrangler:info] GET /airports.json 200 OK (25ms)
+[wrangler:info] GET /favicon.svg 304 Not Modified (11ms)
+[wrangler:info] GET /fares.json 200 OK (10ms)
+[wrangler:info] GET /search 200 OK (7ms)
+[wrangler:info] GET /fonts/Outfit.woff2 304 Not Modified (10ms)
+[wrangler:info] GET /fonts/Manrope.woff2 304 Not Modified (11ms)
+[wrangler:info] GET /app.js 304 Not Modified (12ms)
+[wrangler:info] GET /style.css 304 Not Modified (13ms)
+[wrangler:info] GET /api.js 304 Not Modified (10ms)
+[wrangler:info] GET /travel.js 304 Not Modified (30ms)
+[wrangler:info] GET /chart.js 304 Not Modified (31ms)
+[wrangler:info] GET /spend.js 304 Not Modified (32ms)
+[wrangler:info] GET /compare.js 304 Not Modified (8ms)
+[wrangler:info] GET /match.js 304 Not Modified (31ms)
+[wrangler:info] GET /shop.js 304 Not Modified (32ms)
+[wrangler:info] GET /api/stores 200 OK (13ms)
+[wrangler:info] GET /shops.json 200 OK (46ms)
+[wrangler:info] GET /api/search 200 OK (47ms)
+[wrangler:info] GET /favicon.svg 304 Not Modified (11ms)
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mstore search amazon http_error 503[0m
+
+
+[wrangler:info] GET /api/store-search 200 OK (394ms)

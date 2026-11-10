@@ -1,0 +1,14 @@
+17:38:20 install
+17:38:22 location on: ok; now true
+17:38:22 mock location for the shell: ok
+17:38:23 location add-test-provider fused: ok
+17:38:23 location set-test-provider-enabled fused true: ok
+17:38:23 location add-test-provider gps: ok
+17:38:23 location set-test-provider-enabled gps true: ok
+17:38:23 fused test position: ok
+17:38:23 geo fix: OK
+17:38:24 waiting for the app's WebView
+17:38:26 round 1: DevTools socket webview_devtools_remote_3384
+17:38:29 page http://127.0.0.1:8799/
+17:38:31 Britto's page loaded: true
+17:39:08 shop compare: search page
