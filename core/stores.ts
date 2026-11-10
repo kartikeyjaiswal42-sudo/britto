@@ -206,10 +206,16 @@ function myntra(u: URL): LinkResult {
 }
 
 function vijaysales(u: URL): LinkResult {
-  // /p/<id>/<name>; the name is part of the address (measured: /p/<id> alone is a 404).
+  // Two forms are live (both measured 2026-11-10 with our own bot name):
+  //   /p/<id>/<name>            older products; the name is part of the address (/p/<id> alone is a 404)
+  //   /p/P<sku>/<id>/<name>     newer products; all three parts are needed (any one missing is a 404)
+  // The page names itself by #parentSku: "<id>" on the first form, "P<sku>" on the second, so the
+  // second form's product id is "P<sku>.<id>" and the identity check compares the part before the dot.
   const m = /^\/p\/(\d{4,8})\/([a-z0-9][a-z0-9-]*)\/?$/i.exec(u.pathname);
-  if (!m) return { ok: false, reason: 'not_a_product' };
-  return ok('vijaysales', m[1]!, `https://www.vijaysales.com/p/${m[1]}/${m[2]!.toLowerCase()}`);
+  if (m) return ok('vijaysales', m[1]!, `https://www.vijaysales.com/p/${m[1]}/${m[2]!.toLowerCase()}`);
+  const n = /^\/p\/P(\d{4,8})\/(\d{4,8})\/([a-z0-9][a-z0-9-]*)\/?$/i.exec(u.pathname);
+  if (!n) return { ok: false, reason: 'not_a_product' };
+  return ok('vijaysales', `P${n[1]}.${n[2]}`, `https://www.vijaysales.com/p/P${n[1]}/${n[2]}/${n[3]!.toLowerCase()}`);
 }
 
 function reliancedigital(u: URL): LinkResult {
@@ -245,7 +251,7 @@ export function parseKey(key: string): { store: StoreId; pid: string } | null {
     amazon: ASIN,
     flipkart: /^itm[a-z0-9]{6,20}(\.[A-Z0-9]{12,20})?$/,
     myntra: /^\d{5,10}$/,
-    vijaysales: /^\d{4,8}$/,
+    vijaysales: /^(\d{4,8}|P\d{4,8}\.\d{4,8})$/,
     reliancedigital: /^[a-z0-9][a-z0-9-]{2,299}$/,
     nykaa: /^\d{5,10}$/,
     shopclues: /^\d{6,10}$/,

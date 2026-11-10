@@ -319,6 +319,30 @@ function saleCheck(view) {
     sale.claimedPct != null ? h('p', { class: 'small' }, `Claimed: ${pct(sale.claimedPct)} off M.R.P. \u00b7 Real: ${sale.realPct == null ? 'not known yet' : pct(sale.realPct) + ' vs usual'}`) : null);
 }
 
+/**
+ * The deal score (core/judge.ts dealScore): 0 to 100 with the three parts it is the sum of, so a
+ * shopper can check it by hand. A product too new for the verdict already says so there; a
+ * product with a verdict but no usual price yet says why there is no score. The bar is filled
+ * through CSSOM (the page's CSP refuses inline style attributes).
+ */
+function scoreBlock(view) {
+  const d = view.score;
+  if (!d || view.verdict.kind === 'too_early' || view.verdict.kind === 'unavailable') return null;
+  if (d.score == null) {
+    return h('div', { class: 'deal-score', 'data-score': 'none' }, h('strong', {}, d.headline), h('p', { class: 'small' }, d.basis));
+  }
+  const fill = h('span', { class: 'score-fill' });
+  fill.style.width = `${d.score}%`;
+  return h('div', { class: `deal-score ${d.band}`, 'data-score': String(d.score) },
+    h('div', { class: 'score-head' },
+      h('span', { class: 'score-num' }, String(d.score), h('small', {}, '/100')),
+      h('strong', {}, `Deal score: ${d.headline}`)),
+    h('div', { class: 'score-bar', role: 'img', 'aria-label': `Deal score ${d.score} out of 100: ${d.headline}` }, fill),
+    h('ul', { class: 'score-parts' }, d.parts.map((p) => h('li', { 'data-part': p.id },
+      h('span', {}, p.label), h('span', { class: 'pts' }, `${p.points} of ${p.max}`)))),
+    h('p', { class: 'small' }, d.basis));
+}
+
 /** Top bar's share button on a product page: the phone's share sheet, or the address copied. */
 let shareThis = null;
 document.getElementById('top-share').addEventListener('click', async () => {
@@ -387,6 +411,7 @@ async function productPage(key) {
           h('h2', {}, view.verdict.headline),
           h('p', {}, view.verdict.reasons.join(' ')),
           saleCheck(view),
+          scoreBlock(view),
           priceScale(s))),
       // The price history right under the verdict (what a shopper came for), then other stores'
       // prices (design v5), the alert and only then the store's own offers.

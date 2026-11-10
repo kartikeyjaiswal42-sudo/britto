@@ -302,7 +302,8 @@ export function readerEnough(cfg: ReaderConfig, html: string): boolean {
  */
 export function confirmIdentity(store: StoreId, linkPid: string, ex: Extracted, reportsPid: boolean): Extracted {
   if (ex.status !== 'priced' && ex.status !== 'unavailable') return ex;
-  const expected = store === 'flipkart' ? linkPid.split('.')[0] : linkPid;
+  // Flipkart (itm.PID) and Vijay Sales' newer links (P<sku>.<id>) carry two ids; the page names the first.
+  const expected = store === 'flipkart' || store === 'vijaysales' ? linkPid.split('.')[0] : linkPid;
   if (ex.pid === expected) return ex;
   if (ex.pid == null && !reportsPid) return ex;
   const { offers: _otherItemsOffers, ...rest } = ex;

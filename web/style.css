@@ -501,6 +501,18 @@ svg.ico { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColo
 .shop-search-out { margin-top: 10px; }
 
 /* Price scale in the verdict card (design v5): lowest · today · highest */
+.deal-score { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid color-mix(in srgb, var(--ink) 12%, transparent); }
+.score-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.score-num { font-size: 30px; font-weight: 800; line-height: 1; color: var(--ink); }
+.score-num small { font-size: 13px; font-weight: 700; color: var(--muted); }
+.score-bar { height: 10px; border-radius: 10px; background: color-mix(in srgb, var(--ink) 12%, transparent); overflow: hidden; }
+.score-fill { display: block; height: 100%; border-radius: 10px; background: var(--muted); }
+.deal-score.great .score-fill, .deal-score.good .score-fill { background: var(--good); }
+.deal-score.fair .score-fill { background: #E9C46A; }
+.deal-score.poor .score-fill { background: var(--bad); }
+.score-parts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.score-parts li { display: flex; justify-content: space-between; gap: 12px; }
+.score-parts .pts { flex: none; font-weight: 800; white-space: nowrap; }
 .price-scale { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
 .scale-bar { position: relative; height: 10px; border-radius: 10px; background: linear-gradient(90deg, var(--good) 0%, #E9C46A 55%, #B54708 100%); }
 .scale-dot { position: absolute; top: -5px; width: 20px; height: 20px; border-radius: 20px; background: #FFFFFF; border: 4px solid var(--ink); box-sizing: border-box; transform: translateX(-50%); }

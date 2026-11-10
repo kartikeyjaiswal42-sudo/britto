@@ -152,6 +152,33 @@ export interface SaleCheck {
   explanation: string;
 }
 
+/**
+ * The deal score: 0 to 100, how good today's price is against this product's OWN history.
+ * It is the sum of three named parts, each shown to the shopper with its numbers, so the score
+ * can be checked by hand. A price that never moved scores 40 ("fair"): being the only price
+ * ever seen is not a deal. Until the usual price is ready (core/judge.ts SALE) there is no
+ * score at all: `score: null`, never a guess.
+ */
+export type DealBand = 'great' | 'good' | 'fair' | 'poor' | 'none';
+
+export interface DealPart {
+  id: 'usual' | 'dearer' | 'no_hike';
+  /** What was compared, in plain English with its own numbers. */
+  label: string;
+  points: number;
+  max: number;
+}
+
+export interface DealScore {
+  score: number | null;
+  band: DealBand;
+  headline: string;
+  /** Empty when there is no score. */
+  parts: DealPart[];
+  /** What the score rests on, or why there is none yet. */
+  basis: string;
+}
+
 export type AlertRule =
   | { kind: 'below'; target: Paise }
   | { kind: 'drop'; pct: number }
@@ -182,6 +209,8 @@ export interface ProductView {
   stats: HistoryStats;
   verdict: Verdict;
   sale: SaleCheck;
+  /** How good today's price is, 0 to 100, with its parts (core/judge.ts dealScore). */
+  score: DealScore;
   /** Why there is no price yet, when there is none. */
   pending: string | null;
   /** The store's sale events (core/sales.ts), for the chart. */

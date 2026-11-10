@@ -1,6 +1,6 @@
 import { DAY, pricedTime, spans, weightedQuantile } from './history.ts';
 import { formatPct, formatRupees } from './money.ts';
-import type { HistoryStats, Millis, PricePoint, SaleCheck, Verdict } from './types.ts';
+import type { DealBand, DealPart, DealScore, HistoryStats, Millis, PricePoint, SaleCheck, Verdict } from './types.ts';
 
 // Thresholds are product judgement, not measured accuracy. They live here, named, so a
 // change is one line and every test that depends on them says which one it pins.
@@ -154,4 +154,63 @@ export function saleCheck(points: readonly PricePoint[], lastCheckedAt: Millis |
     status: 'no_real_drop', ...base,
     explanation: `${formatRupees(current)} is about its usual price (${formatRupees(usual)}).${mrpNote}`,
   };
+}
+
+// The deal score's weights and ramps. Product judgement, like the thresholds above: named here
+// so a change is one line and every test says which one it pins.
+export const SCORE = {
+  usual: 50,         // points for 15%+ below the usual price; half at the usual price ...
+  usualSpan: 0.15,   // ... and 0 at 15% above it
+  dearer: 35,        // points when it cost more than today ALL the watched time; 0 when never
+  noHike: 15,        // points when the price was not raised before this drop
+  great: 80,
+  good: 60,
+  fair: 40,
+} as const;
+
+const clamp01 = (x: number): number => Math.min(1, Math.max(0, x));
+
+/**
+ * 0 to 100: how good is today's price, judged only against this product's own watched history.
+ * Three linear parts, each shown with its numbers: against the usual price (the sale check's:
+ * 90 days, last 48 h left out), the share of watched time it cost MORE than today, and whether
+ * it was raised before this drop. No usual price yet -> no score (missing is never zero).
+ */
+export function dealScore(points: readonly PricePoint[], lastCheckedAt: Millis | null, s: HistoryStats, sale: SaleCheck): DealScore {
+  const none = (headline: string, basis: string): DealScore => ({ score: null, band: 'none', headline, parts: [], basis });
+  if (s.current == null || s.inStock === false) return none('No score: not available to buy right now', 'A score needs a price to judge.');
+  const usual = sale.usualPrice;
+  if (usual == null || usual <= 0) {
+    return none('No score yet', `A score compares today's price with the usual price, which needs ${SALE.minPriced / DAY} days of prices (not counting the last ${SALE.exclude / DAY}). We have watched this for ${days(s.daysTracked)}.`);
+  }
+  const current = s.current;
+  const last = points[points.length - 1]!;
+  const end = Math.max(lastCheckedAt ?? last.at, last.at);
+  const all = spans(points, end);
+  const priced = pricedTime(all);
+  const dearerTime = all.reduce((n, sp) => n + (sp.price != null && sp.inStock && sp.price > current ? sp.to - sp.from : 0), 0);
+  const dearerShare = priced > 0 ? dearerTime / priced : 0;
+
+  const under = (usual - current) / usual;
+  const parts: DealPart[] = [
+    {
+      id: 'usual', max: SCORE.usual,
+      points: Math.round(SCORE.usual * clamp01(0.5 + under / (2 * SCORE.usualSpan))),
+      label: Math.abs(under) < 0.005
+        ? `At its usual price (${formatRupees(usual)})`
+        : `${formatPct(Math.abs(under))} ${under > 0 ? 'below' : 'above'} its usual price (${formatRupees(usual)})`,
+    },
+    {
+      id: 'dearer', max: SCORE.dearer,
+      points: Math.round(SCORE.dearer * clamp01(dearerShare)),
+      label: dearerShare <= 0 ? 'It never cost more than today while we watched' : `It cost more than today ${formatPct(dearerShare)} of the time we watched`,
+    },
+    sale.hike
+      ? { id: 'no_hike', max: SCORE.noHike, points: 0, label: `Raised to ${formatRupees(sale.hike.to)} on ${formatDate(sale.hike.at)} before this "drop"` }
+      : { id: 'no_hike', max: SCORE.noHike, points: SCORE.noHike, label: 'Not raised before this price' },
+  ];
+  const score = parts.reduce((n, p) => n + p.points, 0);
+  const band: DealBand = score >= SCORE.great ? 'great' : score >= SCORE.good ? 'good' : score >= SCORE.fair ? 'fair' : 'poor';
+  const headline = { great: 'Great deal', good: 'Good deal', fair: 'Fair price', poor: 'Poor deal' }[band];
+  return { score, band, headline, parts, basis: `Scored on ${days(s.daysTracked)} of this product's own prices, as Britto read them.` };
 }

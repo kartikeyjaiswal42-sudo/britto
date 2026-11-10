@@ -1,5 +1,5 @@
 import { isChange, stats } from '../core/history.ts';
-import { saleCheck, verdict } from '../core/judge.ts';
+import { dealScore, saleCheck, verdict } from '../core/judge.ts';
 import { saleEventsFor } from '../core/sales.ts';
 import { STORES, type ParsedLink } from '../core/stores.ts';
 import { TRUST, type HeldReport, type Observed } from '../core/trust.ts';
@@ -207,6 +207,7 @@ export async function productView(db: D1Database, row: ProductRow, now: Millis =
   const points = await loadPoints(db, row.key);
   const s = stats(points, row.last_checked_at);
   const store = STORES[row.store];
+  const sale = saleCheck(points, row.last_checked_at);
   return {
     key: row.key,
     store: { id: store.id, name: store.name, serverFetch: store.serverFetch },
@@ -216,7 +217,8 @@ export async function productView(db: D1Database, row: ProductRow, now: Millis =
     points,
     stats: s,
     verdict: verdict(s),
-    sale: saleCheck(points, row.last_checked_at),
+    sale,
+    score: dealScore(points, row.last_checked_at, s, sale),
     pending: pendingReason(row, points.length > 0),
     saleEvents: saleEventsFor(row.store),
     offers: await loadOffers(db, row.key, row.store, now),

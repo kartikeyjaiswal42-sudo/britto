@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { formatRupees, parseRupees } from './money.ts';
 import { parseKey, parseProductLink } from './stores.ts';
 import { DAY, isChange, stats } from './history.ts';
-import { saleCheck, verdict } from './judge.ts';
+import { dealScore, saleCheck, verdict } from './judge.ts';
 import { decideAlert, describeRule, newAlert, parseRule, readingMovesAlerts, suggestTargets } from './alerts.ts';
 import { pickDue, refreshInterval } from './schedule.ts';
 import type { PricePoint } from './types.ts';
@@ -70,6 +70,18 @@ test('Vijay Sales product links: /p/<id>/<name>, the name is required', () => {
   assert.deepEqual(parseProductLink('https://www.vijaysales.com/air-conditioners'), { ok: false, reason: 'not_a_product' });
   assert.deepEqual(parseKey('vijaysales:222878'), { store: 'vijaysales', pid: '222878' });
   assert.equal(parseKey('vijaysales:22x'), null);
+});
+
+test('Vijay Sales newer product links: /p/P<sku>/<id>/<name>, every part required', () => {
+  // Measured 2026-11-10: this link answers 200 with the price box; without the name, or with the
+  // older /p/P<sku>/<name> shape, it answers 404.
+  const r = parseProductLink('https://www.vijaysales.com/p/P245195/245195/Apple-iPhone-17-Pro-256GB-Cosmic-Orange?utm=x#top');
+  assert.ok(r.ok && r.link.key === 'vijaysales:P245195.245195');
+  assert.equal(r.ok && r.link.url, 'https://www.vijaysales.com/p/P245195/245195/apple-iphone-17-pro-256gb-cosmic-orange');
+  assert.deepEqual(parseProductLink('https://www.vijaysales.com/p/P245195/245195'), { ok: false, reason: 'not_a_product' });
+  assert.deepEqual(parseProductLink('https://www.vijaysales.com/p/P245195/apple-iphone-17-pro'), { ok: false, reason: 'not_a_product' });
+  assert.deepEqual(parseKey('vijaysales:P245195.245195'), { store: 'vijaysales', pid: 'P245195.245195' });
+  assert.equal(parseKey('vijaysales:P245195'), null);
 });
 
 test('Reliance Digital product links: /product/<handle>', () => {
@@ -170,6 +182,57 @@ test('verdict: buy at the lowest, wait well above usual, fair in between', () =>
 
 test('verdict: unavailable when out of stock', () => {
   assert.equal(verdict(stats([pt(0, 100_00), pt(10, null)], T0 + 12 * DAY)).kind, 'unavailable');
+});
+
+// ------------------------------------------------------------------ deal score
+const scoreOf = (pts: PricePoint[], at: number) => dealScore(pts, at, stats(pts, at), saleCheck(pts, at));
+
+test('score: a real 20% drop that was dearer almost all the time scores near the top', () => {
+  // 40 days at ₹1,000, then ₹800 for a day. usual ₹1,000 -> 20% below -> 50/50;
+  // dearer 40 of 41 days = 97.6% -> round(35 x 0.976) = 34; not raised -> 15. Sum 99.
+  const d = scoreOf([pt(0, 1000_00), pt(40, 800_00)], T0 + 41 * DAY);
+  assert.deepEqual(d.parts.map((p) => [p.id, p.points, p.max]), [['usual', 50, 50], ['dearer', 34, 35], ['no_hike', 15, 15]]);
+  assert.equal(d.score, 99);
+  assert.equal(d.band, 'great');
+  assert.equal(d.parts.reduce((n, p) => n + p.points, 0), d.score, 'the parts shown add up to the score shown');
+});
+
+test('score: a price that never moved is fair, not a deal', () => {
+  // At the usual price -> 25/50; never dearer -> 0/35; not raised -> 15. Sum 40.
+  const d = scoreOf([pt(0, 305_00, { mrp: 699_00 })], T0 + 30 * DAY);
+  assert.deepEqual(d.parts.map((p) => p.points), [25, 0, 15]);
+  assert.equal(d.score, 40);
+  assert.equal(d.band, 'fair');
+});
+
+test('score: hiked then "dropped" back is a poor deal and says why', () => {
+  // ₹1,000 for 50 days, ₹1,300 for 12, "sale" at ₹999 for a day. usual ₹1,000 -> 0.1% below ->
+  // round(50 x 0.5033) = 25; dearer 62 of 63 days (₹1,000 and ₹1,300 are both above ₹999) = 98% -> 34;
+  // raised before the drop -> 0. Sum 59: under the "good" line because of the hike alone.
+  const d = scoreOf([pt(0, 1000_00), pt(50, 1300_00), pt(62, 999_00)], T0 + 63 * DAY);
+  assert.deepEqual(d.parts.map((p) => p.points), [25, 34, 0]);
+  assert.equal(d.score, 59);
+  assert.equal(d.band, 'fair');
+  assert.match(d.parts[2]!.label, /Raised to ₹1,300 on .* before this "drop"/);
+});
+
+test('score: above the usual price and usually cheaper is a poor deal', () => {
+  // ₹1,000 for 60 days, then ₹1,100 for 10. usual ₹1,000 -> 10% above -> round(50 x 0.1667) = 8;
+  // never dearer -> 0; not raised before a DROP (it rose, nothing dropped) -> 15. Sum 23.
+  const d = scoreOf([pt(0, 1000_00), pt(60, 1100_00)], T0 + 70 * DAY);
+  assert.deepEqual(d.parts.map((p) => p.points), [8, 0, 15]);
+  assert.equal(d.band, 'poor');
+});
+
+test('score: no usual price yet means no score, never a guess', () => {
+  const d = scoreOf([pt(0, 500_00)], T0 + 5 * DAY);
+  assert.equal(d.score, null);
+  assert.equal(d.band, 'none');
+  assert.deepEqual(d.parts, []);
+  assert.match(d.basis, /needs 7 days of prices/);
+  const gone = scoreOf([pt(0, 500_00), pt(20, null)], T0 + 30 * DAY);
+  assert.equal(gone.score, null);
+  assert.match(gone.headline, /not available/);
 });
 
 // ------------------------------------------------------------------ sale check
